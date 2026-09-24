@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Managing SEO in Craft CMS: a practical guide to getting it right</title>
+<meta name="description" content="A hands-on guide to managing SEO in Craft CMS. Learn how to structure content, optimise performance, and avoid common mistakes with a flexible CMS.">
+
+	<link rel="canonical" href="managing-seo-in-craft-cms.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="managing-seo-in-craft-cms.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Managing SEO in Craft CMS: a practical guide to getting it right">
+<meta property="og:description" content="A hands-on guide to managing SEO in Craft CMS. Learn how to structure content, optimise performance, and avoid common mistakes with a flexible CMS.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/managing-seo-in-craft-cms">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right/Engage_Blog_Hero_06.18_CB_V1-5.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms#blogposting","url":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms","headline":"Managing SEO in Craft CMS: a practical guide to getting it right","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/rebecca-walker#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png","datePublished":"2026-08-25T16:38:01+01:00","description":"A hands-on guide to managing SEO in Craft CMS. Learn how to structure content, optimise performance, and avoid common mistakes with a flexible CMS."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms#webpage","url":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms","name":"Managing SEO in Craft CMS: a practical guide to getting it right","description":"A hands-on guide to managing SEO in Craft CMS. Learn how to structure content, optimise performance, and avoid common mistakes with a flexible CMS.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Managing SEO in Craft CMS: A practical guide to getting it right","item":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png"},"datePublished":"2026-08-25T16:38:01+01:00","dateModified":"2026-08-27T09:27:07+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="managing-seo-in-craft-cms.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Managing SEO in Craft CMS: a practical guide to getting it right&quot;,&quot;description&quot;:&quot;A hands-on guide to managing SEO in Craft CMS. Learn how to structure content, optimise performance, and avoid common mistakes with a flexible CMS.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms&quot;,&quot;shareTitle&quot;:&quot;Managing SEO in Craft CMS: a practical guide to getting it right&quot;,&quot;shareDescription&quot;:&quot;A hands-on guide to managing SEO in Craft CMS. Learn how to structure content, optimise performance, and avoid common mistakes with a flexible CMS.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms\&quot;,\&quot;headline\&quot;:\&quot;Managing SEO in Craft CMS: a practical guide to getting it right\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/rebecca-walker#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\\\/Engage_Blog_Hero_06.18_CB_V1-5.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-08-25T16:38:01+01:00\&quot;,\&quot;description\&quot;:\&quot;A hands-on guide to managing SEO in Craft CMS. Learn how to structure content, optimise performance, and avoid common mistakes with a flexible CMS.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms\&quot;,\&quot;name\&quot;:\&quot;Managing SEO in Craft CMS: a practical guide to getting it right\&quot;,\&quot;description\&quot;:\&quot;A hands-on guide to managing SEO in Craft CMS. Learn how to structure content, optimise performance, and avoid common mistakes with a flexible CMS.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Managing SEO in Craft CMS: A practical guide to getting it right\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\\\/Engage_Blog_Hero_06.18_CB_V1-5.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-08-25T16:38:01+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-08-27T09:27:07+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Managing SEO in Craft CMS: A practical guide to getting it right&quot;,&quot;date&quot;:&quot;25th August 2026&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Rebecca&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/rebecca-walker&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 10 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 5&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;Managing SEO in Craft CMS is powerful, until it isn&#039;t. SEO rarely collapses in one go. It erodes.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;A quick fix here. A plugin bolted on there. A handful of \&quot;we&#039;ll sort that later\&quot; calls that quietly turn permanent. Give it long enough and the consistency goes, and rankings tend to follow it out the door.&lt;\/p&gt;&lt;p&gt;Most platforms hand you one of two compromises. Lock everything down so tightly that nothing can move, or open everything up so completely that nothing stays consistent. Craft CMS refuses both. It hands you genuine control over the things that actually move the needle on search \u2013 structure, templates, URLs, performance \u2013 but it won&#039;t save you from your own bad calls.&lt;\/p&gt;&lt;p&gt;That&#039;s the trade-off worth understanding before you start. Craft repays sites where SEO was part of the plan from day one. It won&#039;t quietly fix what you got wrong six months in. Which is exactly why a well-built Craft site and a mediocre one can look identical on paper and perform worlds apart. The platform is only ever as good as the thinking behind it. A brilliant kitchen with quartz worktops, island and fancy knives doesn\u2019t make anyone a brilliant cook.&lt;\/p&gt;&lt;p&gt;What follows is how we approach Craft SEO across the builds and migrations we run. If you want the control without the chaos that sometimes tags along with it, this is the way to get there.&lt;\/p&gt;&lt;h2&gt;Why Craft CMS is good for SEO&lt;\/h2&gt;&lt;p&gt;There&#039;s a lazy assumption that a CMS without SEO \&quot;out of the box\&quot; is somehow behind the curve. The reality tends to run the other way.&lt;\/p&gt;&lt;p&gt;What Craft gives you is control without the baggage. No fighting rigid templates, no stacking plugins to paper over gaps. You decide how your SEO works from the foundations up. And handled with care, that&#039;s a real edge rather than extra effort. In practice it gives you:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ed593a178d08091dd6d05119448bdecb3\&quot;&gt;Clean, lightweight markup with nothing weighing the page down&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eddafc76c308c37fdf0fdfc04aa1a4420\&quot;&gt;Full ownership of URLs, templates and the relationships between content&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee31a4931e2cd6e7f1874021dcfbcd698\&quot;&gt;Content models built to mirror search intent rather than fight it&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e00119d28a88179c84e1af568e0391ab2\&quot;&gt;Room to plug SEO into the wider stack, from analytics through to CRM&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e94a8305cbff3e5ac3b605f4d91296416\&quot;&gt;Performance that reflects how well the site was built, not what the CMS would tolerate&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;It&#039;s also genuinely considerate of the people using it day to day. A clean interface, flexible fields, and sensible permissions let content teams get on with their work without tripping over something they didn&#039;t mean to touch. That meeting point of flexibility and usability is where Craft really separates itself, and why it&#039;s the platform we reach for on&lt;a href=\&quot;https:\/\/engage.agency\/services\/seo\&quot;&gt;\u00a0&lt;u&gt;SEO-critical builds.&lt;\/u&gt;&lt;\/a&gt;&lt;\/p&gt;&lt;h2&gt;The basics you need to get right before anything clever&lt;\/h2&gt;&lt;p&gt;Get the fundamentals locked down before you reach for anything sophisticated. Consistency beats cleverness almost every time. The SEO problems we find in Craft builds rarely trace back to the platform. They trace back to decisions left too late, or good intentions that nobody enforced once the site went live. Four areas matter most:&lt;\/p&gt;&lt;h3&gt;SEO tooling in Craft&lt;\/h3&gt;&lt;p&gt;Tooling is support, not the solution. SEOmatic and tools like it automate meta data, schema and sitemaps, and they&#039;re useful for holding things together at scale. But they only ever amplify the structure beneath them. The actual work lives in content modelling, template logic, field configuration, and editorial workflow. Lean on tools to assist that, never to replace it.&lt;\/p&gt;&lt;h3&gt;Meta data control&lt;\/h3&gt;&lt;p&gt;Meta data needs rules. Flexibility with no governance is how you end up with empty descriptions, duplicate titles, and fields that slipped through the net on a busy publishing day. Set clear default patterns for titles and descriptions, decide upfront when a manual override is warranted, and build in validation that flags the gaps before Google does. It&#039;s as much a process as a configuration.&lt;\/p&gt;&lt;h3&gt;URL structure&lt;\/h3&gt;&lt;p&gt;URL structure is a genuine strength here. Craft lets you shape URLs around how your content is actually organised, not how the database happens to store it. Auto-generated sprawl, URLs swapped out with no redirect plan, naming that drifts from section to section, all avoidable, all a question of discipline rather than capability.&lt;\/p&gt;&lt;h3&gt;XML sitemaps and indexing&lt;\/h3&gt;&lt;p&gt;Sitemaps and indexing should be invisible. Done right, nobody thinks about them. Done wrong, they hand you problems you never needed: staging sites getting indexed, junk pages padding out the sitemap, genuinely important content left out in the cold. Unglamorous, but worth nailing before anything else.&lt;\/p&gt;&lt;h2&gt;Structuring content properly in Craft CMS&lt;\/h2&gt;&lt;p&gt;This is where Craft earns its keep and where most of the real SEO work actually happens.&lt;\/p&gt;&lt;p&gt;Its flexibility lets you model content around the way your business genuinely operates, rather than forcing your content to contort itself into whatever shape the CMS prefers. The catch is that flexibility only pays off when it&#039;s used deliberately. That means mapping out content types, fields and the relationships between them before anyone builds a single page. Content modelling, in other words. And it&#039;s where search performance is quietly decided long before a word goes live.&lt;\/p&gt;&lt;p&gt;One big rich text field can feel like the efficient choice. It almost never holds up. It\u2019s the digital equivalent of shoving everything into one drawer and hoping you\u2019ll find it later. Structured content \u2013 proper heading fields, modular components, asset usage that&#039;s actually controlled \u2013 keeps pages consistent while leaving editors room to move. It also bakes SEO into the model itself, rather than leaving it to the discretion (or oversight) of whoever happens to be editing that day.&lt;\/p&gt;&lt;p&gt;And templates should pull their weight beyond simply rendering content. The good ones enforce heading hierarchy, nudge editors towards internal linking and hold page structure steady across the whole site. Because the moment a site starts to grow, inconsistency turns into something genuinely painful to untangle. Build it well from the start and it performs today and scales tomorrow, with no SEO debt quietly compounding in the background.&lt;\/p&gt;&lt;h2&gt;On-page SEO in Craft CMS&lt;\/h2&gt;&lt;p&gt;This one&#039;s easy to overthink. The bulk of the gains still come from getting the fundamentals right, and fundamentals are precisely where flexible setups tend to wander off course.&lt;\/p&gt;&lt;p&gt;Headings get used as styling rather than structure. Internal links never get added. Images go up uncompressed and without alt text. None of that is the platform&#039;s doing; it&#039;s the process. Craft gives you everything you need to get on-page right; it just won&#039;t force your hand. The discipline has to come from how you build and run the site, not from the CMS playing nanny.&lt;\/p&gt;&lt;p&gt;Keep the attention on three things: heading structures that are clear and consistent, internal linking that&#039;s deliberate rather than accidental, and asset management that&#039;s handled properly across the board. Straightforward stuff. It simply needs someone paying attention to it.&lt;\/p&gt;&lt;h2&gt;Technical SEO in Craft CMS&lt;\/h2&gt;&lt;p&gt;This is the point where the quality of the build stops being theoretical and starts being measurable.&lt;\/p&gt;&lt;h3&gt;Performance and Core Web Vitals&lt;\/h3&gt;&lt;p&gt;Performance and Core Web Vitals in Craft come down entirely to how the thing was put together. Lean templates, optimised assets, hosting and infrastructure that were actually thought about. Get those right, and Craft sites are quick, properly Usain Bolt quick, not just respectable-for-a-CMS quick. Get them wrong, and it shows immediately. Nothing in the platform is holding you back, which does mean there&#039;s nobody else to point at when it drags.&lt;\/p&gt;&lt;h3&gt;Schema and structured data&lt;\/h3&gt;&lt;p&gt;Schema and structured data can be covered at a basic level with plugins, but the advantage usually lives a step beyond that. Custom schema lets you represent complex content types accurately, fight for visibility in rich search features, and line your structured data up properly with your content model. That degree of control is a big part of what makes Craft so capable on SEO-critical sites.&lt;\/p&gt;&lt;h3&gt;Redirects and site changes&lt;\/h3&gt;&lt;p&gt;Redirects and site changes are simply part of the deal. Sites evolve, pages shift, sections get rebuilt, content gets merged. Managed well, none of it costs you anything. Managed badly, it bleeds traffic and you&#039;ll struggle to win it back. A clear redirect strategy, careful URL mapping through migrations, and proper upkeep as the site grows aren&#039;t nice-to-haves. They&#039;re the price of a site that holds its performance over time.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Lovett Website Visual 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-Website-Visual-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-Website-Visual-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-Website-Visual-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-Website-Visual-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-Website-Visual-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-Website-Visual-6.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Seen in practice: +70% conversion rate for Lovett Care&lt;\/h2&gt;&lt;p&gt;Our work with Lovett Care is a good example of just how much can be riding on those decisions.&lt;\/p&gt;&lt;p&gt;Following the acquisition of New Care, two existing websites needed to become one, with authority transferred from the stronger legacy domain into lovettcare.co.uk. That meant consolidating content and URLs without sacrificing the organic and Local Pack visibility that enquiries and occupancy depended on.&lt;\/p&gt;&lt;p&gt;SEO shaped the migration from the outset. We audited both sites, mapped existing visibility, removed low-value legacy content and built a redirect strategy around what was genuinely worth protecting. Search insight also informed the new site structure and location pages, while structured data helped search engines better understand the unified Lovett Care offering.&lt;\/p&gt;&lt;p&gt;The result was a migration that protected existing visibility while creating a much stronger foundation for growth. Sessions increased by 90%, Local Pack rankings improved by 56% and conversion rate increased by 70%.&lt;\/p&gt;&lt;p&gt;That&#039;s why migrations can&#039;t be treated as a launch-week SEO job. URL mapping, redirects, content decisions and technical implementation need to be part of the build from the beginning.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Read the Lovett Care case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/launching-lovett-care-on-craft-cms&quot;,&quot;external&quot;:false,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Managing SEO day-to-day&lt;\/h2&gt;&lt;p&gt;Craft SEO is as much operational as it is technical, and the operational side is the bit that slips through the cracks most often. The platform is built to feel intuitive for content teams, which is a real plus. It also means the way your team works in it has a direct line to how the site performs. Freedom with no structure breeds inconsistency; structure with no freedom grinds teams to a halt. Strong Craft builds find the middle way.&lt;\/p&gt;&lt;h2&gt;Common Craft CMS SEO mistakes&lt;\/h2&gt;&lt;p&gt;The real risk with Craft was never going to be capability. It&#039;s the over-flexibility. So much room to do things your own way that the lack of guardrails becomes the problem. The usual suspects:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ef4cdbbb1d56bc3dabf9ff9521a7591c6\&quot;&gt;No clear content model holding things together&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef9cc7a5269e4547b6af15a3c6e2617fa\&quot;&gt;Nobody actually owning SEO&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e59afbbc27171073d7cc19e29f57f1b53\&quot;&gt;Leaning on tools to do a job that structure should be doing&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e462aa581c825780cde323b939ca97d9f\&quot;&gt;Technical calls deferred until they&#039;ve quietly become expensive to fix&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Craft hands you the control. Point it nowhere and that same control breeds the kind of inconsistency that creeps in slowly and resists being undone.&lt;\/p&gt;&lt;h2&gt;So, is Craft CMS good for SEO?&lt;\/h2&gt;&lt;p&gt;Yes. Genuinely. But it pays back the right approach, not blind faith.&lt;\/p&gt;&lt;p&gt;Expect it to do SEO for you, and you&#039;ll be disappointed. Use it to build something structured, fast and properly governed, and it becomes a serious asset, which is exactly why it&#039;s the platform we keep recommending and building on for SEO-critical projects. If you want to understand more about what we do with it, our&lt;a href=\&quot;https:\/\/engage.agency\/services\/craft-cms\&quot;&gt;\u00a0&lt;u&gt;Craft CMS services&lt;\/u&gt;&lt;\/a&gt; page is the place to start.&lt;\/p&gt;&lt;h2&gt;Ready to get more from Craft?&lt;\/h2&gt;&lt;p&gt;If you&#039;re on Craft and quietly unsure your SEO setup is pulling its weight, it&#039;s worth a proper look. The gap between a site that works and one that genuinely performs almost always comes down to how it was built and how it&#039;s run \u2013 and that gap is nearly always one you can close.&lt;a href=\&quot;https:\/\/engage.agency\/contact\&quot;&gt;\u00a0&lt;u&gt;Get in touch with the Engage team&lt;\/u&gt;&lt;\/a&gt; to talk through what that could look like for your site.&lt;\/p&gt;&lt;h2&gt;Frequently asked questions&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Is Craft CMS good for SEO compared to WordPress?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Craft offers more flexibility and cleaner output, which can translate into stronger SEO when it&#039;s implemented well. It asks for more planning upfront than WordPress does, but hands you full control over structure, performance and long-term scalability \u2013 and for SEO-critical sites, that&#039;s usually a trade worth making.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What is the best SEO plugin for Craft CMS?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;&lt;a href=\&quot;https:\/\/plugins.craftcms.com\/seomatic\&quot;&gt;SEOmatic&lt;\/a&gt; is the go-to for meta data, schema and sitemaps in Craft, and it&#039;s good at holding consistency together at scale. Treat it as a support act rather than the main event, though \u2013 Craft SEO is driven by content structure, templates and implementation, not by plugins on their own.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How do you manage meta data in Craft CMS?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;With a mix of custom fields, global defaults and optional plugin support. The setups that work best pair automation for consistency with manual control on the pages that matter \u2013 so meta data is never left empty or duplicated, but you can still optimise where it counts.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Does Craft CMS support technical SEO requirements?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Fully \u2013 clean URLs, fast performance, structured data, the lot. The key is that these get implemented deliberately during the build rather than assumed to be running on default settings.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How do you structure content for SEO in Craft CMS?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;With defined fields, sections and reusable components instead of loose, unstructured text. That keeps the site consistent, strengthens internal linking and lays a foundation that scales as SEO demands grow.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What are common SEO mistakes in Craft CMS builds?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Inconsistent content structures, missing or duplicated meta data, weak internal linking and no clear SEO ownership. They\u2019re almost always process problems rather than technical ones \u2013 and almost always avoidable with proper planning from the off.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Is your site crafted for search?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right/Engage_Blog_Hero_06.18_CB_V1-5.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right/Engage_Blog_Hero_06.18_CB_V1-5.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right/Engage_Blog_Hero_06.18_CB_V1-5.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right/Engage_Blog_Hero_06.18_CB_V1-5.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right/Engage_Blog_Hero_06.18_CB_V1-5.png"
+		alt="Engage Blog Hero 06 18 CB V1 5"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Managing SEO in Craft CMS: A practical guide to getting it right</h1>
+	
+			<p>25th August 2026</p>
+	
+	
+			<p>Roughly a 10 minute read by</p>
+	
+						<p>
+									<a href="../team/rebecca-walker.html">
+						Rebecca
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>Managing SEO in Craft CMS is powerful, until it isn't. SEO rarely collapses in one go. It erodes.</strong></p><p>A quick fix here. A plugin bolted on there. A handful of "we'll sort that later" calls that quietly turn permanent. Give it long enough and the consistency goes, and rankings tend to follow it out the door.</p><p>Most platforms hand you one of two compromises. Lock everything down so tightly that nothing can move, or open everything up so completely that nothing stays consistent. Craft CMS refuses both. It hands you genuine control over the things that actually move the needle on search – structure, templates, URLs, performance – but it won't save you from your own bad calls.</p><p>That's the trade-off worth understanding before you start. Craft repays sites where SEO was part of the plan from day one. It won't quietly fix what you got wrong six months in. Which is exactly why a well-built Craft site and a mediocre one can look identical on paper and perform worlds apart. The platform is only ever as good as the thinking behind it. A brilliant kitchen with quartz worktops, island and fancy knives doesn’t make anyone a brilliant cook.</p><p>What follows is how we approach Craft SEO across the builds and migrations we run. If you want the control without the chaos that sometimes tags along with it, this is the way to get there.</p><h2>Why Craft CMS is good for SEO</h2><p>There's a lazy assumption that a CMS without SEO "out of the box" is somehow behind the curve. The reality tends to run the other way.</p><p>What Craft gives you is control without the baggage. No fighting rigid templates, no stacking plugins to paper over gaps. You decide how your SEO works from the foundations up. And handled with care, that's a real edge rather than extra effort. In practice it gives you:</p><ul><li data-list-item-id="ed593a178d08091dd6d05119448bdecb3">Clean, lightweight markup with nothing weighing the page down</li><li data-list-item-id="eddafc76c308c37fdf0fdfc04aa1a4420">Full ownership of URLs, templates and the relationships between content</li><li data-list-item-id="ee31a4931e2cd6e7f1874021dcfbcd698">Content models built to mirror search intent rather than fight it</li><li data-list-item-id="e00119d28a88179c84e1af568e0391ab2">Room to plug SEO into the wider stack, from analytics through to CRM</li><li data-list-item-id="e94a8305cbff3e5ac3b605f4d91296416">Performance that reflects how well the site was built, not what the CMS would tolerate</li></ul><p>It's also genuinely considerate of the people using it day to day. A clean interface, flexible fields, and sensible permissions let content teams get on with their work without tripping over something they didn't mean to touch. That meeting point of flexibility and usability is where Craft really separates itself, and why it's the platform we reach for on<a href="../services/seo.html"> <u>SEO-critical builds.</u></a></p><h2>The basics you need to get right before anything clever</h2><p>Get the fundamentals locked down before you reach for anything sophisticated. Consistency beats cleverness almost every time. The SEO problems we find in Craft builds rarely trace back to the platform. They trace back to decisions left too late, or good intentions that nobody enforced once the site went live. Four areas matter most:</p><h3>SEO tooling in Craft</h3><p>Tooling is support, not the solution. SEOmatic and tools like it automate meta data, schema and sitemaps, and they're useful for holding things together at scale. But they only ever amplify the structure beneath them. The actual work lives in content modelling, template logic, field configuration, and editorial workflow. Lean on tools to assist that, never to replace it.</p><h3>Meta data control</h3><p>Meta data needs rules. Flexibility with no governance is how you end up with empty descriptions, duplicate titles, and fields that slipped through the net on a busy publishing day. Set clear default patterns for titles and descriptions, decide upfront when a manual override is warranted, and build in validation that flags the gaps before Google does. It's as much a process as a configuration.</p><h3>URL structure</h3><p>URL structure is a genuine strength here. Craft lets you shape URLs around how your content is actually organised, not how the database happens to store it. Auto-generated sprawl, URLs swapped out with no redirect plan, naming that drifts from section to section, all avoidable, all a question of discipline rather than capability.</p><h3>XML sitemaps and indexing</h3><p>Sitemaps and indexing should be invisible. Done right, nobody thinks about them. Done wrong, they hand you problems you never needed: staging sites getting indexed, junk pages padding out the sitemap, genuinely important content left out in the cold. Unglamorous, but worth nailing before anything else.</p><h2>Structuring content properly in Craft CMS</h2><p>This is where Craft earns its keep and where most of the real SEO work actually happens.</p><p>Its flexibility lets you model content around the way your business genuinely operates, rather than forcing your content to contort itself into whatever shape the CMS prefers. The catch is that flexibility only pays off when it's used deliberately. That means mapping out content types, fields and the relationships between them before anyone builds a single page. Content modelling, in other words. And it's where search performance is quietly decided long before a word goes live.</p><p>One big rich text field can feel like the efficient choice. It almost never holds up. It’s the digital equivalent of shoving everything into one drawer and hoping you’ll find it later. Structured content – proper heading fields, modular components, asset usage that's actually controlled – keeps pages consistent while leaving editors room to move. It also bakes SEO into the model itself, rather than leaving it to the discretion (or oversight) of whoever happens to be editing that day.</p><p>And templates should pull their weight beyond simply rendering content. The good ones enforce heading hierarchy, nudge editors towards internal linking and hold page structure steady across the whole site. Because the moment a site starts to grow, inconsistency turns into something genuinely painful to untangle. Build it well from the start and it performs today and scales tomorrow, with no SEO debt quietly compounding in the background.</p><h2>On-page SEO in Craft CMS</h2><p>This one's easy to overthink. The bulk of the gains still come from getting the fundamentals right, and fundamentals are precisely where flexible setups tend to wander off course.</p><p>Headings get used as styling rather than structure. Internal links never get added. Images go up uncompressed and without alt text. None of that is the platform's doing; it's the process. Craft gives you everything you need to get on-page right; it just won't force your hand. The discipline has to come from how you build and run the site, not from the CMS playing nanny.</p><p>Keep the attention on three things: heading structures that are clear and consistent, internal linking that's deliberate rather than accidental, and asset management that's handled properly across the board. Straightforward stuff. It simply needs someone paying attention to it.</p><h2>Technical SEO in Craft CMS</h2><p>This is the point where the quality of the build stops being theoretical and starts being measurable.</p><h3>Performance and Core Web Vitals</h3><p>Performance and Core Web Vitals in Craft come down entirely to how the thing was put together. Lean templates, optimised assets, hosting and infrastructure that were actually thought about. Get those right, and Craft sites are quick, properly Usain Bolt quick, not just respectable-for-a-CMS quick. Get them wrong, and it shows immediately. Nothing in the platform is holding you back, which does mean there's nobody else to point at when it drags.</p><h3>Schema and structured data</h3><p>Schema and structured data can be covered at a basic level with plugins, but the advantage usually lives a step beyond that. Custom schema lets you represent complex content types accurately, fight for visibility in rich search features, and line your structured data up properly with your content model. That degree of control is a big part of what makes Craft so capable on SEO-critical sites.</p><h3>Redirects and site changes</h3><p>Redirects and site changes are simply part of the deal. Sites evolve, pages shift, sections get rebuilt, content gets merged. Managed well, none of it costs you anything. Managed badly, it bleeds traffic and you'll struggle to win it back. A clear redirect strategy, careful URL mapping through migrations, and proper upkeep as the site grows aren't nice-to-haves. They're the price of a site that holds its performance over time.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-Website-Visual-6.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-Website-Visual-6.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-Website-Visual-6.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-Website-Visual-6.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-Website-Visual-6.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-Website-Visual-6.png"
+		alt="Lovett Website Visual 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Seen in practice: +70% conversion rate for Lovett Care</h2><p>Our work with Lovett Care is a good example of just how much can be riding on those decisions.</p><p>Following the acquisition of New Care, two existing websites needed to become one, with authority transferred from the stronger legacy domain into lovettcare.co.uk. That meant consolidating content and URLs without sacrificing the organic and Local Pack visibility that enquiries and occupancy depended on.</p><p>SEO shaped the migration from the outset. We audited both sites, mapped existing visibility, removed low-value legacy content and built a redirect strategy around what was genuinely worth protecting. Search insight also informed the new site structure and location pages, while structured data helped search engines better understand the unified Lovett Care offering.</p><p>The result was a migration that protected existing visibility while creating a much stronger foundation for growth. Sessions increased by 90%, Local Pack rankings improved by 56% and conversion rate increased by 70%.</p><p>That's why migrations can't be treated as a launch-week SEO job. URL mapping, redirects, content decisions and technical implementation need to be part of the build from the beginning.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="../work/launching-lovett-care-on-craft-cms.html"
+	>
+	Read the Lovett Care case study
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Managing SEO day-to-day</h2><p>Craft SEO is as much operational as it is technical, and the operational side is the bit that slips through the cracks most often. The platform is built to feel intuitive for content teams, which is a real plus. It also means the way your team works in it has a direct line to how the site performs. Freedom with no structure breeds inconsistency; structure with no freedom grinds teams to a halt. Strong Craft builds find the middle way.</p><h2>Common Craft CMS SEO mistakes</h2><p>The real risk with Craft was never going to be capability. It's the over-flexibility. So much room to do things your own way that the lack of guardrails becomes the problem. The usual suspects:</p><ul><li data-list-item-id="ef4cdbbb1d56bc3dabf9ff9521a7591c6">No clear content model holding things together</li><li data-list-item-id="ef9cc7a5269e4547b6af15a3c6e2617fa">Nobody actually owning SEO</li><li data-list-item-id="e59afbbc27171073d7cc19e29f57f1b53">Leaning on tools to do a job that structure should be doing</li><li data-list-item-id="e462aa581c825780cde323b939ca97d9f">Technical calls deferred until they've quietly become expensive to fix</li></ul><p>Craft hands you the control. Point it nowhere and that same control breeds the kind of inconsistency that creeps in slowly and resists being undone.</p><h2>So, is Craft CMS good for SEO?</h2><p>Yes. Genuinely. But it pays back the right approach, not blind faith.</p><p>Expect it to do SEO for you, and you'll be disappointed. Use it to build something structured, fast and properly governed, and it becomes a serious asset, which is exactly why it's the platform we keep recommending and building on for SEO-critical projects. If you want to understand more about what we do with it, our<a href="../services/craft-cms.html"> <u>Craft CMS services</u></a> page is the place to start.</p><h2>Ready to get more from Craft?</h2><p>If you're on Craft and quietly unsure your SEO setup is pulling its weight, it's worth a proper look. The gap between a site that works and one that genuinely performs almost always comes down to how it was built and how it's run – and that gap is nearly always one you can close.<a href="../contact.html"> <u>Get in touch with the Engage team</u></a> to talk through what that could look like for your site.</p><h2>Frequently asked questions</h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		accordion
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h2>
+							Is Craft CMS good for SEO compared to WordPress?
+					</h2>
+	
+	
+			<p>Craft offers more flexibility and cleaner output, which can translate into stronger SEO when it's implemented well. It asks for more planning upfront than WordPress does, but hands you full control over structure, performance and long-term scalability – and for SEO-critical sites, that's usually a trade worth making.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							What is the best SEO plugin for Craft CMS?
+					</h2>
+	
+	
+			<p><a href="https://plugins.craftcms.com/seomatic">SEOmatic</a> is the go-to for meta data, schema and sitemaps in Craft, and it's good at holding consistency together at scale. Treat it as a support act rather than the main event, though – Craft SEO is driven by content structure, templates and implementation, not by plugins on their own.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							How do you manage meta data in Craft CMS?
+					</h2>
+	
+	
+			<p>With a mix of custom fields, global defaults and optional plugin support. The setups that work best pair automation for consistency with manual control on the pages that matter – so meta data is never left empty or duplicated, but you can still optimise where it counts.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Does Craft CMS support technical SEO requirements?
+					</h2>
+	
+	
+			<p>Fully – clean URLs, fast performance, structured data, the lot. The key is that these get implemented deliberately during the build rather than assumed to be running on default settings.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							How do you structure content for SEO in Craft CMS?
+					</h2>
+	
+	
+			<p>With defined fields, sections and reusable components instead of loose, unstructured text. That keeps the site consistent, strengthens internal linking and lays a foundation that scales as SEO demands grow.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							What are common SEO mistakes in Craft CMS builds?
+					</h2>
+	
+	
+			<p>Inconsistent content structures, missing or duplicated meta data, weak internal linking and no clear SEO ownership. They’re almost always process problems rather than technical ones – and almost always avoidable with proper planning from the off.</p>
+	
+	
+	
+	
+		
+	</article>
+			</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Is your site crafted for search?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403bf526f6cc479',t:'MTc5MDI3MzQ0MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

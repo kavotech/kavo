@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Career Vacancies: Senior Account Manager</title>
+<meta name="description" content="Join Engage as a Senior Account Manager. Explore the role, responsibilities, and opportunities to grow your career.">
+
+	<link rel="canonical" href="snraccount-manager.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="snraccount-manager.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Career Vacancies: Senior Account Manager">
+<meta property="og:description" content="Join Engage as a Senior Account Manager. Explore the role, responsibilities, and opportunities to grow your career.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/careers/snraccount-manager">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/snraccount-manager#jobposting","url":"https:\/\/engage.agency\/careers\/snraccount-manager","title":"Senior Account Manager","directApply":true,"datePosted":"2026-03-09T12:43:00+00:00","validThrough":null,"hiringOrganization":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"jobLocation":{"@type":"Place","address":{"@type":"PostalAddress","streetAddress":"1st Floor, Munro House, Duke Street","addressLocality":"Leeds","addressRegion":"West Yorkshire","postalCode":"LS9 8AG","addressCountry":"GB"}},"description":"Join Engage as a Senior Account Manager. Explore the role, responsibilities, and opportunities to grow your career.","employmentType":"FULL_TIME","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/snraccount-manager#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/snraccount-manager#webpage","url":"https:\/\/engage.agency\/careers\/snraccount-manager","name":"Career Vacancies: Senior Account Manager","description":"Join Engage as a Senior Account Manager. Explore the role, responsibilities, and opportunities to grow your career.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/careers\/snraccount-manager#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Join the team","item":"https:\/\/engage.agency\/careers"},{"@type":"ListItem","position":3,"name":"Senior Account Manager","item":"https:\/\/engage.agency\/careers\/snraccount-manager"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/People-images\/ATD-Office.jpg"},"datePublished":"2026-03-09T10:58:05+00:00","dateModified":"2026-09-24T13:57:51+01:00","inLanguage":"en-GB","mainEntity":{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/snraccount-manager#jobposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="snraccount-manager.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Career Vacancies: Senior Account Manager&quot;,&quot;description&quot;:&quot;Join Engage as a Senior Account Manager. Explore the role, responsibilities, and opportunities to grow your career.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/careers\/snraccount-manager&quot;,&quot;shareTitle&quot;:&quot;Career Vacancies: Senior Account Manager&quot;,&quot;shareDescription&quot;:&quot;Join Engage as a Senior Account Manager. Explore the role, responsibilities, and opportunities to grow your career.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/snraccount-manager#jobposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/snraccount-manager\&quot;,\&quot;title\&quot;:\&quot;Senior Account Manager\&quot;,\&quot;directApply\&quot;:true,\&quot;datePosted\&quot;:\&quot;2026-03-09T12:43:00+00:00\&quot;,\&quot;validThrough\&quot;:null,\&quot;hiringOrganization\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;jobLocation\&quot;:{\&quot;@type\&quot;:\&quot;Place\&quot;,\&quot;address\&quot;:{\&quot;@type\&quot;:\&quot;PostalAddress\&quot;,\&quot;streetAddress\&quot;:\&quot;1st Floor, Munro House, Duke Street\&quot;,\&quot;addressLocality\&quot;:\&quot;Leeds\&quot;,\&quot;addressRegion\&quot;:\&quot;West Yorkshire\&quot;,\&quot;postalCode\&quot;:\&quot;LS9 8AG\&quot;,\&quot;addressCountry\&quot;:\&quot;GB\&quot;}},\&quot;description\&quot;:\&quot;Join Engage as a Senior Account Manager. Explore the role, responsibilities, and opportunities to grow your career.\&quot;,\&quot;employmentType\&quot;:\&quot;FULL_TIME\&quot;,\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/snraccount-manager#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/snraccount-manager#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/snraccount-manager\&quot;,\&quot;name\&quot;:\&quot;Career Vacancies: Senior Account Manager\&quot;,\&quot;description\&quot;:\&quot;Join Engage as a Senior Account Manager. Explore the role, responsibilities, and opportunities to grow your career.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/snraccount-manager#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Join the team\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Senior Account Manager\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/snraccount-manager\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/People-images\\\/ATD-Office.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2026-03-09T10:58:05+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-24T13:57:51+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/snraccount-manager#jobposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;basic&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Senior Account Manager&quot;,&quot;copy&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=ClientServices&amp;salary=yes&quot;},&quot;video&quot;:null,&quot;image&quot;:{&quot;alt&quot;:&quot;ATD Office&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;stat&quot;:null}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Salary&lt;\/h2&gt;&lt;p&gt;&lt;strong&gt;\u00a340,000 - \u00a345,000+&lt;\/strong&gt; depending on skills and\u00a0experience&lt;\/p&gt;&lt;h2&gt;Hours and\u00a0location&lt;\/h2&gt;&lt;p&gt;This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a\u00a0week.&lt;\/p&gt;&lt;h2&gt;What we&#039;re looking for&lt;\/h2&gt;&lt;p&gt;We\u2019re seeking an experienced Senior Account Manager to join our team. Your role will be to own client relationships, ensuring the successful delivery and performance of Paid Media, SEO, Social and CRM campaigns across your assigned accounts.&lt;\/p&gt;&lt;p&gt;You&#039;ll act as the performance lead for the client, working closely with relevant teams to drive measurable growth against agreed KPIs. While you won\u2019t be hands-on in executing channel activity, you will have strong working knowledge across performance marketing disciplines, enabling you to maintain visibility of performance trends and support channel teams in delivering against agreed objectives.&lt;\/p&gt;&lt;p&gt;Your role is to ensure clients receive clear performance leadership, commercial value, and a joined up performance marketing approach aligned to their business activity.\u00a0&lt;\/p&gt;&lt;h2&gt;Benefits\u00a0package&lt;\/h2&gt;&lt;p&gt;As part of our commitment to making Engage a great place to work, we\u2019ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks\u00a0are:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e7a0bab39deb8a1eba29a558ae0b634e7\&quot;&gt;We&#039;re &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;employee owned&lt;\/a&gt;&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e2e83ab48a036878ba98c846edb258077\&quot;&gt;25 days holiday + bank holidays (rising after 5\u00a0years)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4b68edc5574047a62b56ce1229c65ec4\&quot;&gt;Company performance linked bonus scheme (this is depending on the business\u2019 performance and is not a contractual\u00a0benefit)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e066923c912185eda8587ff378a0cba59\&quot;&gt;Comprehensive private health\u00a0insurance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec071443cc47e37127a7ff8be345d73f5\&quot;&gt;5% company pension\u00a0scheme&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e734c0b0a5c02b30bff3929874b41dea5\&quot;&gt;Access to financial\u00a0coaching&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e22dc920eca4c8ff8f8c09481e6769e09\&quot;&gt;A company culture that promotes work-life\u00a0balance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed8ef6ba1c6f008aa86af4090be3e5c8a\&quot;&gt;Access to mental health\u00a0support&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e39da06069fc7221c26e083e377ede25f\&quot;&gt;Free on-site\u00a0gym&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0e0e50d5af0c9d4d3562ba6f3e40be50\&quot;&gt;Hybrid working&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ead76abb753ad65f3c8eb53d2ccdaf570\&quot;&gt;An award-winning office&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6d4e5035bd62b89ddc1d1b657a23eb82\&quot;&gt;Your birthday\u00a0off&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed77ec1d123edf431f63b59466719cd56\&quot;&gt;Regular socials, epic Summer parties and\u00a0more\u2026&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=Client+Services&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}}]}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;251110 0858&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/251110-0858.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/251110-0858.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/251110-0858.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/251110-0858.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/251110-0858.JPG&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Duties and responsibilities\u00a0&lt;\/h2&gt;&lt;p&gt;&lt;strong&gt;Client Relationship&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e6653fea8db90a0ec77127bcef9c57236\&quot;&gt;Act as a trusted performance partner to your clients, owning the overall success of&lt;br \/&gt;their performance activity.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7350212a522c9e1fce4ccccc855d3d90\&quot;&gt;Translate client business goals into clear performance objectives and KPIs across&lt;br \/&gt;channels.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e01fa004e11f840933d50a9b0b9b1c7eb\&quot;&gt;Build and maintain strong relationships with client stakeholders, with support from&lt;br \/&gt;senior sponsors when required.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e08cfc9c23986ab9e89d3ce0b958d045e\&quot;&gt;Proactively identify opportunities to improve performance, efficiency and ROI across&lt;br \/&gt;accounts.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9c26bcbda1d43f3c8e2857ce16475030\&quot;&gt;Own and evolve account plans, ensuring growth opportunities are aligned to both&lt;br \/&gt;client goals and agency targets.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Communication&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e92160c1c53f30e71f66322d506fe4825\&quot;&gt;Own client meetings, ensuring agendas, slides and inputs from channels teams are&lt;br \/&gt;clear, timely and focussed.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5bc0856bce1be31e2dffff53dea04688\&quot;&gt;Lead regular status, monthly and quarterly review meetings using agreed&lt;br \/&gt;templates, shaping and controlling the narrative.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7aa19b2e0ed79db4042cc4ce951b5233\&quot;&gt;Create briefs for performance teams, ensuring these are clear and concise with&lt;br \/&gt;required outputs expected.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e890820de2c98f444551ef5a271e59768\&quot;&gt;Maintain clear communication across Productive, Slack, email and other channels&lt;br \/&gt;that a client might favour.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eed4c8e3b219602b6522aee8d30482b8c\&quot;&gt;Keep internal teams fully informed of client priorities, feedback and performance&lt;br \/&gt;expectations.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea8fd1ae03f9bdb05fa183e621c863411\&quot;&gt;Ensure senior sponsors are involved for strategic or review sessions, internally or with&lt;br \/&gt;the client.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Strategic and commercial thinking&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ed5a3ea2a254656bcae399279d0542da1\&quot;&gt;Own revenue targets and account growth plans, supported by Account Directors, or&lt;br \/&gt;Heads of performance departments.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea0b1cb30491f1e1c46cb8ff15b1b3f6b\&quot;&gt;Plan and manage client investment across Paid, SEO, and Social, balancing&lt;br \/&gt;performance impact and commercial outcomes.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e618554b5a3b389ffaba26d3c8344ed75\&quot;&gt;Identify and present upsell and cross-sell opportunities backed by performance&lt;br \/&gt;insights.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e879e2e1fe252c7336a685c491e053ac9\&quot;&gt;Ensure performance recommendations are commercially viable and aligned to your&lt;br \/&gt;clients objectives.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e8eff7cae390b1e805c2129e8d3e412b8\&quot;&gt;Maintain a strong understanding of how performance marketing activity&lt;br \/&gt;contributes to wider business outcomes.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Reporting and insight&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e7e26dda896f8b1e67a6e67f582708014\&quot;&gt;Ensure reporting is clear, accurate and insight led, focussing on performance&lt;br \/&gt;against agreed KPIs.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e959cc89d8e7866653d9010c590d33ebb\&quot;&gt;Challenge performance teams on reporting quality and narrative where necessary.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e43f0ae3aead259d21f66e50a79406eed\&quot;&gt;Translate complex performance data into clear, actionable insight for clients.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e45fc5cf3947016673f343ba4296cbd7f\&quot;&gt;Get clients to understand not just what is happening, but why and what happens&lt;br \/&gt;next.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Operational and delivery&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e478a710a945ff4e638be569f67961684\&quot;&gt;Oversee campaign and project delivery across Paid, SEO, and Social, ensuring&lt;br \/&gt;timelines, scope and budgets are met.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9b1e4fb3630df6992319cefec3ad45ad\&quot;&gt;Maintain accurate financial forecasts and present them to the Head of Client&lt;br \/&gt;services and Directors when necessary.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e8956b26d9b48386a3a80be2262991c41\&quot;&gt;Oversee invoicing inline with agreed deliverables and milestones.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0cb156caf7e41a4d0a98dedf1846c273\&quot;&gt;Prepare estimates for new projects and performance initiatives.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e913c971cd3e33bc5b7032cbd6502c352\&quot;&gt;Ensure time is logged accurately and inline with company policy.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec6083b2af918955507525611bfab7b5d\&quot;&gt;Maintain a high level of attention to detail across all client deliverables.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now &quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=Client+Services&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Charlie Matt Charlotte&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Competencies&lt;\/h2&gt;&lt;p&gt;&lt;strong&gt;Knowledge&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e8cec2543cfadf6d89796badbebf421a8\&quot;&gt;Strong working knowledge of Paid channels, SEO and Social, with the ability to&lt;ul&gt;&lt;li data-list-item-id=\&quot;e15c70627c6d16bf8b0856ea54cd8e825\&quot;&gt;Understand platform performance and metrics&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e85594f6a5a570ab12042201641f3586c\&quot;&gt;Review account at a high level&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e24906bc64097ce9be221f271a6f60b05\&quot;&gt;Challenge strategy, execution and results constructively.\u00a0&lt;\/li&gt;&lt;\/ul&gt;&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e64c03c12585a4ace4ff5f40cceb53d8a\&quot;&gt;Comfortable discussing attribution, tracking, and reporting.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea12bd0f0df9dd6bd06979a3c17c4061b\&quot;&gt;Familiar with GA4, ad platforms, analytics and performance tooling.\u00a0&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Commerciality&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ed84a22ef0ded90b8eaa1c272d8c1532d\&quot;&gt;Strong commercial awareness, with a focus on retention, growth and profitability.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee1c296b6e5c5cd08455c3515798e6199\&quot;&gt;Clear understanding of how performance impacts revenue and client decision making.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4ddf32d8a06cf3df1c0187e1763b86e7\&quot;&gt;Able to balance performance ambition with budget and resourcing realities.\u00a0&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Technical confidence&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e93ca867c56ed9be5c92c6489b1324cec\&quot;&gt;Confident discussing performance marketing technologies, platforms and data flows.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec9aaae29eccf1274789d08137f611292\&quot;&gt;Able to relay technical or performance concepts clearly between clients and internal teams.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee44aff7b60fd108a0a483cd2de7675be\&quot;&gt;Comfortable working with CMS platforms, analytics tools, ad platforms and reporting dashboards.\u00a0&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Prioritisation &amp;amp; Planning&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;It will be essential for you to prioritise your own workload and to manage client and team expectations. You\u2019ll maintain a detailed view of the projects and campaigns going through on your accounts, which will enable you to spot risks, issues and opportunities and plan mitigating actions, as well as keeping the wider team up to date with progress.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=Client+Services&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}}]}},{&quot;type&quot;:&quot;fifty-fifty&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;A bit about us&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Founded in 2007, we\u2019re the digital agency for brands that demand attention. &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;100% employee owned&lt;\/a&gt;, we\u2019re a tight-knit team, motivated to achieve more - for our people, partners, and the planet. That&#039;s what led us to become Leeds&#039; first &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/b-corp\&quot;&gt;B Corp&lt;\/a&gt;.\u00a0&lt;\/p&gt;&lt;p&gt;Find out more &lt;a href=\&quot;https:\/\/engage.agency\/about-us\&quot;&gt;about us&lt;\/a&gt;, &lt;a href=\&quot;https:\/\/engage.agency\/team\&quot;&gt;meet the team&lt;\/a&gt; and be sure to check out our &lt;a href=\&quot;https:\/\/engage.agency\/work\&quot;&gt;latest work&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;Thinking we might be a good fit?\u00a0&lt;\/p&gt;&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=Client+Services&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1280,1024],&quot;ratio&quot;:&quot;3\/2&quot;},&quot;video&quot;:null,&quot;reverse&quot;:false}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Find out more about us&quot;,&quot;items&quot;:[{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Meet the team&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Meet the team&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Join the team&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Join the team&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Case studies index&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Case studies index&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Blog index&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Blog index&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/People-images/ATD-Office.jpg"
+		alt="ATD Office"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Senior Account Manager</h1>
+	
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=ClientServices&amp;salary=yes"
+	>
+	Apply now
+</a>
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Salary</h2><p><strong>£40,000 - £45,000+</strong> depending on skills and experience</p><h2>Hours and location</h2><p>This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a week.</p><h2>What we're looking for</h2><p>We’re seeking an experienced Senior Account Manager to join our team. Your role will be to own client relationships, ensuring the successful delivery and performance of Paid Media, SEO, Social and CRM campaigns across your assigned accounts.</p><p>You'll act as the performance lead for the client, working closely with relevant teams to drive measurable growth against agreed KPIs. While you won’t be hands-on in executing channel activity, you will have strong working knowledge across performance marketing disciplines, enabling you to maintain visibility of performance trends and support channel teams in delivering against agreed objectives.</p><p>Your role is to ensure clients receive clear performance leadership, commercial value, and a joined up performance marketing approach aligned to their business activity. </p><h2>Benefits package</h2><p>As part of our commitment to making Engage a great place to work, we’ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks are:</p><ul><li data-list-item-id="e7a0bab39deb8a1eba29a558ae0b634e7">We're <a href="../about-us/proudly-employee-owned.html">employee owned</a></li><li data-list-item-id="e2e83ab48a036878ba98c846edb258077">25 days holiday + bank holidays (rising after 5 years)</li><li data-list-item-id="e4b68edc5574047a62b56ce1229c65ec4">Company performance linked bonus scheme (this is depending on the business’ performance and is not a contractual benefit)</li><li data-list-item-id="e066923c912185eda8587ff378a0cba59">Comprehensive private health insurance</li><li data-list-item-id="ec071443cc47e37127a7ff8be345d73f5">5% company pension scheme</li><li data-list-item-id="e734c0b0a5c02b30bff3929874b41dea5">Access to financial coaching</li><li data-list-item-id="e22dc920eca4c8ff8f8c09481e6769e09">A company culture that promotes work-life balance</li><li data-list-item-id="ed8ef6ba1c6f008aa86af4090be3e5c8a">Access to mental health support</li><li data-list-item-id="e39da06069fc7221c26e083e377ede25f">Free on-site gym</li><li data-list-item-id="e0e0e50d5af0c9d4d3562ba6f3e40be50">Hybrid working</li><li data-list-item-id="ead76abb753ad65f3c8eb53d2ccdaf570">An award-winning office</li><li data-list-item-id="e6d4e5035bd62b89ddc1d1b657a23eb82">Your birthday off</li><li data-list-item-id="ed77ec1d123edf431f63b59466719cd56">Regular socials, epic Summer parties and more…</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=Client+Services&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+			
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/251110-0858.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/251110-0858.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/251110-0858.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/251110-0858.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/251110-0858.JPG"
+		alt="251110 0858"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Duties and responsibilities </h2><p><strong>Client Relationship</strong></p><ul><li data-list-item-id="e6653fea8db90a0ec77127bcef9c57236">Act as a trusted performance partner to your clients, owning the overall success of<br />their performance activity.</li><li data-list-item-id="e7350212a522c9e1fce4ccccc855d3d90">Translate client business goals into clear performance objectives and KPIs across<br />channels.</li><li data-list-item-id="e01fa004e11f840933d50a9b0b9b1c7eb">Build and maintain strong relationships with client stakeholders, with support from<br />senior sponsors when required.</li><li data-list-item-id="e08cfc9c23986ab9e89d3ce0b958d045e">Proactively identify opportunities to improve performance, efficiency and ROI across<br />accounts.</li><li data-list-item-id="e9c26bcbda1d43f3c8e2857ce16475030">Own and evolve account plans, ensuring growth opportunities are aligned to both<br />client goals and agency targets.</li></ul><p><strong>Communication</strong></p><ul><li data-list-item-id="e92160c1c53f30e71f66322d506fe4825">Own client meetings, ensuring agendas, slides and inputs from channels teams are<br />clear, timely and focussed.</li><li data-list-item-id="e5bc0856bce1be31e2dffff53dea04688">Lead regular status, monthly and quarterly review meetings using agreed<br />templates, shaping and controlling the narrative.</li><li data-list-item-id="e7aa19b2e0ed79db4042cc4ce951b5233">Create briefs for performance teams, ensuring these are clear and concise with<br />required outputs expected.</li><li data-list-item-id="e890820de2c98f444551ef5a271e59768">Maintain clear communication across Productive, Slack, email and other channels<br />that a client might favour.</li><li data-list-item-id="eed4c8e3b219602b6522aee8d30482b8c">Keep internal teams fully informed of client priorities, feedback and performance<br />expectations.</li><li data-list-item-id="ea8fd1ae03f9bdb05fa183e621c863411">Ensure senior sponsors are involved for strategic or review sessions, internally or with<br />the client.</li></ul><p><strong>Strategic and commercial thinking</strong></p><ul><li data-list-item-id="ed5a3ea2a254656bcae399279d0542da1">Own revenue targets and account growth plans, supported by Account Directors, or<br />Heads of performance departments.</li><li data-list-item-id="ea0b1cb30491f1e1c46cb8ff15b1b3f6b">Plan and manage client investment across Paid, SEO, and Social, balancing<br />performance impact and commercial outcomes.</li><li data-list-item-id="e618554b5a3b389ffaba26d3c8344ed75">Identify and present upsell and cross-sell opportunities backed by performance<br />insights.</li><li data-list-item-id="e879e2e1fe252c7336a685c491e053ac9">Ensure performance recommendations are commercially viable and aligned to your<br />clients objectives.</li><li data-list-item-id="e8eff7cae390b1e805c2129e8d3e412b8">Maintain a strong understanding of how performance marketing activity<br />contributes to wider business outcomes.</li></ul><p><strong>Reporting and insight</strong></p><ul><li data-list-item-id="e7e26dda896f8b1e67a6e67f582708014">Ensure reporting is clear, accurate and insight led, focussing on performance<br />against agreed KPIs.</li><li data-list-item-id="e959cc89d8e7866653d9010c590d33ebb">Challenge performance teams on reporting quality and narrative where necessary.</li><li data-list-item-id="e43f0ae3aead259d21f66e50a79406eed">Translate complex performance data into clear, actionable insight for clients.</li><li data-list-item-id="e45fc5cf3947016673f343ba4296cbd7f">Get clients to understand not just what is happening, but why and what happens<br />next.</li></ul><p><strong>Operational and delivery</strong></p><ul><li data-list-item-id="e478a710a945ff4e638be569f67961684">Oversee campaign and project delivery across Paid, SEO, and Social, ensuring<br />timelines, scope and budgets are met.</li><li data-list-item-id="e9b1e4fb3630df6992319cefec3ad45ad">Maintain accurate financial forecasts and present them to the Head of Client<br />services and Directors when necessary.</li><li data-list-item-id="e8956b26d9b48386a3a80be2262991c41">Oversee invoicing inline with agreed deliverables and milestones.</li><li data-list-item-id="e0cb156caf7e41a4d0a98dedf1846c273">Prepare estimates for new projects and performance initiatives.</li><li data-list-item-id="e913c971cd3e33bc5b7032cbd6502c352">Ensure time is logged accurately and inline with company policy.</li><li data-list-item-id="ec6083b2af918955507525611bfab7b5d">Maintain a high level of attention to detail across all client deliverables.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=Client+Services&amp;salary=yes"
+	>
+	Apply now 
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+		alt="Charlie Matt Charlotte"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Competencies</h2><p><strong>Knowledge</strong></p><ul><li data-list-item-id="e8cec2543cfadf6d89796badbebf421a8">Strong working knowledge of Paid channels, SEO and Social, with the ability to<ul><li data-list-item-id="e15c70627c6d16bf8b0856ea54cd8e825">Understand platform performance and metrics</li><li data-list-item-id="e85594f6a5a570ab12042201641f3586c">Review account at a high level</li><li data-list-item-id="e24906bc64097ce9be221f271a6f60b05">Challenge strategy, execution and results constructively. </li></ul></li><li data-list-item-id="e64c03c12585a4ace4ff5f40cceb53d8a">Comfortable discussing attribution, tracking, and reporting. </li><li data-list-item-id="ea12bd0f0df9dd6bd06979a3c17c4061b">Familiar with GA4, ad platforms, analytics and performance tooling. </li></ul><p><strong>Commerciality</strong></p><ul><li data-list-item-id="ed84a22ef0ded90b8eaa1c272d8c1532d">Strong commercial awareness, with a focus on retention, growth and profitability. </li><li data-list-item-id="ee1c296b6e5c5cd08455c3515798e6199">Clear understanding of how performance impacts revenue and client decision making.</li><li data-list-item-id="e4ddf32d8a06cf3df1c0187e1763b86e7">Able to balance performance ambition with budget and resourcing realities. </li></ul><p><strong>Technical confidence</strong></p><ul><li data-list-item-id="e93ca867c56ed9be5c92c6489b1324cec">Confident discussing performance marketing technologies, platforms and data flows.</li><li data-list-item-id="ec9aaae29eccf1274789d08137f611292">Able to relay technical or performance concepts clearly between clients and internal teams. </li><li data-list-item-id="ee44aff7b60fd108a0a483cd2de7675be">Comfortable working with CMS platforms, analytics tools, ad platforms and reporting dashboards. </li></ul><p><strong>Prioritisation &amp; Planning</strong></p><p>It will be essential for you to prioritise your own workload and to manage client and team expectations. You’ll maintain a detailed view of the projects and campaigns going through on your accounts, which will enable you to spot risks, issues and opportunities and plan mitigating actions, as well as keeping the wider team up to date with progress.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=Client+Services&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							A bit about us
+					</h2>
+	
+	
+			<p>Founded in 2007, we’re the digital agency for brands that demand attention. <a href="../about-us/proudly-employee-owned.html">100% employee owned</a>, we’re a tight-knit team, motivated to achieve more - for our people, partners, and the planet. That's what led us to become Leeds' first <a href="../about-us/b-corp.html">B Corp</a>. </p><p>Find out more <a href="../about-us.html">about us</a>, <a href="../team.html">meet the team</a> and be sure to check out our <a href="../work.html">latest work</a>.</p><p>Thinking we might be a good fit? </p>
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333/engage-website/production/People-images/Team-photo-March-26.jpg"
+		alt="Team photo March 26"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Senior+Account+Manager&amp;team=Client+Services&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Find out more about us
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Meet the team
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Meet the team"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../team.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Join the team
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Join the team"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../careers.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Case studies index
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Case studies index"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Blog index
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Blog index"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c0162d09c479',t:'MTc5MDI3MzQ3Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>The Elympics | Our Values &amp; Culture | Engage Agency</title>
+<meta name="description" content="Discover the Engage Elympics, our wellbeing and fundraising initiative that’s raised £90k for Leeds charities by turning team activity into donations.">
+
+	<link rel="canonical" href="the-elympics.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="The Elympics | Our Values &amp; Culture | Engage Agency">
+<meta property="og:description" content="Discover the Engage Elympics, our wellbeing and fundraising initiative that’s raised £90k for Leeds charities by turning team activity into donations.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/about-us/the-elympics">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Elympics/2c4d947381550e66a74df6db543e9005e98ce19f.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"WebPage","@id":"https:\/\/engage.agency\/about-us\/the-elympics#webpage","url":"https:\/\/engage.agency\/about-us\/the-elympics","name":"The Elympics | Our Values & Culture | Engage Agency","description":"Discover the Engage Elympics, our wellbeing and fundraising initiative that\u2019s raised \u00a390k for Leeds charities by turning team activity into donations.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/about-us\/the-elympics#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"About us","item":"https:\/\/engage.agency\/about-us"},{"@type":"ListItem","position":3,"name":"The Elympics","item":"https:\/\/engage.agency\/about-us\/the-elympics"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Elympics\/2c4d947381550e66a74df6db543e9005e98ce19f.png"},"datePublished":"2026-03-16T16:34:48+00:00","dateModified":"2026-03-27T16:17:35+00:00","inLanguage":"en-GB"}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="the-elympics.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;The Elympics | Our Values &amp; Culture | Engage Agency&quot;,&quot;description&quot;:&quot;Discover the Engage Elympics, our wellbeing and fundraising initiative that\u2019s raised \u00a390k for Leeds charities by turning team activity into donations.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Elympics\/2c4d947381550e66a74df6db543e9005e98ce19f.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;,&quot;shareTitle&quot;:&quot;The Elympics | Our Values &amp; Culture | Engage Agency&quot;,&quot;shareDescription&quot;:&quot;Discover the Engage Elympics, our wellbeing and fundraising initiative that\u2019s raised \u00a390k for Leeds charities by turning team activity into donations.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/about-us\\\/the-elympics#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/about-us\\\/the-elympics\&quot;,\&quot;name\&quot;:\&quot;The Elympics | Our Values &amp; Culture | Engage Agency\&quot;,\&quot;description\&quot;:\&quot;Discover the Engage Elympics, our wellbeing and fundraising initiative that\\u2019s raised \\u00a390k for Leeds charities by turning team activity into donations.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/about-us\\\/the-elympics#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;About us\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/about-us\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;The Elympics\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/about-us\\\/the-elympics\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Elympics\\\/2c4d947381550e66a74df6db543e9005e98ce19f.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-03-16T16:34:48+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-03-27T16:17:35+00:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;basic&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;The Elympics&quot;,&quot;copy&quot;:null,&quot;cta&quot;:null,&quot;video&quot;:{&quot;poster&quot;:{&quot;alt&quot;:&quot;&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Elympics\/2c4d947381550e66a74df6db543e9005e98ce19f.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Elympics\/2c4d947381550e66a74df6db543e9005e98ce19f.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Elympics\/2c4d947381550e66a74df6db543e9005e98ce19f.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/Elympics\/2c4d947381550e66a74df6db543e9005e98ce19f.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Elympics\/2c4d947381550e66a74df6db543e9005e98ce19f.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;sizes&quot;:[],&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/engage-website\/production\/Elympics\/elympics-header-video.mp4&quot;]},&quot;image&quot;:null,&quot;stat&quot;:null}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h3&gt;&lt;strong&gt;Working in digital marketing? It\u2019s busy. It\u2019s brilliant. But let\u2019s be honest. It\u2019s not exactly an Olympic sport.&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Most of us regularly spend six or more hours a day glued to our desks. That\u2019s despite a growing body of research linking regular movement with sharper focus, improved sleep and reduced stress.\u00a0&lt;\/p&gt;&lt;p&gt;All of this got us thinking. How could we encourage our team to be more active in a way that felt motivating, inclusive and genuinely rewarding? Something better than simply handing out gym memberships to the keen few.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;We saw an opportunity to do something far more meaningful.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Not long after, the Elympics was born. The idea was simple. Turn sweat into gold. But instead of lining our own pockets, we\u2019d channel that money into supporting local causes where every pound can make a tangible difference.&lt;\/p&gt;&lt;p&gt;Now in its 10th year, our Elympics programme has raised &lt;strong&gt;more than \u00a390,000 for charity&lt;\/strong&gt; while helping us become one of the happiest and healthiest agencies on the block.&lt;\/p&gt;&quot;}}]}},{&quot;type&quot;:&quot;atd-callout&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Fitness, fun, and fundraising&quot;,&quot;copy&quot;:&quot;What exercise do we get involved in, and how does Elympics keep us motivated? Hear directly from the team.&quot;,&quot;video&quot;:{&quot;cta&quot;:&quot;Play video&quot;,&quot;poster&quot;:null,&quot;src&quot;:&quot;1102178301&quot;,&quot;service&quot;:&quot;vimeo&quot;,&quot;decorative&quot;:false},&quot;team&quot;:[{&quot;image&quot;:{&quot;alt&quot;:&quot;Charlotte Tankard 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=120\/engage-website\/production\/Teams\/Headshots\/Charlotte-Tankard-1.jpg&quot;],&quot;sizes&quot;:null}}]}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;How does it work?&lt;\/h2&gt;&lt;p&gt;At its core, Elympics turns physical activity into charitable donations. Every mile walked, run, cycled or swum by our team contributes to the fundraising pot. Gym sessions, rowing, and other activities count too. Each one has a set value that converts effort into pounds.&lt;\/p&gt;&lt;p&gt;Here\u2019s how the Elympics economy works:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Cycling: 20p per mile&lt;\/li&gt;&lt;li&gt;Running: 80p per mile&lt;\/li&gt;&lt;li&gt;Walking: 40p per mile&lt;\/li&gt;&lt;li&gt;Gym workout: \u00a32 per hour&lt;\/li&gt;&lt;li&gt;Rowing: 70p per mile&lt;\/li&gt;&lt;li&gt;Swimming: \u00a34 per mile&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Our team tracks activity on Strava, with the data flowing directly into our bespoke Elympics platform through a custom integration. Every effort updates a leaderboard in real-time.&lt;\/p&gt;&lt;p&gt;Each month, everyone that hits the \u00a330 mark is placed in a prize draw for an extra day\u2019s holiday, with the winner revealed live in our studio meeting, using our digital spin-to-win wheel.&lt;\/p&gt;&lt;p&gt;The Elympics is part wellbeing initiative, part fundraising engine, and part bragging rights. But most importantly, it keeps people moving.&lt;\/p&gt;&quot;}}]}},{&quot;type&quot;:&quot;client-result-data&quot;,&quot;data&quot;:{&quot;quote&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;CATCH is a volunteer-led small charity based in the heart of Harehills. The funds raised through Elympics have had a direct positive impact on the young people and the wider community we support.&lt;\/p&gt;&quot;,&quot;author&quot;:&quot;Ash Razzaq, CATCH&quot;,&quot;role&quot;:&quot;Founder&quot;},&quot;stats&quot;:[{&quot;title&quot;:&quot;+\u00a390k&quot;,&quot;copy&quot;:&quot;Funds raised&quot;,&quot;icon&quot;:&quot;star&quot;},{&quot;title&quot;:&quot;+150k&quot;,&quot;copy&quot;:&quot;Distance covered&quot;,&quot;icon&quot;:&quot;arrows-increase&quot;},{&quot;title&quot;:&quot;+47k&quot;,&quot;copy&quot;:&quot;Activities completed&quot;,&quot;icon&quot;:&quot;progress-donut&quot;}]}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;The impact&lt;\/h2&gt;&lt;p&gt;Over the past decade, Elympics has supported a wide range of local charities and community projects across Leeds.\u00a0&lt;\/p&gt;&lt;p&gt;Just as importantly, it has helped us build meaningful, long-term relationships with those organisations. Rather than parachuting in with one-off donations, we\u2019ve taken the time to understand their needs, support them consistently, and see first-hand the difference that grass-roots funding can make.&lt;\/p&gt;&lt;p&gt;That funding has supported vital services, enabled new programmes and provided much-needed stability for small organisations navigating challenging times.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Elympics is also a powerful reminder of what can be achieved together.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Over the past ten years, our team has logged more than\u00a0&lt;strong&gt;150,000 miles of exercise&lt;\/strong&gt;. That\u2019s roughly the equivalent of walking around the world six times.&lt;\/p&gt;&lt;p&gt;The programme isn&#039;t reserved for seasoned athletes either. People of all abilities take part, whether that\u2019s training for a half marathon or squeezing in a lunchtime walk.&lt;\/p&gt;&lt;p&gt;As a result, Elympics has become more than a fundraiser. It\u2019s a cornerstone of our culture and a reflection of something we care deeply about at Engage. Using our energy, success and expertise to create positive change in the community around us.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Elympics Alex&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1227\/engage-website\/production\/Elympics\/Elympics-Alex.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1128\/engage-website\/production\/Elympics\/Elympics-Alex.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=995\/engage-website\/production\/Elympics\/Elympics-Alex.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=955\/engage-website\/production\/Elympics\/Elympics-Alex.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=663\/engage-website\/production\/Elympics\/Elympics-Alex.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=398\/engage-website\/production\/Elympics\/Elympics-Alex.JPG&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2400,&quot;height&quot;:1592},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;The highlights&lt;\/h2&gt;&lt;p&gt;Ten years of Elympics has delivered plenty of memorable moments along the way.&lt;\/p&gt;&lt;p&gt;Our team has taken on challenges like the Leeds Abbey Dash, Total Warrior, and the 3 peaks, in addition to countless charity runs, rides and swims. Some have pushed themselves further than they ever expected and set new personal bests. Others have discovered new hobbies that stuck long after the miles were logged.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Alongside the physical achievements, the programme has also helped shape the culture inside our agency.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Elympics has played a role in building the sense of camaraderie and shared purpose that defines life at Engage. It\u2019s also contributed to our &lt;strong&gt;96% staff retention rate&lt;\/strong&gt;, significantly higher than the digital industry average.&lt;\/p&gt;&lt;h2&gt;Our chosen charities&lt;\/h2&gt;&lt;p&gt;Over the years we\u2019ve partnered with a range of organisations making a real difference across Leeds and Yorkshire. Our current partners include:&lt;\/p&gt;&quot;}}]}},{&quot;type&quot;:&quot;fifty-fifty&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;h4&gt;CATCH&lt;\/h4&gt;&lt;p&gt;CATCH run The Hub in Harehills, a community space created with West Yorkshire Police and Leeds City Council.&lt;\/p&gt;&lt;p&gt;By day it hosts services including women\u2019s groups, language classes, NHS clinics and more. By night it becomes a youth club, welcoming more than 100 local young people each week for sport, games and a safe place to spend time together.&lt;\/p&gt;&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Find out more&quot;,&quot;href&quot;:&quot;https:\/\/www.catchleeds.org\/&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;image&quot;:{&quot;alt&quot;:&quot;CATCH 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567\/engage-website\/production\/Elympics\/CATCH-1.PNG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467\/engage-website\/production\/Elympics\/CATCH-1.PNG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333\/engage-website\/production\/Elympics\/CATCH-1.PNG&quot;],&quot;sizes&quot;:[1280,1024],&quot;ratio&quot;:&quot;3\/2&quot;},&quot;video&quot;:null,&quot;reverse&quot;:false}},{&quot;type&quot;:&quot;fifty-fifty&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;h4&gt;FareShare Yorkshire\u00a0&lt;\/h4&gt;&lt;p&gt;FareShare Yorkshire tackles food waste by intercepting quality surplus food that would otherwise go to waste.&lt;\/p&gt;&lt;p&gt;Working with producers and suppliers across the supply chain, it\u2019s collected and processed at their Leeds and Barnsley warehouses, powered by a huge network of volunteers. The food then reaches around 400 charities and community groups, helping turn surplus into nutritious meals for people facing food poverty.&lt;\/p&gt;&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/www.fareshareyorkshire.org\/&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;image&quot;:{&quot;alt&quot;:&quot;Fareshare 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567\/engage-website\/production\/Elympics\/Fareshare-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467\/engage-website\/production\/Elympics\/Fareshare-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333\/engage-website\/production\/Elympics\/Fareshare-1.jpg&quot;],&quot;sizes&quot;:[1280,1024],&quot;ratio&quot;:&quot;3\/2&quot;},&quot;video&quot;:null,&quot;reverse&quot;:true}},{&quot;type&quot;:&quot;fifty-fifty&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;h3&gt;Leeds Mind&lt;\/h3&gt;&lt;p&gt;Leeds Mind is independently run from the national charity, with all funds raised going directly into local mental health support across the city.&lt;\/p&gt;&lt;p&gt;The organisation promotes positive mental health and wellbeing through services including counselling, peer support, befriending, suicide bereavement and employment support. The aim is simple: help people build on their strengths, overcome challenges and feel more in control of their lives.&lt;\/p&gt;&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/www.leedsmind.org.uk\/&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;image&quot;:{&quot;alt&quot;:&quot;Elympics Abbey Dash&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567\/engage-website\/production\/Elympics\/Elympics-Abbey-Dash.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467\/engage-website\/production\/Elympics\/Elympics-Abbey-Dash.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333\/engage-website\/production\/Elympics\/Elympics-Abbey-Dash.png&quot;],&quot;sizes&quot;:[1280,1024],&quot;ratio&quot;:&quot;3\/2&quot;},&quot;video&quot;:null,&quot;reverse&quot;:false}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Looking ahead&lt;\/h2&gt;&lt;p&gt;Ten years in, the Elympics keeps evolving. New challenges, new causes and new personal bests are always just around the corner.&lt;\/p&gt;&lt;p&gt;What hasn\u2019t changed is the core idea behind it. When a team pulls together, even small actions add up to something meaningful. And if those actions happen to involve a few extra miles along the way, even better.&lt;\/p&gt;&quot;}}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;More from the studio:&quot;,&quot;items&quot;:[{&quot;prefix&quot;:&quot;Great Ormond Street Hospital Charity&quot;,&quot;title&quot;:&quot;Task complete: Helping GOSH Charity reach 281% of its fundraising target&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/helping-gosh-childrens-charity-reach-its-fundraising-target&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Case Study26 Sports London Hero 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Case-study-images\/GOSH\/Taskmaster\/Engage_CaseStudy26_SportsLondon_Hero-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Case-study-images\/GOSH\/Taskmaster\/Engage_CaseStudy26_SportsLondon_Hero-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+				
+			<h1>The Elympics</h1>
+	
+	
+	
+	
+	
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h3><strong>Working in digital marketing? It’s busy. It’s brilliant. But let’s be honest. It’s not exactly an Olympic sport.</strong></h3><p>Most of us regularly spend six or more hours a day glued to our desks. That’s despite a growing body of research linking regular movement with sharper focus, improved sleep and reduced stress. </p><p>All of this got us thinking. How could we encourage our team to be more active in a way that felt motivating, inclusive and genuinely rewarding? Something better than simply handing out gym memberships to the keen few.</p><p><strong>We saw an opportunity to do something far more meaningful.</strong></p><p>Not long after, the Elympics was born. The idea was simple. Turn sweat into gold. But instead of lining our own pockets, we’d channel that money into supporting local causes where every pound can make a tangible difference.</p><p>Now in its 10th year, our Elympics programme has raised <strong>more than £90,000 for charity</strong> while helping us become one of the happiest and healthiest agencies on the block.</p>
+	
+	
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Fitness, fun, and fundraising
+					</h2>
+	
+	
+			What exercise do we get involved in, and how does Elympics keep us motivated? Hear directly from the team.
+	
+			<figure>
+										
+					</figure>
+	
+	
+	
+		
+	</section>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>How does it work?</h2><p>At its core, Elympics turns physical activity into charitable donations. Every mile walked, run, cycled or swum by our team contributes to the fundraising pot. Gym sessions, rowing, and other activities count too. Each one has a set value that converts effort into pounds.</p><p>Here’s how the Elympics economy works:</p><ul><li>Cycling: 20p per mile</li><li>Running: 80p per mile</li><li>Walking: 40p per mile</li><li>Gym workout: £2 per hour</li><li>Rowing: 70p per mile</li><li>Swimming: £4 per mile</li></ul><p>Our team tracks activity on Strava, with the data flowing directly into our bespoke Elympics platform through a custom integration. Every effort updates a leaderboard in real-time.</p><p>Each month, everyone that hits the £30 mark is placed in a prize draw for an extra day’s holiday, with the winner revealed live in our studio meeting, using our digital spin-to-win wheel.</p><p>The Elympics is part wellbeing initiative, part fundraising engine, and part bragging rights. But most importantly, it keeps people moving.</p>
+	
+	
+	
+	
+		
+	</div>
+			
+			<div>
+	
+	
+
+	
+	
+	
+	
+	
+	
+		
+	</div>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>The impact</h2><p>Over the past decade, Elympics has supported a wide range of local charities and community projects across Leeds. </p><p>Just as importantly, it has helped us build meaningful, long-term relationships with those organisations. Rather than parachuting in with one-off donations, we’ve taken the time to understand their needs, support them consistently, and see first-hand the difference that grass-roots funding can make.</p><p>That funding has supported vital services, enabled new programmes and provided much-needed stability for small organisations navigating challenging times.</p><p><strong>Elympics is also a powerful reminder of what can be achieved together.</strong></p><p>Over the past ten years, our team has logged more than <strong>150,000 miles of exercise</strong>. That’s roughly the equivalent of walking around the world six times.</p><p>The programme isn't reserved for seasoned athletes either. People of all abilities take part, whether that’s training for a half marathon or squeezing in a lunchtime walk.</p><p>As a result, Elympics has become more than a fundraiser. It’s a cornerstone of our culture and a reflection of something we care deeply about at Engage. Using our energy, success and expertise to create positive change in the community around us.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1227/engage-website/production/Elympics/Elympics-Alex.JPG"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1128/engage-website/production/Elympics/Elympics-Alex.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=995/engage-website/production/Elympics/Elympics-Alex.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=955/engage-website/production/Elympics/Elympics-Alex.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=663/engage-website/production/Elympics/Elympics-Alex.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=398/engage-website/production/Elympics/Elympics-Alex.JPG"
+		alt="Elympics Alex"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>The highlights</h2><p>Ten years of Elympics has delivered plenty of memorable moments along the way.</p><p>Our team has taken on challenges like the Leeds Abbey Dash, Total Warrior, and the 3 peaks, in addition to countless charity runs, rides and swims. Some have pushed themselves further than they ever expected and set new personal bests. Others have discovered new hobbies that stuck long after the miles were logged.</p><p><strong>Alongside the physical achievements, the programme has also helped shape the culture inside our agency.</strong></p><p>Elympics has played a role in building the sense of camaraderie and shared purpose that defines life at Engage. It’s also contributed to our <strong>96% staff retention rate</strong>, significantly higher than the digital industry average.</p><h2>Our chosen charities</h2><p>Over the years we’ve partnered with a range of organisations making a real difference across Leeds and Yorkshire. Our current partners include:</p>
+	
+	
+	
+	
+		
+	</div>
+			
+			<div>
+	
+	
+
+	
+	
+			<h4>CATCH</h4><p>CATCH run The Hub in Harehills, a community space created with West Yorkshire Police and Leeds City Council.</p><p>By day it hosts services including women’s groups, language classes, NHS clinics and more. By night it becomes a youth club, welcoming more than 100 local young people each week for sport, games and a safe place to spend time together.</p>
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567/engage-website/production/Elympics/CATCH-1.PNG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467/engage-website/production/Elympics/CATCH-1.PNG"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333/engage-website/production/Elympics/CATCH-1.PNG"
+		alt="CATCH 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="https://www.catchleeds.org/"
+	>
+	Find out more
+</a>
+	
+	
+		
+	</div>
+		
+			<div>
+	
+	
+
+	
+	
+			<h4>FareShare Yorkshire </h4><p>FareShare Yorkshire tackles food waste by intercepting quality surplus food that would otherwise go to waste.</p><p>Working with producers and suppliers across the supply chain, it’s collected and processed at their Leeds and Barnsley warehouses, powered by a huge network of volunteers. The food then reaches around 400 charities and community groups, helping turn surplus into nutritious meals for people facing food poverty.</p>
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567/engage-website/production/Elympics/Fareshare-1.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467/engage-website/production/Elympics/Fareshare-1.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333/engage-website/production/Elympics/Fareshare-1.jpg"
+		alt="Fareshare 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="https://www.fareshareyorkshire.org/"
+	>
+	Read more
+</a>
+	
+	
+		
+	</div>
+		
+			<div>
+	
+	
+
+	
+	
+			<h3>Leeds Mind</h3><p>Leeds Mind is independently run from the national charity, with all funds raised going directly into local mental health support across the city.</p><p>The organisation promotes positive mental health and wellbeing through services including counselling, peer support, befriending, suicide bereavement and employment support. The aim is simple: help people build on their strengths, overcome challenges and feel more in control of their lives.</p>
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567/engage-website/production/Elympics/Elympics-Abbey-Dash.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467/engage-website/production/Elympics/Elympics-Abbey-Dash.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333/engage-website/production/Elympics/Elympics-Abbey-Dash.png"
+		alt="Elympics Abbey Dash"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="https://www.leedsmind.org.uk/"
+	>
+	Read more
+</a>
+	
+	
+		
+	</div>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Looking ahead</h2><p>Ten years in, the Elympics keeps evolving. New challenges, new causes and new personal bests are always just around the corner.</p><p>What hasn’t changed is the core idea behind it. When a team pulls together, even small actions add up to something meaningful. And if those actions happen to involve a few extra miles along the way, even better.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	
+			<section>
+	
+	
+
+			<h2>
+							More from the studio:
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Task complete: Helping GOSH Charity reach 281% of its fundraising target
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Case-study-images/GOSH/Taskmaster/Engage_CaseStudy26_SportsLondon_Hero-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Case-study-images/GOSH/Taskmaster/Engage_CaseStudy26_SportsLondon_Hero-3.png"
+		alt="Engage Case Study26 Sports London Hero 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/helping-gosh-childrens-charity-reach-its-fundraising-target.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403be315f33c479',t:'MTc5MDI3MzM5NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>How to Improve Your Google PageSpeed Score &amp; Website Performance</title>
+<meta name="description" content="Learn how to increase your PageSpeed score, what Google PageSpeed Insights means, and which performance fixes are actually worth prioritising.">
+
+	<link rel="canonical" href="improve-your-websites-performance-and-score-100-on-google-pagespeed-insights.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="improve-your-websites-performance-and-score-100-on-google-pagespeed-insights.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="How to Improve Your Google PageSpeed Score &amp; Website Performance">
+<meta property="og:description" content="Learn how to increase your PageSpeed score, what Google PageSpeed Insights means, and which performance fixes are actually worth prioritising.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#blogposting","url":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights","headline":"How to Improve Your Google PageSpeed Score & Website Performance","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/simon-willians#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights.png","datePublished":"2025-07-09T19:49:55+01:00","description":"Learn how to increase your PageSpeed score, what Google PageSpeed Insights means, and which performance fixes are actually worth prioritising."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#webpage","url":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights","name":"How to Improve Your Google PageSpeed Score & Website Performance","description":"Learn how to increase your PageSpeed score, what Google PageSpeed Insights means, and which performance fixes are actually worth prioritising.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"How to increase your PageSpeed score without chasing 100\/100","item":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights.png"},"datePublished":"2025-07-09T19:49:55+01:00","dateModified":"2026-08-26T10:25:25+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#blogposting"}},{"@type":"FAQPage","@id":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#faqpage","url":"https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights","mainEntity":[{"@type":"Question","name":"What is a good PageSpeed score?","acceptedAnswer":{"@type":"Answer","text":"<p>A good PageSpeed score is 90 or above. Scores between 50 and 89 need improvement, while scores below 50 are considered poor. That said, the score should be used as a guide, not the only measure of whether your website is performing well.<\/p>"}},{"@type":"Question","name":"How do I increase my PageSpeed score?","acceptedAnswer":{"@type":"Answer","text":"<p>To increase your PageSpeed score, start by optimising images, reducing unused JavaScript and CSS, improving server response time, fixing layout shifts, loading fonts properly and removing unnecessary third-party scripts. Start with the issues that affect your most important pages first.<\/p>"}},{"@type":"Question","name":"Does a 100\/100 PageSpeed score matter?","acceptedAnswer":{"@type":"Answer","text":"<p>A 100\/100 PageSpeed score can be nice, but it is not always necessary. A fast, stable and easy-to-use website is more important than chasing a perfect score. Sometimes the effort needed to move from a good score to a perfect score is better spent improving the wider user experience.<\/p>"}},{"@type":"Question","name":"What is the difference between PageSpeed Insights and Core Web Vitals?","acceptedAnswer":{"@type":"Answer","text":"<p>PageSpeed Insights is the tool that tests and reports on page performance. Core Web Vitals are specific user experience metrics that measure loading, responsiveness and visual stability. In short, PageSpeed Insights helps diagnose performance, while Core Web Vitals help show how users experience it.<\/p>"}}]}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="improve-your-websites-performance-and-score-100-on-google-pagespeed-insights.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;How to Improve Your Google PageSpeed Score &amp; Website Performance&quot;,&quot;description&quot;:&quot;Learn how to increase your PageSpeed score, what Google PageSpeed Insights means, and which performance fixes are actually worth prioritising.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights&quot;,&quot;shareTitle&quot;:&quot;How to Improve Your Google PageSpeed Score &amp; Website Performance&quot;,&quot;shareDescription&quot;:&quot;Learn how to increase your PageSpeed score, what Google PageSpeed Insights means, and which performance fixes are actually worth prioritising.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights\&quot;,\&quot;headline\&quot;:\&quot;How to Improve Your Google PageSpeed Score &amp; Website Performance\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/simon-willians#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\\\/insights.png\&quot;,\&quot;datePublished\&quot;:\&quot;2025-07-09T19:49:55+01:00\&quot;,\&quot;description\&quot;:\&quot;Learn how to increase your PageSpeed score, what Google PageSpeed Insights means, and which performance fixes are actually worth prioritising.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights\&quot;,\&quot;name\&quot;:\&quot;How to Improve Your Google PageSpeed Score &amp; Website Performance\&quot;,\&quot;description\&quot;:\&quot;Learn how to increase your PageSpeed score, what Google PageSpeed Insights means, and which performance fixes are actually worth prioritising.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;How to increase your PageSpeed score without chasing 100\\\/100\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\\\/insights.png\&quot;},\&quot;datePublished\&quot;:\&quot;2025-07-09T19:49:55+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-08-26T10:25:25+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#blogposting\&quot;}},{\&quot;@type\&quot;:\&quot;FAQPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights#faqpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/improve-your-websites-performance-and-score-100-on-google-pagespeed-insights\&quot;,\&quot;mainEntity\&quot;:[{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;What is a good PageSpeed score?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;A good PageSpeed score is 90 or above. Scores between 50 and 89 need improvement, while scores below 50 are considered poor. That said, the score should be used as a guide, not the only measure of whether your website is performing well.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;How do I increase my PageSpeed score?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;To increase your PageSpeed score, start by optimising images, reducing unused JavaScript and CSS, improving server response time, fixing layout shifts, loading fonts properly and removing unnecessary third-party scripts. Start with the issues that affect your most important pages first.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Does a 100\\\/100 PageSpeed score matter?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;A 100\\\/100 PageSpeed score can be nice, but it is not always necessary. A fast, stable and easy-to-use website is more important than chasing a perfect score. Sometimes the effort needed to move from a good score to a perfect score is better spent improving the wider user experience.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;What is the difference between PageSpeed Insights and Core Web Vitals?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;PageSpeed Insights is the tool that tests and reports on page performance. Core Web Vitals are specific user experience metrics that measure loading, responsiveness and visual stability. In short, PageSpeed Insights helps diagnose performance, while Core Web Vitals help show how users experience it.&lt;\\\/p&gt;\&quot;}}]}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;How to increase your PageSpeed score without chasing 100\/100&quot;,&quot;date&quot;:&quot;6th June 2019&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Simon&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/simon-willians&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 7 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Insights&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;A perfect Google PageSpeed Insights score looks lovely. Very green. Very satisfying. But it is not always the real goal.&lt;\/p&gt;&lt;p&gt;PageSpeed Insights is useful because it helps you spot the things slowing a page down, from oversized images and unused code to layout shifts, slow server responses and heavy third-party scripts. The trick is knowing which issues actually matter, and which ones are just there to make your report look more dramatic than it needs to be.&lt;\/p&gt;&lt;p&gt;If you want to increase your PageSpeed score, start by focusing on the things that improve the real user experience: faster loading, smoother interactions and fewer moments where the page appears to be doing absolutely nothing. Always a crowd-pleaser.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Insights 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=482\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=286\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=214\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=313\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=214\/engage-website\/production\/Blog\/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights\/insights-2.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:1400,&quot;height&quot;:500},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;What is Google PageSpeed Insights?&lt;\/h2&gt;&lt;p&gt;Google PageSpeed Insights is a free tool that measures the performance of a web page on mobile and desktop. It gives your page a performance score, then highlights opportunities that could help improve loading speed, responsiveness and visual stability.&lt;\/p&gt;&lt;p&gt;The report can include two types of data:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e7dbbc9ec2911af19e98d2fff647642ac\&quot;&gt;Lab data, which tests the page in a controlled environment.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e72a0f4bd897995e1e4c211fdffcce541\&quot;&gt;Field data, where available, which shows how real users experience the page.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;That second bit matters. A lab test can help you diagnose problems, but real user data gives a better sense of how people are actually experiencing your site in the wild. And the wild, as usual, is less predictable.&lt;\/p&gt;&lt;h2&gt;What does your PageSpeed score mean?&lt;\/h2&gt;&lt;p&gt;PageSpeed Insights gives your page a performance score from 0 to 100:&lt;\/p&gt;&lt;figure class=\&quot;table table-style-block-align-left\&quot;&gt;&lt;table style=\&quot;border-style:none;\&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Score&lt;\/td&gt;&lt;td style=\&quot;background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Rating&lt;\/td&gt;&lt;td style=\&quot;background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;What it means&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;90 to 100&lt;\/td&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Good&lt;\/td&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;The page is performing well, though there may still be small improvements to make.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;50 to 89&lt;\/td&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Needs improvement&lt;\/td&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;The page has performance issues that could affect user experience.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;0 to 49&lt;\/td&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Poor&lt;\/td&gt;&lt;td style=\&quot;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;The page has more serious performance issues that should be prioritised.&lt;\/td&gt;&lt;\/tr&gt;&lt;\/tbody&gt;&lt;\/table&gt;&lt;\/figure&gt;&lt;p&gt;A good score is useful, but it should not be viewed in isolation. A page can score well and still have usability problems. It can also score lower because of things that are commercially or creatively important, such as interactive features, personalisation, tracking or rich media.&lt;\/p&gt;&lt;p&gt;Context matters. Annoying, but true.&lt;\/p&gt;&lt;h2&gt;Do you need a 100\/100 PageSpeed score?&lt;\/h2&gt;&lt;p&gt;Not always. A score of 100 is nice, but chasing it at all costs can quickly become a very technical way to miss the point.&lt;\/p&gt;&lt;p&gt;The better question is: does the page feel fast, stable and easy to use for the people you actually care about? If your checkout is slow, your contact form lags, or your key landing pages take too long to load on mobile, those are worth fixing. If a carefully considered design feature costs a couple of points but helps the page do its job, ripping it out just to impress a testing tool may not be the smartest move.&lt;\/p&gt;&lt;p&gt;Aim for strong performance, not performance theatre.&lt;\/p&gt;&lt;h2&gt;How to increase your PageSpeed score&lt;\/h2&gt;&lt;p&gt;The best way to improve your PageSpeed score is to work through the issues that have the biggest impact on loading, interaction and layout stability. Start with the basics, then move into the more technical fixes.&lt;\/p&gt;&lt;figure class=\&quot;table table-style-block-align-left\&quot;&gt;&lt;table style=\&quot;border-style:none;\&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;What to check&lt;\/td&gt;&lt;td style=\&quot;background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Why it matters&lt;\/td&gt;&lt;td style=\&quot;background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;What to do&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Large images&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Heavy images are one of the most common causes of slow pages.&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Compress images, use modern formats and avoid uploading images far larger than they need to be.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Unused JavaScript&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Too much JavaScript can delay loading and make the page feel sluggish.&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Remove unused scripts, split code where possible and only load what the page needs.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Render-blocking resources&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Some files stop the browser from showing the page quickly.&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Defer non-critical JavaScript and optimise critical CSS.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Third-party scripts&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Analytics, ads, embeds and tracking tools can all slow things down.&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Audit what is actually needed and remove anything that is no longer useful.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Fonts&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Poorly loaded fonts can delay text display or cause layout shifts.&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Use sensible font loading, preload key fonts and avoid excessive font weights.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Server response time&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;A slow server can hold everything else back.&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Improve hosting, caching, database performance and backend efficiency.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Layout shifts&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Moving buttons, images or text create a poor user experience.&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Set image dimensions, reserve space for embeds and avoid injecting content above existing content.&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Mobile performance&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Mobile scores are often lower because devices and connections vary more.&lt;\/td&gt;&lt;td style=\&quot;background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;\&quot;&gt;Test mobile first and prioritise the pages that matter most to users.&lt;\/td&gt;&lt;\/tr&gt;&lt;\/tbody&gt;&lt;\/table&gt;&lt;\/figure&gt;&lt;p&gt;The biggest gains usually come from fixing the obvious problems first. Huge images. Old scripts. Unused plugins. Overloaded templates. The usual suspects, looking guilty in the corner.&lt;\/p&gt;&lt;h2&gt;Core Web Vitals matter too&lt;\/h2&gt;&lt;p&gt;PageSpeed scores are useful, but they are only one part of performance. Core Web Vitals help measure how users experience a page in practice.&lt;\/p&gt;&lt;p&gt;The three main Core Web Vitals are:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e098298a478002453a02165efe9dd60f9\&quot;&gt;Largest Contentful Paint, which measures how quickly the main content loads.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5a81863888e5176c7b1b6af51ecc1fc9\&quot;&gt;Interaction to Next Paint, which measures how responsive the page feels after user interactions.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e2a22a115867cfcea07b2de8bd402ff17\&quot;&gt;Cumulative Layout Shift, which measures whether the page moves around unexpectedly as it loads.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;In plain English: does the page load quickly, respond properly and stay still while people are trying to use it?&lt;\/p&gt;&lt;p&gt;That is what users care about. Nobody arrives on a website thinking, \u201cI hope this has excellent lab data.\u201d They just want the page to work.&lt;\/p&gt;&lt;h2&gt;How does PageSpeed affect your SEO and paid media performance?&lt;\/h2&gt;&lt;p&gt;PageSpeed is not just a technical health check sitting off to one side. It also feeds into two of the areas most businesses care about most: organic visibility and paid media efficiency.&lt;\/p&gt;&lt;p&gt;For\u00a0&lt;a href=\&quot;https:\/\/engage.agency\/services\/seo\&quot;&gt;&lt;u&gt;SEO&lt;\/u&gt;&lt;\/a&gt;, Core Web Vitals form part of the wider page experience signals Google factors into search ranking. Being fast will not single-handedly outrank a page with weak content, but a slow, unstable page can quietly undermine the technical foundations your organic strategy is trying to build, especially on competitive terms where every signal counts. If your content and technical SEO work is solid but your PageSpeed score is dragging, performance is often the missing piece.&lt;\/p&gt;&lt;p&gt;For\u00a0&lt;a href=\&quot;https:\/\/engage.agency\/services\/ppc\&quot;&gt;&lt;u&gt;PPC&lt;\/u&gt;&lt;\/a&gt;, the effect can be even more direct. Landing page experience is one of the components Google Ads uses to calculate Quality Score, and a lower Quality Score typically means higher costs per click and reduced ad visibility for the same budget. If you are sending paid traffic to a slow or unstable landing page, you may be paying more for clicks that were already at risk of bouncing before the page had even finished loading.&lt;\/p&gt;&lt;p&gt;Treating PageSpeed as part of your SEO and paid media strategy, rather than a standalone technical task, tends to pay for itself. A faster, more stable site supports organic visibility and paid efficiency at the same time, which makes it one of the rare fixes that benefits nearly every part of the marketing funnel.&lt;\/p&gt;&lt;h2&gt;What should you fix first?&lt;\/h2&gt;&lt;p&gt;Not every PageSpeed warning deserves the same level of panic. Start with the issues that affect important pages, important users and important actions.&lt;\/p&gt;&lt;p&gt;Prioritise fixes in this order:&lt;\/p&gt;&lt;ol&gt;&lt;li data-list-item-id=\&quot;e467022e28954f63f64441559c0e9fb10\&quot;&gt;Pages that drive leads, sales, bookings or enquiries.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eeb3ba4623e3c791cff29cd96ad8699bc\&quot;&gt;Mobile performance issues.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee91e9c0dedf616847ad9aaa75fa60ff1\&quot;&gt;Failing Core Web Vitals.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ecdad5a1e3e41f4709d8dd07f4e2bb40a\&quot;&gt;Slow-loading images and videos.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4386ce1b65afa15697ac1eab23dc79e7\&quot;&gt;Unused JavaScript or CSS.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e73acb3c4a27e9b9ffcf7030751473c78\&quot;&gt;Layout shifts that affect key content or buttons.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5581624bd5e2a922f952843d4ecf7871\&quot;&gt;Third-party scripts that slow the page down without adding enough value.&lt;\/li&gt;&lt;\/ol&gt;&lt;p&gt;That last point is worth repeating. If a script is not helping you measure, sell, support or improve something, it probably needs a very awkward conversation.&lt;\/p&gt;&lt;h2&gt;Make your website faster for actual humans&lt;\/h2&gt;&lt;p&gt;Improving your PageSpeed score is not really about making Google happy. It is about making your website easier to use, faster to trust and less likely to make people give up before they have done what they came to do.&lt;\/p&gt;&lt;p&gt;A better score can be a useful sign that things are moving in the right direction. But the real win is a site that loads quickly, feels smooth and supports the user journey properly. That is where good&lt;a href=\&quot;https:\/\/engage.agency\/services\/website-development\&quot;&gt;\u00a0&lt;u&gt;website development&lt;\/u&gt;&lt;\/a&gt; makes a difference, because performance needs to be built into the foundations, not patched on later with crossed fingers and a plugin.&lt;\/p&gt;&lt;p&gt;If your website is slow, clunky or throwing up PageSpeed warnings you would rather not look at, our&lt;a href=\&quot;https:\/\/engage.agency\/services\/websites\&quot;&gt;\u00a0&lt;u&gt;websites team&lt;\/u&gt;&lt;\/a&gt; can help you find the real performance issues and fix the ones that matter.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;pull-quote&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;According to research by Google&quot;,&quot;copy&quot;:&quot;&lt;p&gt;&lt;a href=\&quot;https:\/\/www.thinkwithgoogle.com\/marketing-resources\/data-measurement\/mobile-page-speed-new-industry-benchmarks\/\&quot;&gt;53% of users abandoned&lt;\/a&gt; a mobile site if it took more than 3 seconds to\u00a0load.&lt;\/p&gt;&quot;,&quot;author&quot;:null,&quot;role&quot;:null}}]}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;FAQs&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;What is a good PageSpeed score?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;A good PageSpeed score is 90 or above. Scores between 50 and 89 need improvement, while scores below 50 are considered poor. That said, the score should be used as a guide, not the only measure of whether your website is performing well.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How do I increase my PageSpeed score?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;To increase your PageSpeed score, start by optimising images, reducing unused JavaScript and CSS, improving server response time, fixing layout shifts, loading fonts properly and removing unnecessary third-party scripts. Start with the issues that affect your most important pages first.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Does a 100\/100 PageSpeed score matter?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;A 100\/100 PageSpeed score can be nice, but it is not always necessary. A fast, stable and easy-to-use website is more important than chasing a perfect score. Sometimes the effort needed to move from a good score to a perfect score is better spent improving the wider user experience.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What is the difference between PageSpeed Insights and Core Web Vitals?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;PageSpeed Insights is the tool that tests and reports on page performance. Core Web Vitals are specific user experience metrics that measure loading, responsiveness and visual stability. In short, PageSpeed Insights helps diagnose performance, while Core Web Vitals help show how users experience it.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights.png"
+		alt="Insights"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>How to increase your PageSpeed score without chasing 100/100</h1>
+	
+			<p>6th June 2019</p>
+	
+	
+			<p>Roughly a 7 minute read by</p>
+	
+						<p>
+									<a href="../team/simon-willians.html">
+						Simon
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>A perfect Google PageSpeed Insights score looks lovely. Very green. Very satisfying. But it is not always the real goal.</p><p>PageSpeed Insights is useful because it helps you spot the things slowing a page down, from oversized images and unused code to layout shifts, slow server responses and heavy third-party scripts. The trick is knowing which issues actually matter, and which ones are just there to make your report look more dramatic than it needs to be.</p><p>If you want to increase your PageSpeed score, start by focusing on the things that improve the real user experience: faster loading, smoother interactions and fewer moments where the page appears to be doing absolutely nothing. Always a crowd-pleaser.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=482/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights-2.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=286/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights-2.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=214/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights-2.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=313/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights-2.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=214/engage-website/production/Blog/Improve-your-websites-performance-and-score-100-on-Google-PageSpeed-Insights/insights-2.png"
+		alt="Insights 2"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>What is Google PageSpeed Insights?</h2><p>Google PageSpeed Insights is a free tool that measures the performance of a web page on mobile and desktop. It gives your page a performance score, then highlights opportunities that could help improve loading speed, responsiveness and visual stability.</p><p>The report can include two types of data:</p><ul><li data-list-item-id="e7dbbc9ec2911af19e98d2fff647642ac">Lab data, which tests the page in a controlled environment.</li><li data-list-item-id="e72a0f4bd897995e1e4c211fdffcce541">Field data, where available, which shows how real users experience the page.</li></ul><p>That second bit matters. A lab test can help you diagnose problems, but real user data gives a better sense of how people are actually experiencing your site in the wild. And the wild, as usual, is less predictable.</p><h2>What does your PageSpeed score mean?</h2><p>PageSpeed Insights gives your page a performance score from 0 to 100:</p><figure class="table table-style-block-align-left"><table style="border-style:none;"><tbody><tr><td style="background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Score</td><td style="background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Rating</td><td style="background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">What it means</td></tr><tr><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">90 to 100</td><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Good</td><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">The page is performing well, though there may still be small improvements to make.</td></tr><tr><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">50 to 89</td><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Needs improvement</td><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">The page has performance issues that could affect user experience.</td></tr><tr><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">0 to 49</td><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Poor</td><td style="border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">The page has more serious performance issues that should be prioritised.</td></tr></tbody></table></figure><p>A good score is useful, but it should not be viewed in isolation. A page can score well and still have usability problems. It can also score lower because of things that are commercially or creatively important, such as interactive features, personalisation, tracking or rich media.</p><p>Context matters. Annoying, but true.</p><h2>Do you need a 100/100 PageSpeed score?</h2><p>Not always. A score of 100 is nice, but chasing it at all costs can quickly become a very technical way to miss the point.</p><p>The better question is: does the page feel fast, stable and easy to use for the people you actually care about? If your checkout is slow, your contact form lags, or your key landing pages take too long to load on mobile, those are worth fixing. If a carefully considered design feature costs a couple of points but helps the page do its job, ripping it out just to impress a testing tool may not be the smartest move.</p><p>Aim for strong performance, not performance theatre.</p><h2>How to increase your PageSpeed score</h2><p>The best way to improve your PageSpeed score is to work through the issues that have the biggest impact on loading, interaction and layout stability. Start with the basics, then move into the more technical fixes.</p><figure class="table table-style-block-align-left"><table style="border-style:none;"><tbody><tr><td style="background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">What to check</td><td style="background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Why it matters</td><td style="background-color:#d9d9d9;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">What to do</td></tr><tr><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Large images</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Heavy images are one of the most common causes of slow pages.</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Compress images, use modern formats and avoid uploading images far larger than they need to be.</td></tr><tr><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Unused JavaScript</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Too much JavaScript can delay loading and make the page feel sluggish.</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Remove unused scripts, split code where possible and only load what the page needs.</td></tr><tr><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Render-blocking resources</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Some files stop the browser from showing the page quickly.</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Defer non-critical JavaScript and optimise critical CSS.</td></tr><tr><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Third-party scripts</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Analytics, ads, embeds and tracking tools can all slow things down.</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Audit what is actually needed and remove anything that is no longer useful.</td></tr><tr><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Fonts</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Poorly loaded fonts can delay text display or cause layout shifts.</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Use sensible font loading, preload key fonts and avoid excessive font weights.</td></tr><tr><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Server response time</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">A slow server can hold everything else back.</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Improve hosting, caching, database performance and backend efficiency.</td></tr><tr><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Layout shifts</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Moving buttons, images or text create a poor user experience.</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Set image dimensions, reserve space for embeds and avoid injecting content above existing content.</td></tr><tr><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Mobile performance</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Mobile scores are often lower because devices and connections vary more.</td><td style="background-color:#ffffff;border-color:#cccccc;border-width:0.75pt;padding:8.503937007874017pt;">Test mobile first and prioritise the pages that matter most to users.</td></tr></tbody></table></figure><p>The biggest gains usually come from fixing the obvious problems first. Huge images. Old scripts. Unused plugins. Overloaded templates. The usual suspects, looking guilty in the corner.</p><h2>Core Web Vitals matter too</h2><p>PageSpeed scores are useful, but they are only one part of performance. Core Web Vitals help measure how users experience a page in practice.</p><p>The three main Core Web Vitals are:</p><ul><li data-list-item-id="e098298a478002453a02165efe9dd60f9">Largest Contentful Paint, which measures how quickly the main content loads.</li><li data-list-item-id="e5a81863888e5176c7b1b6af51ecc1fc9">Interaction to Next Paint, which measures how responsive the page feels after user interactions.</li><li data-list-item-id="e2a22a115867cfcea07b2de8bd402ff17">Cumulative Layout Shift, which measures whether the page moves around unexpectedly as it loads.</li></ul><p>In plain English: does the page load quickly, respond properly and stay still while people are trying to use it?</p><p>That is what users care about. Nobody arrives on a website thinking, “I hope this has excellent lab data.” They just want the page to work.</p><h2>How does PageSpeed affect your SEO and paid media performance?</h2><p>PageSpeed is not just a technical health check sitting off to one side. It also feeds into two of the areas most businesses care about most: organic visibility and paid media efficiency.</p><p>For <a href="../services/seo.html"><u>SEO</u></a>, Core Web Vitals form part of the wider page experience signals Google factors into search ranking. Being fast will not single-handedly outrank a page with weak content, but a slow, unstable page can quietly undermine the technical foundations your organic strategy is trying to build, especially on competitive terms where every signal counts. If your content and technical SEO work is solid but your PageSpeed score is dragging, performance is often the missing piece.</p><p>For <a href="../services/ppc.html"><u>PPC</u></a>, the effect can be even more direct. Landing page experience is one of the components Google Ads uses to calculate Quality Score, and a lower Quality Score typically means higher costs per click and reduced ad visibility for the same budget. If you are sending paid traffic to a slow or unstable landing page, you may be paying more for clicks that were already at risk of bouncing before the page had even finished loading.</p><p>Treating PageSpeed as part of your SEO and paid media strategy, rather than a standalone technical task, tends to pay for itself. A faster, more stable site supports organic visibility and paid efficiency at the same time, which makes it one of the rare fixes that benefits nearly every part of the marketing funnel.</p><h2>What should you fix first?</h2><p>Not every PageSpeed warning deserves the same level of panic. Start with the issues that affect important pages, important users and important actions.</p><p>Prioritise fixes in this order:</p><ol><li data-list-item-id="e467022e28954f63f64441559c0e9fb10">Pages that drive leads, sales, bookings or enquiries.</li><li data-list-item-id="eeb3ba4623e3c791cff29cd96ad8699bc">Mobile performance issues.</li><li data-list-item-id="ee91e9c0dedf616847ad9aaa75fa60ff1">Failing Core Web Vitals.</li><li data-list-item-id="ecdad5a1e3e41f4709d8dd07f4e2bb40a">Slow-loading images and videos.</li><li data-list-item-id="e4386ce1b65afa15697ac1eab23dc79e7">Unused JavaScript or CSS.</li><li data-list-item-id="e73acb3c4a27e9b9ffcf7030751473c78">Layout shifts that affect key content or buttons.</li><li data-list-item-id="e5581624bd5e2a922f952843d4ecf7871">Third-party scripts that slow the page down without adding enough value.</li></ol><p>That last point is worth repeating. If a script is not helping you measure, sell, support or improve something, it probably needs a very awkward conversation.</p><h2>Make your website faster for actual humans</h2><p>Improving your PageSpeed score is not really about making Google happy. It is about making your website easier to use, faster to trust and less likely to make people give up before they have done what they came to do.</p><p>A better score can be a useful sign that things are moving in the right direction. But the real win is a site that loads quickly, feels smooth and supports the user journey properly. That is where good<a href="../services/website-development.html"> <u>website development</u></a> makes a difference, because performance needs to be built into the foundations, not patched on later with crossed fingers and a plugin.</p><p>If your website is slow, clunky or throwing up PageSpeed warnings you would rather not look at, our<a href="../services/websites.html"> <u>websites team</u></a> can help you find the real performance issues and fix the ones that matter.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		pull-quote
+	</div>
+
+			<section>
+	
+	
+
+			<h2>
+							According to research by Google
+					</h2>
+	
+	
+			<p><a href="https://www.thinkwithgoogle.com/marketing-resources/data-measurement/mobile-page-speed-new-industry-benchmarks/">53% of users abandoned</a> a mobile site if it took more than 3 seconds to load.</p>
+	
+	
+	
+	
+																			
+	</section>
+			
+			<section>
+	
+	
+
+			<h2>
+							FAQs
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							What is a good PageSpeed score?
+					</h3>
+	
+	
+			<p>A good PageSpeed score is 90 or above. Scores between 50 and 89 need improvement, while scores below 50 are considered poor. That said, the score should be used as a guide, not the only measure of whether your website is performing well.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							How do I increase my PageSpeed score?
+					</h3>
+	
+	
+			<p>To increase your PageSpeed score, start by optimising images, reducing unused JavaScript and CSS, improving server response time, fixing layout shifts, loading fonts properly and removing unnecessary third-party scripts. Start with the issues that affect your most important pages first.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Does a 100/100 PageSpeed score matter?
+					</h3>
+	
+	
+			<p>A 100/100 PageSpeed score can be nice, but it is not always necessary. A fast, stable and easy-to-use website is more important than chasing a perfect score. Sometimes the effort needed to move from a good score to a perfect score is better spent improving the wider user experience.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							What is the difference between PageSpeed Insights and Core Web Vitals?
+					</h3>
+	
+	
+			<p>PageSpeed Insights is the tool that tests and reports on page performance. Core Web Vitals are specific user experience metrics that measure loading, responsiveness and visual stability. In short, PageSpeed Insights helps diagnose performance, while Core Web Vitals help show how users experience it.</p>
+	
+	
+	
+	
+		
+	</article>
+			</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c1f85c82c479',t:'MTc5MDI3MzU1MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

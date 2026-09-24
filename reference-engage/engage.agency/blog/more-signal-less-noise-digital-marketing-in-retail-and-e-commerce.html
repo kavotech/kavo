@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Digital Marketing in Retail &amp; E-commerce | Expertise from Engage</title>
+<meta name="description" content="Digital marketing in FMCG is evolving. Discover how social and activations drive engagement, build brand recall, and influence real-world purchase behaviour.">
+
+	<link rel="canonical" href="more-signal-less-noise-digital-marketing-in-retail-and-e-commerce.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="more-signal-less-noise-digital-marketing-in-retail-and-e-commerce.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Digital Marketing in Retail &amp; E-commerce | Expertise from Engage">
+<meta property="og:description" content="Digital marketing in FMCG is evolving. Discover how social and activations drive engagement, build brand recall, and influence real-world purchase behaviour.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce/Ecomm-blog-hero.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#blogposting","url":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce","headline":"Digital Marketing in Retail & E-commerce | Expertise from Engage","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/lloyd-preston#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png","datePublished":"2026-08-10T16:56:26+01:00","description":"Digital marketing in FMCG is evolving. Discover how social and activations drive engagement, build brand recall, and influence real-world purchase behaviour."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#webpage","url":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce","name":"Digital Marketing in Retail & E-commerce | Expertise from Engage","description":"Digital marketing in FMCG is evolving. Discover how social and activations drive engagement, build brand recall, and influence real-world purchase behaviour.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"More signal, less noise: Digital marketing in retail and e-commerce","item":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png"},"datePublished":"2026-08-10T16:56:26+01:00","dateModified":"2026-09-10T09:13:44+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="more-signal-less-noise-digital-marketing-in-retail-and-e-commerce.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Digital Marketing in Retail &amp; E-commerce | Expertise from Engage&quot;,&quot;description&quot;:&quot;Digital marketing in FMCG is evolving. Discover how social and activations drive engagement, build brand recall, and influence real-world purchase behaviour.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce&quot;,&quot;shareTitle&quot;:&quot;Digital Marketing in Retail &amp; E-commerce | Expertise from Engage&quot;,&quot;shareDescription&quot;:&quot;Digital marketing in FMCG is evolving. Discover how social and activations drive engagement, build brand recall, and influence real-world purchase behaviour.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce\&quot;,\&quot;headline\&quot;:\&quot;Digital Marketing in Retail &amp; E-commerce | Expertise from Engage\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/lloyd-preston#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\\\/Ecomm-blog-hero.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-08-10T16:56:26+01:00\&quot;,\&quot;description\&quot;:\&quot;Digital marketing in FMCG is evolving. Discover how social and activations drive engagement, build brand recall, and influence real-world purchase behaviour.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce\&quot;,\&quot;name\&quot;:\&quot;Digital Marketing in Retail &amp; E-commerce | Expertise from Engage\&quot;,\&quot;description\&quot;:\&quot;Digital marketing in FMCG is evolving. Discover how social and activations drive engagement, build brand recall, and influence real-world purchase behaviour.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;More signal, less noise: Digital marketing in retail and e-commerce\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\\\/Ecomm-blog-hero.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-08-10T16:56:26+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-10T09:13:44+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;More signal, less noise: Digital marketing in retail and e-commerce&quot;,&quot;date&quot;:&quot;10th August 2026&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Lloyd&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/lloyd-preston&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 8 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Ecomm blog hero&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h4&gt;Retail and e-commerce are among the most competitive environments in digital marketing. Acquisition costs are rising. Margins are under pressure. And platforms like Amazon continue to reshape how demand is captured and converted.&lt;\/h4&gt;&lt;p&gt;The instinctive response is to do more: more paid media, more channels. It\u2019s understandable.\u00a0&lt;\/p&gt;&lt;p&gt;It\u2019s also, in our experience, rarely the right one. Performance doesn&#039;t improve through more activity. It improves when marketing is properly aligned with commercial reality. This guide explains what that looks like in practice.&lt;\/p&gt;&lt;h2&gt;What drives e-commerce performance&lt;\/h2&gt;&lt;p&gt;Before diving into channels and tactics, it&#039;s worth being clear about what performance in e-commerce actually depends on, because it&#039;s rarely what brands assume.&lt;\/p&gt;&lt;p&gt;Strong category-level visibility is where most organic revenue growth begins. Product pages that build confidence quickly determine whether that traffic converts. Paid media, used to scale what already works rather than compensate for what doesn&#039;t, drives efficient growth without eroding margin.&lt;\/p&gt;&lt;p&gt;Alignment between marketing and commercial factors - pricing, stock levels, feed quality \u2013 determines whether campaigns deliver sustainable results. And a joined-up approach across SEO, paid, social and retention is what separates brands that grow consistently from those that plateau.&lt;\/p&gt;&lt;p&gt;None of this is complicated in isolation. Getting all of them working together? That\u2019s the interesting part.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Muji image fullwidth 16 9 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Case-study-images\/Muji\/Muji_image_fullwidth_16_9_3.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Case-study-images\/Muji\/Muji_image_fullwidth_16_9_3.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Case-study-images\/Muji\/Muji_image_fullwidth_16_9_3.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Case-study-images\/Muji\/Muji_image_fullwidth_16_9_3.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Muji\/Muji_image_fullwidth_16_9_3.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Muji\/Muji_image_fullwidth_16_9_3.jpg&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Seen in practice: +350% organic revenue growth for MUJI&lt;\/h2&gt;&lt;p&gt;When MUJI launched new subdomains across key European markets, it needed to build organic visibility from a weaker starting point, as the authority of its established domain wouldn\u2019t automatically transfer to the new subdomains.&lt;\/p&gt;&lt;p&gt;We combined technical SEO improvements with optimised multilingual landing and product content, supported by a digital PR campaign built around original research into holiday sleeping habits. This gave MUJI a genuinely useful and newsworthy story to tell, while strengthening visibility across its sleep, travel and relaxation ranges.\u00a0&lt;\/p&gt;&lt;p&gt;The campaign secured coverage in more than 100 publications across the UK France, with a reach of over 561 million people, and \u2013 alongside the wider SEO strategy \u2013 contributed to a 350% year-on-year increase in organic revenue.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Read the full MUJI case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/better-sleep-bigger-results-350-organic-revenue-growth-for-muji&quot;,&quot;external&quot;:false,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;The reality of retail and e-commerce today&lt;\/h2&gt;&lt;p&gt;Four shifts are making the old playbook harder to sustain.&lt;\/p&gt;&lt;p&gt;Paid media costs are rising. Year-on-year CPC increases in the 10-25% range are common across the retail accounts we manage. As competition intensifies, brands spend more just to hold their ground, and when product feeds, pricing or landing pages aren&#039;t strong enough to support that spend, the result is diminishing returns. More spend doesn&#039;t fix weak foundations. It merely makes them more expensive to maintain.&lt;\/p&gt;&lt;p&gt;Organic search is harder to win \u2013\u00a0but more valuable. The same structural issues come up in almost every e-commerce SEO audit: category pages misaligned to search intent, over-reliance on product pages for visibility and internal linking that doesn&#039;t prioritise commercial pages. Most of the time, the constraint isn&#039;t competition but architecture.&lt;\/p&gt;&lt;p&gt;Search results have changed. Shopping feeds, product grids and AI-generated summaries have reduced the share of clicks available to traditional organic listings. Pages need to earn attention quickly, build confidence immediately and convert efficiently when they do get the click.&lt;\/p&gt;&lt;p&gt;Discovery has fragmented. Users increasingly find products through social and return later via branded or direct search to complete the purchase. This means channels that create demand are routinely undervalued in favour of those that capture it. Attribution models have a lot to answer for.&lt;\/p&gt;&lt;h2&gt;Conversion is often the real constraint&lt;\/h2&gt;&lt;p&gt;One of the most common issues across e-commerce isn&#039;t traffic. It&#039;s what happens after the click.&lt;\/p&gt;&lt;p&gt;Product pages that rely on manufacturer copy, carry limited detail or create friction on mobile that quietly undermines the effectiveness of every channel. Traffic arrives and leaves without converting, the problem gets diagnosed as a visibility issue and more spend gets applied. The cycle repeats. It\u2019s one of the more frustrating patterns we see, because the fix is usually closer than people think.&lt;\/p&gt;&lt;p&gt;With AI-generated content now commonplace across the web, generic product descriptions carry less weight than ever. Differentiation and genuine product detail are becoming increasingly important, both for search engines and for the users who arrive from them.&lt;\/p&gt;&lt;h2&gt;The three core drivers of e-commerce performance&lt;\/h2&gt;&lt;p&gt;Across the brands we work with, performance comes down to three things working in sequence.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Visibility:&lt;\/strong&gt; Being present where high-intent demand exists, particularly through well-structured category pages and targeted paid search. In audits, this is most often limited by site structure or intent misalignment rather than a lack of effort or investment.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Confidence:&lt;\/strong&gt; Giving users a compelling reason to choose your product through strong product pages, reviews, clear messaging and UX that doesn&#039;t create doubt. Product pages are the most frequently underinvested part of the e-commerce journey, and the one with the most direct impact on conversion.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Conversion:&lt;\/strong&gt; Removing friction and guiding users clearly to purchase. Drop-off happens through unclear navigation, poor mobile experience or unnecessary steps in the buying journey. Small improvements here tend to have a disproportionate impact on overall revenue.&lt;\/p&gt;&lt;p&gt;It sounds straightforward. And it is, once you know where the gap is. The most common pattern we see is strong performance at the top of this sequence, and a failure somewhere in the middle. High traffic, modest revenue and a paid media budget working harder than it should to compensate.&lt;\/p&gt;&lt;h2&gt;How each channel contributes&lt;\/h2&gt;&lt;p&gt;Every channel plays a distinct role, and understanding those roles is what prevents budget from being misallocated.&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e9759e85387f4d2528e6daed16d6e5df5\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/seo\&quot;&gt;&lt;u&gt;SEO&lt;\/u&gt;&lt;\/a&gt; captures high-intent demand efficiently over time. It\u2019s strongest when category structure and domain authority are aligned, and where some of the most durable revenue growth comes from.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4609f14b85fcf1b7ca794c808964a94d\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/ppc\&quot;&gt;&lt;u&gt;Paid media&lt;\/u&gt;&lt;\/a&gt; scales what already works, but amplifies inefficiency just as quickly when conversion or pricing is weak.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0c8c717f0d6096962dc20f07f69a6f0e\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/social-media-marketing\&quot;&gt;&lt;u&gt;Social&lt;\/u&gt;&lt;\/a&gt; introduces products to new audiences and creates demand that converts later through search or direct. Frequently undervalued because attribution models don&#039;t capture that delayed path well.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7c42165daf082d639c503a42f175a453\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/digital-pr\&quot;&gt;&lt;u&gt;Digital PR&lt;\/u&gt;&lt;\/a&gt; builds the authority that allows category pages to compete for high-value terms. Without it, organic performance in competitive markets tends to plateau.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7914ac5f8d5251253b83df757b78fe5d\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/crm\&quot;&gt;&lt;u&gt;CRM and retention&lt;\/u&gt;&lt;\/a&gt; is where margin is actually made in most retail accounts, yet it remains the most underinvested channel across the brands we work with.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;The failure modes are predictable: paid media compensating for weak conversion; SEO underperforming due to poor structure rather than lack of effort; social undervalued because attribution doesn&#039;t tell the full story; CRM deprioritised in favour of faster-returning channels. These are alignment problems, not channel problems.&lt;\/p&gt;&lt;h2&gt;Where to focus first&lt;\/h2&gt;&lt;p&gt;Prioritisation should follow the constraint, not the channel.&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ec3c495ca187bb097842a2f1ea34ebeb4\&quot;&gt;High traffic, modest revenue? Start with product pages and UX.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef1ac0a9c76e2bc8e2147bd8cbcb336fe\&quot;&gt;Paid media not scaling efficiently? Look at pricing, landing pages and campaign structure.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3f07ce195c39bb8f9358325b0f9a8fd9\&quot;&gt;Growth slowing despite solid fundamentals? Invest in SEO.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6da6090b600b94145669367018cb06d2\&quot;&gt;Margins under pressure? Focus on retention.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;It\u2019s not always a comfortable conversation, but it\u2019s usually a short one \u2013 and it tends to point somewhere useful.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;DUSK MB4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Case-study-images\/DUSK\/DUSK_MB4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Case-study-images\/DUSK\/DUSK_MB4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Case-study-images\/DUSK\/DUSK_MB4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Case-study-images\/DUSK\/DUSK_MB4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/DUSK\/DUSK_MB4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/DUSK\/DUSK_MB4.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Seen in practice: +449% project ROI for DUSK.com&lt;\/h2&gt;&lt;p&gt;Our work with DUSK is a great example of what happens when you start with the commercial constraint rather than defaulting to more activity. Organic search had significant growth potential, but unlocking it meant looking beyond content production to where technical performance, site structure and seasonal demand were limiting results.&lt;\/p&gt;&lt;p&gt;We brought technical SEO, collection architecture, content, attribution and revenue into one commercially focused strategy. Technical issues were prioritised according to likely impact, while collection pages were expanded around the ways customers actually search - by colour, style, product type and buying intent. We also created targeted landing pages around key trading periods such as Black Friday, helping DUSK capture more specific seasonal demand.&lt;\/p&gt;&lt;p&gt;The work generated \u00a310.6 million in organic revenue, delivered a 449% project ROI and increased engaged sessions by 42%. That makes DUSK a useful proof point for the approach outlined here: understanding the commercial context first, then using the right activity to support it.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Read the full DUSK case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/dusk-waking-up-growth-for-dusk-com&quot;,&quot;external&quot;:false,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;What to look for in an e-commerce agency&lt;\/h2&gt;&lt;p&gt;The best e-commerce agencies don&#039;t just run channels, they understand how marketing connects to the commercial side of the business. That means a genuine understanding of margins, pricing and product mix; thinking across SEO, paid, social and digital PR as a connected system - experience with platforms, product feeds and large catalogues - and a clear focus on conversion and retention.&lt;\/p&gt;&lt;p&gt;The role of an e-commerce agency isn&#039;t simply to drive impressions. It&#039;s to improve efficiency, scalability and long-term growth. And to be honest with you, to recognise where the real constraints sit somewhere else in the business.\u00a0\u00a0&lt;\/p&gt;&lt;h2&gt;Ready to improve e-commerce performance?&lt;\/h2&gt;&lt;p&gt;We bring SEO, paid media, social and digital PR together into a single connected approach for retail and e-commerce brands \u2013 because that&#039;s what real performance looks like. If growth is plateauing or acquisition costs are climbing, &lt;a href=\&quot;https:\/\/engage.agency\/contact\&quot;&gt;&lt;u&gt;let&#039;s have an honest conversation about what&#039;s actually holding things back.&lt;\/u&gt;&lt;\/a&gt;&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Is SEO important for e-commerce?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Yes, but its value depends almost entirely on whether the underlying structure supports it. Category pages and internal linking are the two factors that most often determine whether SEO investment translates into revenue, and they&#039;re the first things worth auditing.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What&#039;s the most effective e-commerce marketing strategy?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;One that combines multiple channels, aligned to commercial goals rather than activity metrics. The strongest strategies are centred on margin, growth and customer lifetime value \u2013 not impressions or clicks in isolation.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How does Performance Max work for e-commerce?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;It uses automation to deliver ads across Google&#039;s properties, but performance depends heavily on feed quality, campaign segmentation and accurate conversion tracking. It can work very well when those foundations are solid and amplify problems quickly when they&#039;re not.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How can e-commerce brands improve conversion rates?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;By starting with product pages, not traffic. Improving detail, trust signals and mobile UX tends to deliver faster and more durable conversion gains than any equivalent investment in acquisition.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Ready to add commercial growth to the basket?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let\u2019s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce/Ecomm-blog-hero.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce/Ecomm-blog-hero.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce/Ecomm-blog-hero.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce/Ecomm-blog-hero.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce/Ecomm-blog-hero.png"
+		alt="Ecomm blog hero"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>More signal, less noise: Digital marketing in retail and e-commerce</h1>
+	
+			<p>10th August 2026</p>
+	
+	
+			<p>Roughly a 8 minute read by</p>
+	
+						<p>
+									<a href="../team/lloyd-preston.html">
+						Lloyd
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h4>Retail and e-commerce are among the most competitive environments in digital marketing. Acquisition costs are rising. Margins are under pressure. And platforms like Amazon continue to reshape how demand is captured and converted.</h4><p>The instinctive response is to do more: more paid media, more channels. It’s understandable. </p><p>It’s also, in our experience, rarely the right one. Performance doesn't improve through more activity. It improves when marketing is properly aligned with commercial reality. This guide explains what that looks like in practice.</p><h2>What drives e-commerce performance</h2><p>Before diving into channels and tactics, it's worth being clear about what performance in e-commerce actually depends on, because it's rarely what brands assume.</p><p>Strong category-level visibility is where most organic revenue growth begins. Product pages that build confidence quickly determine whether that traffic converts. Paid media, used to scale what already works rather than compensate for what doesn't, drives efficient growth without eroding margin.</p><p>Alignment between marketing and commercial factors - pricing, stock levels, feed quality – determines whether campaigns deliver sustainable results. And a joined-up approach across SEO, paid, social and retention is what separates brands that grow consistently from those that plateau.</p><p>None of this is complicated in isolation. Getting all of them working together? That’s the interesting part.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Case-study-images/Muji/Muji_image_fullwidth_16_9_3.jpg"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Case-study-images/Muji/Muji_image_fullwidth_16_9_3.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Case-study-images/Muji/Muji_image_fullwidth_16_9_3.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Case-study-images/Muji/Muji_image_fullwidth_16_9_3.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Muji/Muji_image_fullwidth_16_9_3.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Muji/Muji_image_fullwidth_16_9_3.jpg"
+		alt="Muji image fullwidth 16 9 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Seen in practice: +350% organic revenue growth for MUJI</h2><p>When MUJI launched new subdomains across key European markets, it needed to build organic visibility from a weaker starting point, as the authority of its established domain wouldn’t automatically transfer to the new subdomains.</p><p>We combined technical SEO improvements with optimised multilingual landing and product content, supported by a digital PR campaign built around original research into holiday sleeping habits. This gave MUJI a genuinely useful and newsworthy story to tell, while strengthening visibility across its sleep, travel and relaxation ranges. </p><p>The campaign secured coverage in more than 100 publications across the UK France, with a reach of over 561 million people, and – alongside the wider SEO strategy – contributed to a 350% year-on-year increase in organic revenue.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="../work/better-sleep-bigger-results-350-organic-revenue-growth-for-muji.html"
+	>
+	Read the full MUJI case study
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>The reality of retail and e-commerce today</h2><p>Four shifts are making the old playbook harder to sustain.</p><p>Paid media costs are rising. Year-on-year CPC increases in the 10-25% range are common across the retail accounts we manage. As competition intensifies, brands spend more just to hold their ground, and when product feeds, pricing or landing pages aren't strong enough to support that spend, the result is diminishing returns. More spend doesn't fix weak foundations. It merely makes them more expensive to maintain.</p><p>Organic search is harder to win – but more valuable. The same structural issues come up in almost every e-commerce SEO audit: category pages misaligned to search intent, over-reliance on product pages for visibility and internal linking that doesn't prioritise commercial pages. Most of the time, the constraint isn't competition but architecture.</p><p>Search results have changed. Shopping feeds, product grids and AI-generated summaries have reduced the share of clicks available to traditional organic listings. Pages need to earn attention quickly, build confidence immediately and convert efficiently when they do get the click.</p><p>Discovery has fragmented. Users increasingly find products through social and return later via branded or direct search to complete the purchase. This means channels that create demand are routinely undervalued in favour of those that capture it. Attribution models have a lot to answer for.</p><h2>Conversion is often the real constraint</h2><p>One of the most common issues across e-commerce isn't traffic. It's what happens after the click.</p><p>Product pages that rely on manufacturer copy, carry limited detail or create friction on mobile that quietly undermines the effectiveness of every channel. Traffic arrives and leaves without converting, the problem gets diagnosed as a visibility issue and more spend gets applied. The cycle repeats. It’s one of the more frustrating patterns we see, because the fix is usually closer than people think.</p><p>With AI-generated content now commonplace across the web, generic product descriptions carry less weight than ever. Differentiation and genuine product detail are becoming increasingly important, both for search engines and for the users who arrive from them.</p><h2>The three core drivers of e-commerce performance</h2><p>Across the brands we work with, performance comes down to three things working in sequence.</p><p><strong>Visibility:</strong> Being present where high-intent demand exists, particularly through well-structured category pages and targeted paid search. In audits, this is most often limited by site structure or intent misalignment rather than a lack of effort or investment.</p><p><strong>Confidence:</strong> Giving users a compelling reason to choose your product through strong product pages, reviews, clear messaging and UX that doesn't create doubt. Product pages are the most frequently underinvested part of the e-commerce journey, and the one with the most direct impact on conversion.</p><p><strong>Conversion:</strong> Removing friction and guiding users clearly to purchase. Drop-off happens through unclear navigation, poor mobile experience or unnecessary steps in the buying journey. Small improvements here tend to have a disproportionate impact on overall revenue.</p><p>It sounds straightforward. And it is, once you know where the gap is. The most common pattern we see is strong performance at the top of this sequence, and a failure somewhere in the middle. High traffic, modest revenue and a paid media budget working harder than it should to compensate.</p><h2>How each channel contributes</h2><p>Every channel plays a distinct role, and understanding those roles is what prevents budget from being misallocated.</p><ul><li data-list-item-id="e9759e85387f4d2528e6daed16d6e5df5"><a href="../services/seo.html"><u>SEO</u></a> captures high-intent demand efficiently over time. It’s strongest when category structure and domain authority are aligned, and where some of the most durable revenue growth comes from.</li><li data-list-item-id="e4609f14b85fcf1b7ca794c808964a94d"><a href="../services/ppc.html"><u>Paid media</u></a> scales what already works, but amplifies inefficiency just as quickly when conversion or pricing is weak.</li><li data-list-item-id="e0c8c717f0d6096962dc20f07f69a6f0e"><a href="../services/social-media-marketing.html"><u>Social</u></a> introduces products to new audiences and creates demand that converts later through search or direct. Frequently undervalued because attribution models don't capture that delayed path well.</li><li data-list-item-id="e7c42165daf082d639c503a42f175a453"><a href="../services/digital-pr.html"><u>Digital PR</u></a> builds the authority that allows category pages to compete for high-value terms. Without it, organic performance in competitive markets tends to plateau.</li><li data-list-item-id="e7914ac5f8d5251253b83df757b78fe5d"><a href="../services/crm.html"><u>CRM and retention</u></a> is where margin is actually made in most retail accounts, yet it remains the most underinvested channel across the brands we work with.</li></ul><p>The failure modes are predictable: paid media compensating for weak conversion; SEO underperforming due to poor structure rather than lack of effort; social undervalued because attribution doesn't tell the full story; CRM deprioritised in favour of faster-returning channels. These are alignment problems, not channel problems.</p><h2>Where to focus first</h2><p>Prioritisation should follow the constraint, not the channel.</p><ul><li data-list-item-id="ec3c495ca187bb097842a2f1ea34ebeb4">High traffic, modest revenue? Start with product pages and UX.</li><li data-list-item-id="ef1ac0a9c76e2bc8e2147bd8cbcb336fe">Paid media not scaling efficiently? Look at pricing, landing pages and campaign structure.</li><li data-list-item-id="e3f07ce195c39bb8f9358325b0f9a8fd9">Growth slowing despite solid fundamentals? Invest in SEO.</li><li data-list-item-id="e6da6090b600b94145669367018cb06d2">Margins under pressure? Focus on retention.</li></ul><p>It’s not always a comfortable conversation, but it’s usually a short one – and it tends to point somewhere useful.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Case-study-images/DUSK/DUSK_MB4.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Case-study-images/DUSK/DUSK_MB4.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Case-study-images/DUSK/DUSK_MB4.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Case-study-images/DUSK/DUSK_MB4.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/DUSK/DUSK_MB4.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/DUSK/DUSK_MB4.png"
+		alt="DUSK MB4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Seen in practice: +449% project ROI for DUSK.com</h2><p>Our work with DUSK is a great example of what happens when you start with the commercial constraint rather than defaulting to more activity. Organic search had significant growth potential, but unlocking it meant looking beyond content production to where technical performance, site structure and seasonal demand were limiting results.</p><p>We brought technical SEO, collection architecture, content, attribution and revenue into one commercially focused strategy. Technical issues were prioritised according to likely impact, while collection pages were expanded around the ways customers actually search - by colour, style, product type and buying intent. We also created targeted landing pages around key trading periods such as Black Friday, helping DUSK capture more specific seasonal demand.</p><p>The work generated £10.6 million in organic revenue, delivered a 449% project ROI and increased engaged sessions by 42%. That makes DUSK a useful proof point for the approach outlined here: understanding the commercial context first, then using the right activity to support it.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="../work/dusk-waking-up-growth-for-dusk-com.html"
+	>
+	Read the full DUSK case study
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>What to look for in an e-commerce agency</h2><p>The best e-commerce agencies don't just run channels, they understand how marketing connects to the commercial side of the business. That means a genuine understanding of margins, pricing and product mix; thinking across SEO, paid, social and digital PR as a connected system - experience with platforms, product feeds and large catalogues - and a clear focus on conversion and retention.</p><p>The role of an e-commerce agency isn't simply to drive impressions. It's to improve efficiency, scalability and long-term growth. And to be honest with you, to recognise where the real constraints sit somewhere else in the business.  </p><h2>Ready to improve e-commerce performance?</h2><p>We bring SEO, paid media, social and digital PR together into a single connected approach for retail and e-commerce brands – because that's what real performance looks like. If growth is plateauing or acquisition costs are climbing, <a href="../contact.html"><u>let's have an honest conversation about what's actually holding things back.</u></a></p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		accordion
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h2>
+							Is SEO important for e-commerce?
+					</h2>
+	
+	
+			<p>Yes, but its value depends almost entirely on whether the underlying structure supports it. Category pages and internal linking are the two factors that most often determine whether SEO investment translates into revenue, and they're the first things worth auditing.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							What's the most effective e-commerce marketing strategy?
+					</h2>
+	
+	
+			<p>One that combines multiple channels, aligned to commercial goals rather than activity metrics. The strongest strategies are centred on margin, growth and customer lifetime value – not impressions or clicks in isolation.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							How does Performance Max work for e-commerce?
+					</h2>
+	
+	
+			<p>It uses automation to deliver ads across Google's properties, but performance depends heavily on feed quality, campaign segmentation and accurate conversion tracking. It can work very well when those foundations are solid and amplify problems quickly when they're not.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							How can e-commerce brands improve conversion rates?
+					</h2>
+	
+	
+			<p>By starting with product pages, not traffic. Improving detail, trust signals and mobile UX tends to deliver faster and more durable conversion gains than any equivalent investment in acquisition.</p>
+	
+	
+	
+	
+		
+	</article>
+			</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Ready to add commercial growth to the basket?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let’s talk
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c0650b97c479',t:'MTc5MDI3MzQ4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

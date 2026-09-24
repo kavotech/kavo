@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Fact vs. fiction: 5 common misconceptions about gamification</title>
+<meta name="description" content="Ignoring gamification? That’s a big mistake. It’s a powerful marketing tool that boosts engagement, drives conversions, and delivers measurable results. Here’s how.">
+
+	<link rel="canonical" href="fact-vs-fiction-5-common-misconceptions-about-gamification.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="fact-vs-fiction-5-common-misconceptions-about-gamification.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Fact vs. fiction: 5 common misconceptions about gamification">
+<meta property="og:description" content="Ignoring gamification? That’s a big mistake. It’s a powerful marketing tool that boosts engagement, drives conversions, and delivers measurable results. Here’s how.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/fact-vs-fiction-5-common-misconceptions-about-gamification">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/1_HERO_GAMIFICATION.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification#blogposting","url":"https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification","headline":"Fact vs. fiction: 5 common misconceptions about gamification","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/matt-slater#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/blog_gamification_1x1.png","datePublished":"2025-07-09T21:46:35+01:00","description":"Ignoring gamification? That\u2019s a big mistake. It\u2019s a powerful marketing tool that boosts engagement, drives conversions, and delivers measurable results. Here\u2019s how."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification#webpage","url":"https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification","name":"Fact vs. fiction: 5 common misconceptions about gamification","description":"Ignoring gamification? That\u2019s a big mistake. It\u2019s a powerful marketing tool that boosts engagement, drives conversions, and delivers measurable results. Here\u2019s how.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Fact vs. fiction: 5 common misconceptions about gamification","item":"https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/blog_gamification_1x1.png"},"datePublished":"2025-07-09T21:46:35+01:00","dateModified":"2026-06-03T09:17:45+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="fact-vs-fiction-5-common-misconceptions-about-gamification.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Fact vs. fiction: 5 common misconceptions about gamification&quot;,&quot;description&quot;:&quot;Ignoring gamification? That\u2019s a big mistake. It\u2019s a powerful marketing tool that boosts engagement, drives conversions, and delivers measurable results. Here\u2019s how.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/1_HERO_GAMIFICATION.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/fact-vs-fiction-5-common-misconceptions-about-gamification&quot;,&quot;shareTitle&quot;:&quot;Fact vs. fiction: 5 common misconceptions about gamification&quot;,&quot;shareDescription&quot;:&quot;Ignoring gamification? That\u2019s a big mistake. It\u2019s a powerful marketing tool that boosts engagement, drives conversions, and delivers measurable results. Here\u2019s how.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/fact-vs-fiction-5-common-misconceptions-about-gamification#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/fact-vs-fiction-5-common-misconceptions-about-gamification\&quot;,\&quot;headline\&quot;:\&quot;Fact vs. fiction: 5 common misconceptions about gamification\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/matt-slater#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/fact-vs-fiction-5-common-misconceptions-about-gamification#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\\\/blog_gamification_1x1.png\&quot;,\&quot;datePublished\&quot;:\&quot;2025-07-09T21:46:35+01:00\&quot;,\&quot;description\&quot;:\&quot;Ignoring gamification? That\\u2019s a big mistake. It\\u2019s a powerful marketing tool that boosts engagement, drives conversions, and delivers measurable results. Here\\u2019s how.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/fact-vs-fiction-5-common-misconceptions-about-gamification#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/fact-vs-fiction-5-common-misconceptions-about-gamification\&quot;,\&quot;name\&quot;:\&quot;Fact vs. fiction: 5 common misconceptions about gamification\&quot;,\&quot;description\&quot;:\&quot;Ignoring gamification? That\\u2019s a big mistake. It\\u2019s a powerful marketing tool that boosts engagement, drives conversions, and delivers measurable results. Here\\u2019s how.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/fact-vs-fiction-5-common-misconceptions-about-gamification#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Fact vs. fiction: 5 common misconceptions about gamification\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/fact-vs-fiction-5-common-misconceptions-about-gamification\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\\\/blog_gamification_1x1.png\&quot;},\&quot;datePublished\&quot;:\&quot;2025-07-09T21:46:35+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-06-03T09:17:45+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/fact-vs-fiction-5-common-misconceptions-about-gamification#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Fact vs. fiction: 5 common misconceptions about gamification&quot;,&quot;date&quot;:&quot;4th March 2025&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Matt&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/matt-slater&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 5 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Blog gamification 1x1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/blog_gamification_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/blog_gamification_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/blog_gamification_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/blog_gamification_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/blog_gamification_1x1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/digital-activations\&quot;&gt;Gamification&lt;\/a&gt; doesn\u2019t always get the recognition it deserves. Some see it as a gimmick, others think it\u2019s just for younger generations, and many assume it\u2019s either complex to implement or tricky to\u00a0measure.&lt;\/p&gt;&lt;p&gt;The truth? It\u2019s anything\u00a0but.&lt;\/p&gt;&lt;p&gt;A gamification strategy is quickly becoming a &lt;i&gt;must have&lt;\/i&gt; for brands looking to meet rising digital expectations. As part of a well-rounded marketing plan, it\u2019s a serious commercial driver that creates meaningful interactions, strengthens customer relationships, and delivers data-led results that go far beyond basic brand\u00a0awareness.&lt;\/p&gt;&lt;p&gt;In fact, &lt;a href=\&quot;https:\/\/www.beeliked.com\/blog\/gamification-market-trends-2025?utm_source=chatgpt.com\&quot;&gt;research suggests&lt;\/a&gt; that gamified strategies can improve conversion rates by up to 50% and sales performance by 3.5\u00a0times.&lt;\/p&gt;&lt;p&gt;Yet, despite all the evidence, the same misconceptions keep cropping up. So, let\u2019s take a moment to set the record\u00a0straight.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;\u201cGamification =\u00a0Games.\u201d&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;&lt;strong&gt;Reality: &lt;\/strong&gt;Gamification is where marketing meets gaming. It blends strategy, psychology, and bespoke design to create immersive brand experiences. It\u2019s not about building games; it\u2019s about using game mechanics to activate your brand, tell stories, and engage audiences in a way that feels seamless and rewarding. Think challenges, rewards, and interactivity, all tailored to turn passive audiences into active\u00a0participants.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;3 MAINBODY ELYMPICS 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/3_MAINBODY_ELYMPICS-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/3_MAINBODY_ELYMPICS-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/3_MAINBODY_ELYMPICS-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/3_MAINBODY_ELYMPICS-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/3_MAINBODY_ELYMPICS-1.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2400,&quot;height&quot;:1350},&quot;caption&quot;:&quot;&lt;p&gt;&lt;i&gt;We\u2019ve gamified exercise for charity through our &lt;\/i&gt;&lt;a href=\&quot;https:\/\/elym.pics\/\&quot;&gt;Elympics initiative&lt;\/a&gt;&lt;i&gt; - featuring a leaderboard, activity tracking, and rewards.&lt;\/i&gt;&lt;\/p&gt;&quot;,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;pull-quote&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;p&gt;ROI is hard to measure in a game\u00a0setting.&lt;\/p&gt;&quot;,&quot;author&quot;:null,&quot;role&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;Reality:&lt;\/strong&gt; Gamification isn\u2019t a black box when it comes to data. Live reporting dashboards can track everything, from redemptions and sign-ups to session length and purchase behaviour, giving real-time insights into performance and feeding first-party data directly into your CRM. And because success looks different for everyone, gamification can be shaped around your specific goals and priorities - whether that\u2019s brand engagement, retention or increasing customer lifetime\u00a0value.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;2 MAINBODY DATA v1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/2_MAINBODY_DATA_v1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/2_MAINBODY_DATA_v1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/2_MAINBODY_DATA_v1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/2_MAINBODY_DATA_v1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/2_MAINBODY_DATA_v1.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2400,&quot;height&quot;:1350},&quot;caption&quot;:&quot;&lt;p&gt;&lt;i&gt;Explore the results we\u2019ve delivered for top brands like Jet2Holidays and Desperados, and &lt;\/i&gt;&lt;a href=\&quot;https:\/\/gamification.engageinteractive.co.uk\/\&quot;&gt;play the live demos right\u00a0here&lt;\/a&gt;.&lt;\/p&gt;&quot;,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;pull-quote&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;p&gt;Gamification is just for kids and young\u00a0adults.&lt;\/p&gt;&quot;,&quot;author&quot;:null,&quot;role&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;Reality: &lt;\/strong&gt;Think gaming is just for GenAlpha and GenZ? Think again; &lt;a href=\&quot;https:\/\/www.statista.com\/statistics\/326420\/console-gamers-gender\/\&quot;&gt;73% of internet users aged 45-64 play games on at least one device&lt;\/a&gt;, with adults also hunting for deals, entering competitions, and chasing loyalty rewards on a daily basis. Gamification works because it taps into natural behaviours - curiosity, competition, and the drive for rewards - making it a powerful marketing tactic for audiences of all ages (looking at you,\u00a0Mum)!&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;pull-quote&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;p&gt;Gamification doesn\u2019t fit our\u00a0brand.&lt;\/p&gt;&quot;,&quot;author&quot;:null,&quot;role&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;Reality:&lt;\/strong&gt; Gamification isn\u2019t one-size-fits-all; it\u2019s as unique as your brand is. Whether it\u2019s tapping into nostalgia, showcasing partner brands, or using sound and touch to create sensory memories, gamification brings your brand story to life like no other tactic. From subtle loyalty perks to bold interactive campaigns, it can be tailored to enhance your identity, not change it, turning brand engagement into a truly immersive\u00a0experience.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;4 MAINBODY JET2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/4_MAINBODY_JET2.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/4_MAINBODY_JET2.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/4_MAINBODY_JET2.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/4_MAINBODY_JET2.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Fact-vs.-fiction-5-common-misconceptions-about-gamification\/4_MAINBODY_JET2.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2400,&quot;height&quot;:1350},&quot;caption&quot;:&quot;&lt;p&gt;&lt;i&gt;For almost a decade, we\u2019ve delivered gamified campaigns for Jet2holidays, with our latest easter-themed activation delivering over 28m plays. &lt;\/i&gt;&lt;a href=\&quot;https:\/\/gamification.engageinteractive.co.uk\/activation\/jet2holidays-easter-break\&quot;&gt;Play the demo&lt;\/a&gt;&lt;i&gt;.&lt;\/i&gt;&lt;\/p&gt;&quot;,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;pull-quote&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;p&gt;The technical setup is too\u00a0complex.&lt;\/p&gt;&quot;,&quot;author&quot;:null,&quot;role&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;Reality: &lt;\/strong&gt;It\u2019s true that the technical side of gamification can seem complex, especially without the right expertise. That\u2019s where a specialised gamification partner becomes essential; to handle the heavy lifting. With access to your existing systems, your agency partner can take care of the majority of the technical setup, ensuring compliance with data protection, seamless cross-platform hosting across apps, websites, and microsites, and integration with CRMs, marketing automation tools, and customer data platforms for a hassle-free\u00a0launch.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Ready to get\u00a0started?&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;With the global gamification industry valued at \u00a317bn, and projected to grow to \u00a3115bn by 2032, now is the time to unlock its full potential - and we\u2019re here to help you do just\u00a0that.&lt;\/p&gt;&lt;p&gt;No matter your industry - hospitality, travel, retail or beyond - we can work with you to craft high-impact, results-driven experiences. Ready to take the leap? &lt;a href=\&quot;https:\/\/engage.agency\/contact\&quot;&gt;Let\u2019s\u00a0talk&lt;\/a&gt;.&lt;\/p&gt;&quot;}}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/blog_gamification_1x1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/blog_gamification_1x1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/blog_gamification_1x1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/blog_gamification_1x1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/blog_gamification_1x1.png"
+		alt="Blog gamification 1x1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Fact vs. fiction: 5 common misconceptions about gamification</h1>
+	
+			<p>4th March 2025</p>
+	
+	
+			<p>Roughly a 5 minute read by</p>
+	
+						<p>
+									<a href="../team/matt-slater.html">
+						Matt
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><a href="../services/digital-activations.html">Gamification</a> doesn’t always get the recognition it deserves. Some see it as a gimmick, others think it’s just for younger generations, and many assume it’s either complex to implement or tricky to measure.</p><p>The truth? It’s anything but.</p><p>A gamification strategy is quickly becoming a <i>must have</i> for brands looking to meet rising digital expectations. As part of a well-rounded marketing plan, it’s a serious commercial driver that creates meaningful interactions, strengthens customer relationships, and delivers data-led results that go far beyond basic brand awareness.</p><p>In fact, <a href="https://www.beeliked.com/blog/gamification-market-trends-2025?utm_source=chatgpt.com">research suggests</a> that gamified strategies can improve conversion rates by up to 50% and sales performance by 3.5 times.</p><p>Yet, despite all the evidence, the same misconceptions keep cropping up. So, let’s take a moment to set the record straight.</p><h2><strong>“Gamification = Games.”</strong></h2><p><strong>Reality: </strong>Gamification is where marketing meets gaming. It blends strategy, psychology, and bespoke design to create immersive brand experiences. It’s not about building games; it’s about using game mechanics to activate your brand, tell stories, and engage audiences in a way that feels seamless and rewarding. Think challenges, rewards, and interactivity, all tailored to turn passive audiences into active participants.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/3_MAINBODY_ELYMPICS-1.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/3_MAINBODY_ELYMPICS-1.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/3_MAINBODY_ELYMPICS-1.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/3_MAINBODY_ELYMPICS-1.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/3_MAINBODY_ELYMPICS-1.jpg"
+		alt="3 MAINBODY ELYMPICS 1"
+		loading="lazy"
+			>
+</picture>
+			
+							<figcaption>figure: &lt;p&gt;&lt;i&gt;We’ve gamified exercise for charity through our &lt;/i&gt;&lt;a href=&quot;https://elym.pics/&quot;&gt;Elympics initiative&lt;/a&gt;&lt;i&gt; - featuring a leaderboard, activity tracking, and rewards.&lt;/i&gt;&lt;/p&gt;</figcaption>
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		pull-quote
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>ROI is hard to measure in a game setting.</p>
+	
+	
+	
+	
+																			
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>Reality:</strong> Gamification isn’t a black box when it comes to data. Live reporting dashboards can track everything, from redemptions and sign-ups to session length and purchase behaviour, giving real-time insights into performance and feeding first-party data directly into your CRM. And because success looks different for everyone, gamification can be shaped around your specific goals and priorities - whether that’s brand engagement, retention or increasing customer lifetime value.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/2_MAINBODY_DATA_v1.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/2_MAINBODY_DATA_v1.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/2_MAINBODY_DATA_v1.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/2_MAINBODY_DATA_v1.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/2_MAINBODY_DATA_v1.jpg"
+		alt="2 MAINBODY DATA v1"
+		loading="lazy"
+			>
+</picture>
+			
+							<figcaption>figure: &lt;p&gt;&lt;i&gt;Explore the results we’ve delivered for top brands like Jet2Holidays and Desperados, and &lt;/i&gt;&lt;a href=&quot;https://gamification.engageinteractive.co.uk/&quot;&gt;play the live demos right here&lt;/a&gt;.&lt;/p&gt;</figcaption>
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		pull-quote
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>Gamification is just for kids and young adults.</p>
+	
+	
+	
+	
+																			
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>Reality: </strong>Think gaming is just for GenAlpha and GenZ? Think again; <a href="https://www.statista.com/statistics/326420/console-gamers-gender/">73% of internet users aged 45-64 play games on at least one device</a>, with adults also hunting for deals, entering competitions, and chasing loyalty rewards on a daily basis. Gamification works because it taps into natural behaviours - curiosity, competition, and the drive for rewards - making it a powerful marketing tactic for audiences of all ages (looking at you, Mum)!</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		pull-quote
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>Gamification doesn’t fit our brand.</p>
+	
+	
+	
+	
+																			
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>Reality:</strong> Gamification isn’t one-size-fits-all; it’s as unique as your brand is. Whether it’s tapping into nostalgia, showcasing partner brands, or using sound and touch to create sensory memories, gamification brings your brand story to life like no other tactic. From subtle loyalty perks to bold interactive campaigns, it can be tailored to enhance your identity, not change it, turning brand engagement into a truly immersive experience.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/4_MAINBODY_JET2.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/4_MAINBODY_JET2.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/4_MAINBODY_JET2.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/4_MAINBODY_JET2.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Fact-vs.-fiction-5-common-misconceptions-about-gamification/4_MAINBODY_JET2.jpg"
+		alt="4 MAINBODY JET2"
+		loading="lazy"
+			>
+</picture>
+			
+							<figcaption>figure: &lt;p&gt;&lt;i&gt;For almost a decade, we’ve delivered gamified campaigns for Jet2holidays, with our latest easter-themed activation delivering over 28m plays. &lt;/i&gt;&lt;a href=&quot;https://gamification.engageinteractive.co.uk/activation/jet2holidays-easter-break&quot;&gt;Play the demo&lt;/a&gt;&lt;i&gt;.&lt;/i&gt;&lt;/p&gt;</figcaption>
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		pull-quote
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>The technical setup is too complex.</p>
+	
+	
+	
+	
+																			
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>Reality: </strong>It’s true that the technical side of gamification can seem complex, especially without the right expertise. That’s where a specialised gamification partner becomes essential; to handle the heavy lifting. With access to your existing systems, your agency partner can take care of the majority of the technical setup, ensuring compliance with data protection, seamless cross-platform hosting across apps, websites, and microsites, and integration with CRMs, marketing automation tools, and customer data platforms for a hassle-free launch.</p><h2><strong>Ready to get started?</strong></h2><p>With the global gamification industry valued at £17bn, and projected to grow to £115bn by 2032, now is the time to unlock its full potential - and we’re here to help you do just that.</p><p>No matter your industry - hospitality, travel, retail or beyond - we can work with you to craft high-impact, results-driven experiences. Ready to take the leap? <a href="../contact.html">Let’s talk</a>.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c218af57c479',t:'MTc5MDI3MzU1NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

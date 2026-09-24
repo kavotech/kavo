@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>The Best Travel Marketing Campaigns | Trends &amp; Insights</title>
+<meta name="description" content="Explore the most engaging travel marketing campaigns, from UK luxury travel trends to AI-enhanced initiatives shaping the future of travel and tourism marketing.">
+
+	<link rel="canonical" href="the-most-engaging-travel-marketing-campaigns-right-now.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="the-most-engaging-travel-marketing-campaigns-right-now.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="The Best Travel Marketing Campaigns | Trends &amp; Insights">
+<meta property="og:description" content="Explore the most engaging travel marketing campaigns, from UK luxury travel trends to AI-enhanced initiatives shaping the future of travel and tourism marketing.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/the-most-engaging-travel-marketing-campaigns-right-now">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_ABTA_cover.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now#blogposting","url":"https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now","headline":"The Best Travel Marketing Campaigns | Trends & Insights","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/tom-schofield#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_ABTA_cover.png","datePublished":"2026-01-28T15:27:09+00:00","description":"Explore the most engaging travel marketing campaigns, from UK luxury travel trends to AI-enhanced initiatives shaping the future of travel and tourism marketing."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now#webpage","url":"https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now","name":"The Best Travel Marketing Campaigns | Trends & Insights","description":"Explore the most engaging travel marketing campaigns, from UK luxury travel trends to AI-enhanced initiatives shaping the future of travel and tourism marketing.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"The most engaging travel marketing campaigns right now","item":"https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_ABTA_cover.png"},"datePublished":"2026-01-28T15:27:09+00:00","dateModified":"2026-06-03T09:15:03+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="the-most-engaging-travel-marketing-campaigns-right-now.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;The Best Travel Marketing Campaigns | Trends &amp; Insights&quot;,&quot;description&quot;:&quot;Explore the most engaging travel marketing campaigns, from UK luxury travel trends to AI-enhanced initiatives shaping the future of travel and tourism marketing.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_ABTA_cover.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/the-most-engaging-travel-marketing-campaigns-right-now&quot;,&quot;shareTitle&quot;:&quot;The Best Travel Marketing Campaigns | Trends &amp; Insights&quot;,&quot;shareDescription&quot;:&quot;Explore the most engaging travel marketing campaigns, from UK luxury travel trends to AI-enhanced initiatives shaping the future of travel and tourism marketing.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/the-most-engaging-travel-marketing-campaigns-right-now#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/the-most-engaging-travel-marketing-campaigns-right-now\&quot;,\&quot;headline\&quot;:\&quot;The Best Travel Marketing Campaigns | Trends &amp; Insights\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/tom-schofield#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/the-most-engaging-travel-marketing-campaigns-right-now#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/The-most-engaging-travel-campaigns-right-now\\\/engage_blog_ABTA_cover.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-01-28T15:27:09+00:00\&quot;,\&quot;description\&quot;:\&quot;Explore the most engaging travel marketing campaigns, from UK luxury travel trends to AI-enhanced initiatives shaping the future of travel and tourism marketing.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/the-most-engaging-travel-marketing-campaigns-right-now#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/the-most-engaging-travel-marketing-campaigns-right-now\&quot;,\&quot;name\&quot;:\&quot;The Best Travel Marketing Campaigns | Trends &amp; Insights\&quot;,\&quot;description\&quot;:\&quot;Explore the most engaging travel marketing campaigns, from UK luxury travel trends to AI-enhanced initiatives shaping the future of travel and tourism marketing.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/the-most-engaging-travel-marketing-campaigns-right-now#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;The most engaging travel marketing campaigns right now\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/the-most-engaging-travel-marketing-campaigns-right-now\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/The-most-engaging-travel-campaigns-right-now\\\/engage_blog_ABTA_cover.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-01-28T15:27:09+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-06-03T09:15:03+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/the-most-engaging-travel-marketing-campaigns-right-now#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;The most engaging travel marketing campaigns right now&quot;,&quot;date&quot;:&quot;2nd March 2026&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Tom&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/tom-schofield&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 15 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog ABTA cover&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_ABTA_cover.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_ABTA_cover.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_ABTA_cover.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_ABTA_cover.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_ABTA_cover.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;In today\u2019s travel landscape, inspiration alone is no longer enough. Airlines, destinations, tour operators and platforms are all competing in the same feeds, moments and mindsets, fighting not just for bookings but for attention.&lt;\/strong&gt;&lt;br \/&gt;&lt;br \/&gt;As our latest travel market trends research shows, demand is strong, but loyalty is oh-so fragile, with travellers constantly weighing up their next option and ignoring the plethora of loyalty schemes that perhaps don\u2019t really reflect how we want to\u00a0travel.&lt;\/p&gt;&lt;p&gt;At Engage, we spend a lot of time thinking about attention, time and desire and how brands earn all three. The campaigns that cut through now go a lot further than just glossy storytelling. They invite participation, deliver real value, tap into lived culture and blend human warmth with that smart technology everyone talks about all the time (you know the one). This first edition of our annual series highlights seven recent travel marketing campaigns that did exactly\u00a0that.&lt;\/p&gt;&lt;h2&gt;Methodology&lt;\/h2&gt;&lt;p&gt;To create this ranking, our travel marketing experts - the team behind some of &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/work\/seasonal-success-for-jet2holidays\&quot;&gt;Jet2\u2019s most successful digital activations&lt;\/a&gt; - shortlisted the travel marketing campaigns that most impressed them over the past year or so. These were then presented to the wider agency, with colleagues voting on the work they felt delivered the strongest\u00a0engagement.&lt;\/p&gt;&lt;p&gt;Votes were based on a shared set of criteria, including interactivity, memorability and traveller value. The results formed what we have now call the Engage-ment Travel League, a snapshot of the campaigns that earned attention and made it\u00a0count.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog Travel league&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_league.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_league.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_league.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_league.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_league.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_league.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Our top 7 favourite recent travel\u00a0campaigns&lt;\/h2&gt;&lt;h3&gt;\u00a0&lt;\/h3&gt;&lt;h3&gt;#7: Mindtrip - Group Chat Travel\u00a0Planning&lt;\/h3&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog Travel needcredit 7th&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_7th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_7th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_7th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_7th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_7th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_7th.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h4&gt;Engage-ment score:\u00a05\/9&lt;\/h4&gt;&lt;p&gt;Mindtrip delivers strong utility through collaboration, though its impact is more functional than emotionally\u00a0distinctive.&lt;\/p&gt;&lt;h4&gt;What makes it stand\u00a0out&lt;\/h4&gt;&lt;ul&gt;&lt;li&gt;Reflects real group travel\u00a0behaviour&lt;\/li&gt;&lt;li&gt;AI adapts to multiple preferences, not just one\u00a0user&lt;\/li&gt;&lt;li&gt;Simplifies planning by replacing fragmented\u00a0tools&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;What the campaign\u00a0is&lt;\/h4&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/mindtrip.ai\/\&quot;&gt;Mindtrip&lt;\/a&gt; introduced its &lt;a href=\&quot;https:\/\/mindtrip.ai\/chat\&quot;&gt;group chat feature&lt;\/a&gt; to address a simple but often ignored truth about travel planning: Most trips are decided together, yet most platforms are built for individuals. The feature brings group conversation, shared ideas and preference setting into one space, allowing travellers to plan collaboratively while an AI assistant responds to the discussion in real\u00a0time.&lt;\/p&gt;&lt;p&gt;Instead of delivering static recommendations, the experience evolves as the group talks, debates and refines what they want from a trip,. reflecting how trends in travel marketing increasingly centre on collaborative, human-led\u00a0experiences.&lt;\/p&gt;&lt;h4&gt;Why we love\u00a0it&lt;\/h4&gt;&lt;p&gt;Most travel platforms still treat planning like a solo activity, despite the reality that holidays are often a group decision. Mindtrip recognises this behavioural gap and designs around it. By combining AI with group dynamics, it removes friction and creates inspiration that evolves naturally as people contribute. The collaboration between humanity and the hivemind of AI feels actually heartwarming rather than\u00a0weird.&lt;\/p&gt;&lt;h3&gt;&lt;br \/&gt;#6: Austrian National Tourist Office -\u00a0ChatSkiPT&lt;\/h3&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog Travel needcredit 6th&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_6th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_6th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_6th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_6th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_6th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_6th.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h4&gt;Engage-ment score:\u00a06\/9&lt;\/h4&gt;&lt;p&gt;ChatSkiPT builds trust through human expertise, even if interaction remains relatively\u00a0light.&lt;\/p&gt;&lt;h4&gt;What makes it stand\u00a0out&lt;\/h4&gt;&lt;ul&gt;&lt;li&gt;Celebrates human intelligence rather than competing with\u00a0AI&lt;\/li&gt;&lt;li&gt;Builds trust through real local\u00a0voices&lt;\/li&gt;&lt;li&gt;Timely cultural commentary on travel sector marketing campaign\u00a0automation&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;What the campaign\u00a0is&lt;\/h4&gt;&lt;p&gt;ChatSkiPT was conceived as a deliberate response to the growing dominance of AI-driven travel planning. Rather than launching another automated tool, the &lt;a href=\&quot;https:\/\/b2b.austria.info\/uk\/\&quot;&gt;Austrian National Tourist Office&lt;\/a&gt; chose to spotlight real ski instructors, positioning them as trusted guides for winter travel. Travellers were invited to ask practical questions about conditions, resorts and apr\u00e8s ski and receive answers shaped by lived experience on the\u00a0slopes.&lt;\/p&gt;&lt;p&gt;Rolled out through social content, paid digital, PR and a branded hub, the campaign framed human knowledge as a point of difference and positioned Austria as a destination best understood through its people, rather than\u00a0prompts.&lt;\/p&gt;&lt;h4&gt;Why we love\u00a0it&lt;\/h4&gt;&lt;p&gt;In a moment where AI dominates travel conversations, ChatSkiPT confidently swims against the tide. By putting real people front and centre, it reminds travellers that local knowledge, humour and warmth still matter. The campaign builds trust through authenticity while cleverly tapping into wider cultural debates about technology versus human\u00a0expertise.&lt;br \/&gt;\u00a0&lt;\/p&gt;&lt;h3&gt;#5: Oxfam - Taxing Luxury\u00a0Travel&lt;\/h3&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog Travel needcredit 5th&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_5th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_5th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_5th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_5th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_5th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_5th.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h4&gt;Engage-ment score: 6\/9&lt;\/h4&gt;&lt;p&gt;Oxfam converts attention into real-world impact, with value felt more socially than personally for travellers.&lt;\/p&gt;&lt;h4&gt;What makes it stand\u00a0out&lt;\/h4&gt;&lt;ul&gt;&lt;li&gt;Demonstrable real world policy\u00a0impact&lt;\/li&gt;&lt;li&gt;Bold satirical use of travel\u00a0aesthetics&lt;\/li&gt;&lt;li&gt;Turns awareness into\u00a0participation&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;What the campaign\u00a0is&lt;\/h4&gt;&lt;p&gt;This campaign used the visual language and tone of aspirational travel advertising to challenge the environmental cost of private jets and superyachts. Developed by &lt;a href=\&quot;https:\/\/www.oxfam.org.uk\/\&quot;&gt;Oxfam&lt;\/a&gt;, it spanned film, social, digital out of home, influencer partnerships and PR, using satire to highlight how fair taxation on luxury travel could generate billions for climate\u00a0justice.&lt;\/p&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/www.oxfam.org.uk\/get-involved\/campaign-with-oxfam\/lets-tax-the-most-polluting-luxury-travel\/#d00d883a-3f68-4b27-a095-81bb0e9cd95f-read-the-full-letter\&quot;&gt;A public open letter&lt;\/a&gt; formed the centrepiece of the activation, giving supporters a clear and simple way to add their voice and push for tangible political change. The campaign contributed to a 50% rise in Air Passenger Duty for private jets \u2013 a real win for a campaign that soared above many\u00a0others.&lt;\/p&gt;&lt;h4&gt;Why we love\u00a0it&lt;\/h4&gt;&lt;p&gt;This is purpose with teeth. Rather than vague sustainability messaging or corporate greenwashing that smells off from the start, Oxfam delivered a campaign with measurable impact. By reframing climate justice through a travel lens, it made inequality feel immediate and relevant and gave people a clear way to\u00a0act.&lt;\/p&gt;&lt;h3&gt;&lt;br \/&gt;&lt;strong&gt;#4: Wonderful Copenhagen -\u00a0CopenPay&lt;\/strong&gt;&lt;\/h3&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog Travel needcredit 4th&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_4th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_4th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_4th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_4th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_4th.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_4th.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h4&gt;Engage-ment score:\u00a07\/9&lt;\/h4&gt;&lt;p&gt;CopenPay shows how gamified incentives can guide behaviour, making sustainability feel rewarding rather than\u00a0restrictive.&lt;\/p&gt;&lt;h4&gt;What makes it stand\u00a0out&lt;\/h4&gt;&lt;ul&gt;&lt;li&gt;Gamifies sustainable behaviour in the real\u00a0world&lt;\/li&gt;&lt;li&gt;Evidence led and supported by credible\u00a0partners&lt;\/li&gt;&lt;li&gt;Encourages exploration through meaningful\u00a0action&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;What the campaign\u00a0is&lt;\/h4&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/www.visitcopenhagen.com\/copenpay\&quot;&gt;CopenPay&lt;\/a&gt; is a destination-wide initiative designed to reshape how visitors move through Copenhagen. Instead of promoting sustainability as an abstract value, the city introduced a reward-based system that links low carbon actions to cultural\u00a0experiences.&lt;\/p&gt;&lt;p&gt;Travellers earn small rewards by cycling, using public transport, arriving by train or taking part in community activities such as clean-ups and urban gardening. These rewards unlock access to partner attractions, turning responsible behaviour into a playful and practical way to explore the city. After a successful pilot, the programme returned at greater scale and duration, making Copenhagen just as wonderful as the song always told us it\u00a0was.&lt;\/p&gt;&lt;h4&gt;Why we love\u00a0it&lt;\/h4&gt;&lt;p&gt;CopenPay transforms sustainability from a passive message into an active behaviour. Rather than telling travellers what not to do, it rewards positive choices and makes responsible tourism feel playful and achievable. These types of campaigns highlight emerging travel industry marketing trends and participatory initiatives that shape visitor behaviour.&lt;\/p&gt;&lt;h3&gt;&lt;br \/&gt;&lt;strong&gt;#3: Jet2Holidays - The\u00a0#Jet2Challenge&lt;\/strong&gt;&lt;\/h3&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog Travel 3rd&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_3rd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_3rd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_3rd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_3rd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_3rd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_3rd.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h4&gt;Engage-ment score:\u00a07\/9&lt;\/h4&gt;&lt;p&gt;The #Jet2Challenge thrives on mass participation and memorability, even if traveller value is more\u00a0limited.&lt;\/p&gt;&lt;h4&gt;What makes it stand\u00a0out&lt;\/h4&gt;&lt;ul&gt;&lt;li&gt;User led storytelling at massive\u00a0scale&lt;\/li&gt;&lt;li&gt;Deep cultural relevance through sound and\u00a0humour&lt;\/li&gt;&lt;li&gt;Simple mechanics that unlock\u00a0creativity&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;What the campaign\u00a0is&lt;\/h4&gt;&lt;p&gt;Rather than a planned campaign, the #Jet2Challenge grew out of an organic social moment, when its hugely familiar audio track became widely used on TikTok to soundtrack humorous holiday chaos. Rather than forcing a brand-led response, Jet2 embraced the behaviour already happening and shaped it into a participatory\u00a0challenge.&lt;\/p&gt;&lt;p&gt;Travellers were invited to recreate or lip sync to the sound across TikTok and Instagram Reels, with the chance to win a hefty Jet2holidays voucher. By formalising the trend without trying to control or own it, Jet2 extended the life of the moment and embedded itself deeper into summer travel\u00a0culture.&lt;\/p&gt;&lt;h4&gt;Why we love\u00a0it&lt;\/h4&gt;&lt;p&gt;Rather than trying to control the narrative \u2013 or holding our hand too tightly \u2013 Jet2 leaned into community creativity. The brand became part of a wider cultural moment, using a simple low-barrier prompt to spark mass\u00a0participation.&lt;\/p&gt;&lt;p&gt;The fact this all grew from an organic trend also shows the power of long-term brand building. Jet2\u2019s distinctive assets, especially that instantly recognisable sound bite, gave people something to rally around when the moment\u00a0hit.&lt;\/p&gt;&lt;p&gt;\u00a0&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;2: Visit Iceland - OutHorse Your\u00a0Email&lt;\/strong&gt;&lt;\/h3&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog Travel needcredit 2nd&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_2nd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_2nd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_2nd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_2nd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_2nd.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_2nd.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h4&gt;Engage-ment Score:\u00a08\/9&lt;\/h4&gt;&lt;p&gt;Visit Iceland blends cultural charm with emotional escape, creating value through permission to switch\u00a0off.&lt;\/p&gt;&lt;h4&gt;What makes it stand\u00a0out&lt;\/h4&gt;&lt;ul&gt;&lt;li&gt;Human, humorous response to digital\u00a0burnout&lt;\/li&gt;&lt;li&gt;Unexpected physical\u00a0execution&lt;\/li&gt;&lt;li&gt;Strong sense of place and cultural\u00a0character&lt;\/li&gt;&lt;li&gt;Erm,\u00a0horses&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;&lt;strong&gt;What the campaign\u00a0is&lt;\/strong&gt;&lt;\/h4&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/www.visiticeland.com\/outhorse-your-email\/\&quot;&gt;OutHorse Your Email&lt;\/a&gt; was built around a familiar holiday tension: the inability to fully switch off from work. &lt;a href=\&quot;https:\/\/www.visiticeland.com\/\&quot;&gt;Visit Iceland&lt;\/a&gt; responded with a playful physical installation, where Icelandic horses walked across a giant keyboard to type real out-of-office messages on behalf of\u00a0travellers.&lt;\/p&gt;&lt;p&gt;Captured through film and amplified via social, earned media and a dedicated microsite, the activation reframed Iceland as a place where digital noise fades and true escape begins. The use of the country\u2019s iconic horses grounded the idea firmly in Icelandic culture while delivering global\u00a0appeal.&lt;\/p&gt;&lt;h4&gt;&lt;strong&gt;Why we love\u00a0it&lt;\/strong&gt;&lt;\/h4&gt;&lt;p&gt;This campaign perfectly balances charm and insight. By using Iceland\u2019s iconic horses to replace workplace notifications, it creates a joyful human antidote to digital overload. The physical installation adds surprise, while the message lands universally. It also felt like it could have been a Bjork video, which is a good\u00a0thing.&lt;br \/&gt;\u00a0&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;#1: Black Tomato - The Feelings\u00a0Engine&lt;\/strong&gt;&lt;\/h3&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog Travel needcredit 1st&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_1st.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_1st.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_1st.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_1st.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_1st.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/The-most-engaging-travel-campaigns-right-now\/engage_blog_Travel_needcredit_1st.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h4&gt;&lt;strong&gt;Engage-ment score:\u00a09\/9&lt;\/strong&gt;&lt;\/h4&gt;&lt;p&gt;Black Tomato takes the top spot, uniting emotion-led personalisation and purposeful AI to create a seamless and distinctive planning\u00a0experience.&lt;\/p&gt;&lt;h4&gt;&lt;strong&gt;What makes it stand\u00a0out&lt;\/strong&gt;&lt;\/h4&gt;&lt;ul&gt;&lt;li&gt;Emotion-first\u00a0personalisation&lt;\/li&gt;&lt;li&gt;AI used as an enabler not a\u00a0shortcut&lt;\/li&gt;&lt;li&gt;Perfect alignment with brand purpose and\u00a0storytelling&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;What the campaign\u00a0is&lt;\/h4&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/www.blacktomato.com\/feelings-engine\/\&quot;&gt;The Feelings Engine&lt;\/a&gt; was launched by &lt;a href=\&quot;https:\/\/www.blacktomato.com\/\&quot;&gt;Black Tomato&lt;\/a&gt; to rethink how travel inspiration begins. Instead of starting with destinations or dates, the tool asks travellers how they want to feel, then uses AI alongside expert human curation to suggest experiences aligned to that emotional\u00a0state.&lt;\/p&gt;&lt;p&gt;Developed as part of the brand\u2019s 20th anniversary, the tool sits within a broader content ecosystem that includes storytelling, creator partnerships and a podcast series exploring emotional travel. It positions planning not as a transactional step but as the first chapter in an experience driven by feeling, hope and intent. In many ways, it\u2019s driven by\u00a0dreams.&lt;\/p&gt;&lt;h4&gt;Why we love\u00a0it&lt;\/h4&gt;&lt;p&gt;This feels like a genuine step forward for travel inspiration. By starting with emotion, Black Tomato reframes planning as a deeply personal act. The AI enhances creativity rather than replacing it, while the tool fits seamlessly into the brand\u2019s wider \u2018pursuit of feeling\u2019 platform.&lt;\/p&gt;&lt;h2&gt;Where travel campaigns are heading in 2026 and\u00a0beyond&lt;\/h2&gt;&lt;p&gt;Taken together, these campaigns point to a clear evolution in how travel brands earn attention. The best work now invites audiences to step inside the story and play a role in shaping it. Trends in travel marketing now emphasise interactivity, human presence, and emotion-led\u00a0personalisation.&lt;\/p&gt;&lt;p&gt;Storytelling is becoming increasingly participatory. From socially fuelled moments like #Jet2Challenge to playful executions such as OutHorse Your Email, brands are finding that humour, cultural fluency and interaction outperform polished but passive content. The audience is no longer just watching the journey unfold. They are helping create\u00a0it.&lt;\/p&gt;&lt;p&gt;We\u2019re also seeing a shift towards discovery that feels earned rather than handed down. Initiatives like CopenPay point to a future where destinations guide behaviour through incentives and design rather than instruction. Small, tangible actions are becoming a powerful way to unlock experiences, encouraging travellers to explore places more thoughtfully and\u00a0responsibly.&lt;\/p&gt;&lt;p&gt;Purpose hasn\u2019t disappeared, but the bar has risen. Campaigns such as Oxfam\u2019s show that values-led messaging only resonates when it\u2019s supported by evidence, clarity and a clear route to impact. Vague sustainability promises are losing credibility. What cuts through now are outcomes that people can\u00a0see.&lt;\/p&gt;&lt;p&gt;At the same time, personalisation is becoming more nuanced. The strongest examples move beyond surface level AI recommendations, using emotion and group dynamics to shape inspiration. Tools like The Feelings Engine and Mindtrip signal a move towards planning experiences that reflect how people feel and decide, not just what they search for - a concept increasingly recognised in business travel market trends as\u00a0well.&lt;\/p&gt;&lt;p&gt;Despite rapid advances in technology, one thing remains constant: Human presence still matters. Campaigns like ChatSkiPT and the characterful work from Visit Iceland reinforce that expertise and personality remain powerful differentiators. The next generation of travel marketing will belong to brands that use AI to enhance creativity and relevance while keeping human experience firmly at the centre, where it\u00a0belongs.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;pull-quote&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;p&gt;The most engaging travel campaigns are not shouting louder in an already noisy room. They are inviting people in. From emotional AI tools to playful participation and purpose-driven action, the work that stands out today reflects how people travel, feel and\u00a0connect.&lt;\/p&gt;&quot;,&quot;author&quot;:&quot;Will Blackmore&quot;,&quot;role&quot;:&quot;Technical Director &amp; Jet2 Account Lead&quot;}}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Make every journey go further&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Time to go the extra mile?\u00a0&lt;\/h2&gt;&lt;p&gt;We\u2019re Engage, the digital agency for brands that demand attention. From Jet2 to Uber, we help travel brands grow\u00a0online.&lt;\/p&gt;&lt;p&gt;Looking to do the same? &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/contact\&quot;&gt;Let\u2019s talk&lt;\/a&gt;. We\u2019re offering free insight sessions for travel brands ready to make their next move. We help you go\u00a0further.&lt;\/p&gt;&quot;}}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_ABTA_cover.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_ABTA_cover.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_ABTA_cover.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_ABTA_cover.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_ABTA_cover.png"
+		alt="Engage blog ABTA cover"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>The most engaging travel marketing campaigns right now</h1>
+	
+			<p>2nd March 2026</p>
+	
+	
+			<p>Roughly a 15 minute read by</p>
+	
+						<p>
+									<a href="../team/tom-schofield.html">
+						Tom
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>In today’s travel landscape, inspiration alone is no longer enough. Airlines, destinations, tour operators and platforms are all competing in the same feeds, moments and mindsets, fighting not just for bookings but for attention.</strong><br /><br />As our latest travel market trends research shows, demand is strong, but loyalty is oh-so fragile, with travellers constantly weighing up their next option and ignoring the plethora of loyalty schemes that perhaps don’t really reflect how we want to travel.</p><p>At Engage, we spend a lot of time thinking about attention, time and desire and how brands earn all three. The campaigns that cut through now go a lot further than just glossy storytelling. They invite participation, deliver real value, tap into lived culture and blend human warmth with that smart technology everyone talks about all the time (you know the one). This first edition of our annual series highlights seven recent travel marketing campaigns that did exactly that.</p><h2>Methodology</h2><p>To create this ranking, our travel marketing experts - the team behind some of <a href="https://engageinteractive.co.uk/work/seasonal-success-for-jet2holidays">Jet2’s most successful digital activations</a> - shortlisted the travel marketing campaigns that most impressed them over the past year or so. These were then presented to the wider agency, with colleagues voting on the work they felt delivered the strongest engagement.</p><p>Votes were based on a shared set of criteria, including interactivity, memorability and traveller value. The results formed what we have now call the Engage-ment Travel League, a snapshot of the campaigns that earned attention and made it count.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_league.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_league.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_league.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_league.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_league.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_league.png"
+		alt="Engage blog Travel league"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Our top 7 favourite recent travel campaigns</h2><h3> </h3><h3>#7: Mindtrip - Group Chat Travel Planning</h3>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_7th.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_7th.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_7th.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_7th.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_7th.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_7th.png"
+		alt="Engage blog Travel needcredit 7th"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h4>Engage-ment score: 5/9</h4><p>Mindtrip delivers strong utility through collaboration, though its impact is more functional than emotionally distinctive.</p><h4>What makes it stand out</h4><ul><li>Reflects real group travel behaviour</li><li>AI adapts to multiple preferences, not just one user</li><li>Simplifies planning by replacing fragmented tools</li></ul><h4>What the campaign is</h4><p><a href="https://mindtrip.ai/">Mindtrip</a> introduced its <a href="https://mindtrip.ai/chat">group chat feature</a> to address a simple but often ignored truth about travel planning: Most trips are decided together, yet most platforms are built for individuals. The feature brings group conversation, shared ideas and preference setting into one space, allowing travellers to plan collaboratively while an AI assistant responds to the discussion in real time.</p><p>Instead of delivering static recommendations, the experience evolves as the group talks, debates and refines what they want from a trip,. reflecting how trends in travel marketing increasingly centre on collaborative, human-led experiences.</p><h4>Why we love it</h4><p>Most travel platforms still treat planning like a solo activity, despite the reality that holidays are often a group decision. Mindtrip recognises this behavioural gap and designs around it. By combining AI with group dynamics, it removes friction and creates inspiration that evolves naturally as people contribute. The collaboration between humanity and the hivemind of AI feels actually heartwarming rather than weird.</p><h3><br />#6: Austrian National Tourist Office - ChatSkiPT</h3>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_6th.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_6th.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_6th.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_6th.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_6th.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_6th.png"
+		alt="Engage blog Travel needcredit 6th"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h4>Engage-ment score: 6/9</h4><p>ChatSkiPT builds trust through human expertise, even if interaction remains relatively light.</p><h4>What makes it stand out</h4><ul><li>Celebrates human intelligence rather than competing with AI</li><li>Builds trust through real local voices</li><li>Timely cultural commentary on travel sector marketing campaign automation</li></ul><h4>What the campaign is</h4><p>ChatSkiPT was conceived as a deliberate response to the growing dominance of AI-driven travel planning. Rather than launching another automated tool, the <a href="https://b2b.austria.info/uk/">Austrian National Tourist Office</a> chose to spotlight real ski instructors, positioning them as trusted guides for winter travel. Travellers were invited to ask practical questions about conditions, resorts and après ski and receive answers shaped by lived experience on the slopes.</p><p>Rolled out through social content, paid digital, PR and a branded hub, the campaign framed human knowledge as a point of difference and positioned Austria as a destination best understood through its people, rather than prompts.</p><h4>Why we love it</h4><p>In a moment where AI dominates travel conversations, ChatSkiPT confidently swims against the tide. By putting real people front and centre, it reminds travellers that local knowledge, humour and warmth still matter. The campaign builds trust through authenticity while cleverly tapping into wider cultural debates about technology versus human expertise.<br /> </p><h3>#5: Oxfam - Taxing Luxury Travel</h3>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_5th.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_5th.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_5th.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_5th.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_5th.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_5th.png"
+		alt="Engage blog Travel needcredit 5th"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h4>Engage-ment score: 6/9</h4><p>Oxfam converts attention into real-world impact, with value felt more socially than personally for travellers.</p><h4>What makes it stand out</h4><ul><li>Demonstrable real world policy impact</li><li>Bold satirical use of travel aesthetics</li><li>Turns awareness into participation</li></ul><h4>What the campaign is</h4><p>This campaign used the visual language and tone of aspirational travel advertising to challenge the environmental cost of private jets and superyachts. Developed by <a href="https://www.oxfam.org.uk/">Oxfam</a>, it spanned film, social, digital out of home, influencer partnerships and PR, using satire to highlight how fair taxation on luxury travel could generate billions for climate justice.</p><p><a href="https://www.oxfam.org.uk/get-involved/campaign-with-oxfam/lets-tax-the-most-polluting-luxury-travel/#d00d883a-3f68-4b27-a095-81bb0e9cd95f-read-the-full-letter">A public open letter</a> formed the centrepiece of the activation, giving supporters a clear and simple way to add their voice and push for tangible political change. The campaign contributed to a 50% rise in Air Passenger Duty for private jets – a real win for a campaign that soared above many others.</p><h4>Why we love it</h4><p>This is purpose with teeth. Rather than vague sustainability messaging or corporate greenwashing that smells off from the start, Oxfam delivered a campaign with measurable impact. By reframing climate justice through a travel lens, it made inequality feel immediate and relevant and gave people a clear way to act.</p><h3><br /><strong>#4: Wonderful Copenhagen - CopenPay</strong></h3>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_4th.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_4th.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_4th.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_4th.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_4th.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_4th.png"
+		alt="Engage blog Travel needcredit 4th"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h4>Engage-ment score: 7/9</h4><p>CopenPay shows how gamified incentives can guide behaviour, making sustainability feel rewarding rather than restrictive.</p><h4>What makes it stand out</h4><ul><li>Gamifies sustainable behaviour in the real world</li><li>Evidence led and supported by credible partners</li><li>Encourages exploration through meaningful action</li></ul><h4>What the campaign is</h4><p><a href="https://www.visitcopenhagen.com/copenpay">CopenPay</a> is a destination-wide initiative designed to reshape how visitors move through Copenhagen. Instead of promoting sustainability as an abstract value, the city introduced a reward-based system that links low carbon actions to cultural experiences.</p><p>Travellers earn small rewards by cycling, using public transport, arriving by train or taking part in community activities such as clean-ups and urban gardening. These rewards unlock access to partner attractions, turning responsible behaviour into a playful and practical way to explore the city. After a successful pilot, the programme returned at greater scale and duration, making Copenhagen just as wonderful as the song always told us it was.</p><h4>Why we love it</h4><p>CopenPay transforms sustainability from a passive message into an active behaviour. Rather than telling travellers what not to do, it rewards positive choices and makes responsible tourism feel playful and achievable. These types of campaigns highlight emerging travel industry marketing trends and participatory initiatives that shape visitor behaviour.</p><h3><br /><strong>#3: Jet2Holidays - The #Jet2Challenge</strong></h3>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_3rd.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_3rd.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_3rd.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_3rd.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_3rd.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_3rd.png"
+		alt="Engage blog Travel 3rd"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h4>Engage-ment score: 7/9</h4><p>The #Jet2Challenge thrives on mass participation and memorability, even if traveller value is more limited.</p><h4>What makes it stand out</h4><ul><li>User led storytelling at massive scale</li><li>Deep cultural relevance through sound and humour</li><li>Simple mechanics that unlock creativity</li></ul><h4>What the campaign is</h4><p>Rather than a planned campaign, the #Jet2Challenge grew out of an organic social moment, when its hugely familiar audio track became widely used on TikTok to soundtrack humorous holiday chaos. Rather than forcing a brand-led response, Jet2 embraced the behaviour already happening and shaped it into a participatory challenge.</p><p>Travellers were invited to recreate or lip sync to the sound across TikTok and Instagram Reels, with the chance to win a hefty Jet2holidays voucher. By formalising the trend without trying to control or own it, Jet2 extended the life of the moment and embedded itself deeper into summer travel culture.</p><h4>Why we love it</h4><p>Rather than trying to control the narrative – or holding our hand too tightly – Jet2 leaned into community creativity. The brand became part of a wider cultural moment, using a simple low-barrier prompt to spark mass participation.</p><p>The fact this all grew from an organic trend also shows the power of long-term brand building. Jet2’s distinctive assets, especially that instantly recognisable sound bite, gave people something to rally around when the moment hit.</p><p> </p><h3><strong>2: Visit Iceland - OutHorse Your Email</strong></h3>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_2nd.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_2nd.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_2nd.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_2nd.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_2nd.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_2nd.png"
+		alt="Engage blog Travel needcredit 2nd"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h4>Engage-ment Score: 8/9</h4><p>Visit Iceland blends cultural charm with emotional escape, creating value through permission to switch off.</p><h4>What makes it stand out</h4><ul><li>Human, humorous response to digital burnout</li><li>Unexpected physical execution</li><li>Strong sense of place and cultural character</li><li>Erm, horses</li></ul><h4><strong>What the campaign is</strong></h4><p><a href="https://www.visiticeland.com/outhorse-your-email/">OutHorse Your Email</a> was built around a familiar holiday tension: the inability to fully switch off from work. <a href="https://www.visiticeland.com/">Visit Iceland</a> responded with a playful physical installation, where Icelandic horses walked across a giant keyboard to type real out-of-office messages on behalf of travellers.</p><p>Captured through film and amplified via social, earned media and a dedicated microsite, the activation reframed Iceland as a place where digital noise fades and true escape begins. The use of the country’s iconic horses grounded the idea firmly in Icelandic culture while delivering global appeal.</p><h4><strong>Why we love it</strong></h4><p>This campaign perfectly balances charm and insight. By using Iceland’s iconic horses to replace workplace notifications, it creates a joyful human antidote to digital overload. The physical installation adds surprise, while the message lands universally. It also felt like it could have been a Bjork video, which is a good thing.<br /> </p><h3><strong>#1: Black Tomato - The Feelings Engine</strong></h3>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1222/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_1st.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1123/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_1st.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=991/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_1st.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=951/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_1st.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=661/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_1st.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/The-most-engaging-travel-campaigns-right-now/engage_blog_Travel_needcredit_1st.png"
+		alt="Engage blog Travel needcredit 1st"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h4><strong>Engage-ment score: 9/9</strong></h4><p>Black Tomato takes the top spot, uniting emotion-led personalisation and purposeful AI to create a seamless and distinctive planning experience.</p><h4><strong>What makes it stand out</strong></h4><ul><li>Emotion-first personalisation</li><li>AI used as an enabler not a shortcut</li><li>Perfect alignment with brand purpose and storytelling</li></ul><h4>What the campaign is</h4><p><a href="https://www.blacktomato.com/feelings-engine/">The Feelings Engine</a> was launched by <a href="https://www.blacktomato.com/">Black Tomato</a> to rethink how travel inspiration begins. Instead of starting with destinations or dates, the tool asks travellers how they want to feel, then uses AI alongside expert human curation to suggest experiences aligned to that emotional state.</p><p>Developed as part of the brand’s 20th anniversary, the tool sits within a broader content ecosystem that includes storytelling, creator partnerships and a podcast series exploring emotional travel. It positions planning not as a transactional step but as the first chapter in an experience driven by feeling, hope and intent. In many ways, it’s driven by dreams.</p><h4>Why we love it</h4><p>This feels like a genuine step forward for travel inspiration. By starting with emotion, Black Tomato reframes planning as a deeply personal act. The AI enhances creativity rather than replacing it, while the tool fits seamlessly into the brand’s wider ‘pursuit of feeling’ platform.</p><h2>Where travel campaigns are heading in 2026 and beyond</h2><p>Taken together, these campaigns point to a clear evolution in how travel brands earn attention. The best work now invites audiences to step inside the story and play a role in shaping it. Trends in travel marketing now emphasise interactivity, human presence, and emotion-led personalisation.</p><p>Storytelling is becoming increasingly participatory. From socially fuelled moments like #Jet2Challenge to playful executions such as OutHorse Your Email, brands are finding that humour, cultural fluency and interaction outperform polished but passive content. The audience is no longer just watching the journey unfold. They are helping create it.</p><p>We’re also seeing a shift towards discovery that feels earned rather than handed down. Initiatives like CopenPay point to a future where destinations guide behaviour through incentives and design rather than instruction. Small, tangible actions are becoming a powerful way to unlock experiences, encouraging travellers to explore places more thoughtfully and responsibly.</p><p>Purpose hasn’t disappeared, but the bar has risen. Campaigns such as Oxfam’s show that values-led messaging only resonates when it’s supported by evidence, clarity and a clear route to impact. Vague sustainability promises are losing credibility. What cuts through now are outcomes that people can see.</p><p>At the same time, personalisation is becoming more nuanced. The strongest examples move beyond surface level AI recommendations, using emotion and group dynamics to shape inspiration. Tools like The Feelings Engine and Mindtrip signal a move towards planning experiences that reflect how people feel and decide, not just what they search for - a concept increasingly recognised in business travel market trends as well.</p><p>Despite rapid advances in technology, one thing remains constant: Human presence still matters. Campaigns like ChatSkiPT and the characterful work from Visit Iceland reinforce that expertise and personality remain powerful differentiators. The next generation of travel marketing will belong to brands that use AI to enhance creativity and relevance while keeping human experience firmly at the centre, where it belongs.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		pull-quote
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>The most engaging travel campaigns are not shouting louder in an already noisy room. They are inviting people in. From emotional AI tools to playful participation and purpose-driven action, the work that stands out today reflects how people travel, feel and connect.</p>
+	
+	
+	
+	
+								<p>Will Blackmore</p>
+
+	<p>Technical Director &amp; Jet2 Account Lead</p>
+
+											
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Make every journey go further
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Time to go the extra mile? </h2><p>We’re Engage, the digital agency for brands that demand attention. From Jet2 to Uber, we help travel brands grow online.</p><p>Looking to do the same? <a href="https://engageinteractive.co.uk/contact">Let’s talk</a>. We’re offering free insight sessions for travel brands ready to make their next move. We help you go further.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c1d5a8ebc479',t:'MTc5MDI3MzU0NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

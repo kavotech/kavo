@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Craft CMS 6 Alpha: what it means for your website</title>
+<meta name="description" content="Pixel &amp; Tonic has released the Craft CMS 6 alpha, moving it to Laravel. Here’s what the shift means for your Craft CMS website, and how to prepare for launch.">
+
+	<link rel="canonical" href="craft-cms-6-alpha-what-it-means-for-your-website.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="craft-cms-6-alpha-what-it-means-for-your-website.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Craft CMS 6 Alpha: what it means for your website">
+<meta property="og:description" content="Pixel &amp; Tonic has released the Craft CMS 6 alpha, moving it to Laravel. Here’s what the shift means for your Craft CMS website, and how to prepare for launch.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/craft-cms-6-alpha-what-it-means-for-your-website">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/Craft-CMS-6-Alpha-what-it-means-for-your-website/Engage_Blog_Hero_06.18_CB_V1-1.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website#blogposting","url":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website","headline":"Craft CMS 6 Alpha: what it means for your website","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/adam-gilleard#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png","datePublished":"2026-07-28T13:19:43+01:00","description":"Pixel & Tonic has released the Craft CMS 6 alpha, moving it to Laravel. Here\u2019s what the shift means for your Craft CMS website, and how to prepare for launch."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website#webpage","url":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website","name":"Craft CMS 6 Alpha: what it means for your website","description":"Pixel & Tonic has released the Craft CMS 6 alpha, moving it to Laravel. Here\u2019s what the shift means for your Craft CMS website, and how to prepare for launch.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Craft CMS 6 Alpha: What it means for your website","item":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png"},"datePublished":"2026-07-28T13:19:43+01:00","dateModified":"2026-09-10T09:13:55+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website#blogposting"}},{"@type":"FAQPage","@id":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website#faqpage","url":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website","mainEntity":[{"@type":"Question","name":"Do we need to do anything right now ahead of Craft 6, and how involved will our team need to be?","acceptedAnswer":{"@type":"Answer","text":"<p>Not yet. In fact, your team's involvement is likely to be pretty light.<\/p><p>We'll start with a technical audit to understand the best route for your website. Depending on how your site has been built, that could mean a full native Laravel refactor or a more streamlined upgrade using Craft's official Yii2 adapter.<\/p><p>Once we've agreed the right approach, we'll take care of the heavy lifting. From migration and testing through to launch, we'll manage the process from end to end and keep you updated along the way.<\/p>"}},{"@type":"Question","name":"Will our website experience any downtime, and can we keep editing content during the upgrade?","acceptedAnswer":{"@type":"Answer","text":"<p>Your website can stay live, and your content team can keep working as normal.<\/p><p>We carry out the upgrade in a staging environment, so day-to-day content updates continue right up until launch. When it's time to switch over, we'll schedule a short content freeze while we synchronise the final database changes. Think of it like any well-managed website release. Quick, planned and with no nasty surprises.<\/p>"}},{"@type":"Question","name":"Will any features, plugins or third-party integrations like our CRM or Google Ads stop working?","acceptedAnswer":{"@type":"Answer","text":"<p>In almost every case, no. Your website's functionality is designed to move across with the upgrade, and we'll make sure everything is working as expected before launch.<\/p><p><strong>Custom code and integrations: <\/strong>Bespoke modules, APIs and CRM integrations are part of your codebase, so we'll adapt and test them as part of the upgrade.<\/p><p><strong>Plugins: <\/strong>Craft's official compatibility layer gives plugin developers a smooth transition path, and we expect the major plugins to support Craft 6 quickly. If you're relying on an older or unsupported plugin, we can replace that functionality with a custom module where needed.<\/p><p><strong>Marketing tools: <\/strong>Tracking scripts, Google Ads, analytics platforms and other front-end marketing tools operate independently of Craft's core architecture, so they'll continue working as they do today.<\/p>"}},{"@type":"Question","name":"Do we need to upgrade as soon as Craft 6 is released?","acceptedAnswer":{"@type":"Answer","text":"<p>No. There's no need to rush.<\/p><p>Pixel &amp; Tonic has committed to supporting Craft 5 as a Long-Term Support (LTS) release for five years after Craft 6 launches. That gives you plenty of breathing room to plan the upgrade around your priorities, budget and roadmap.<\/p><p>That said, upgrading sooner means you'll benefit from the latest platform improvements and keep your website in the best shape for the years ahead.<\/p>"}},{"@type":"Question","name":"How long will the Craft 6 upgrade take?","acceptedAnswer":{"@type":"Answer","text":"<p>Every website is different, so timings depend on the complexity of your build.<\/p><p>The biggest factors usually include:<\/p><ul><li data-list-item-id=\"e082e75c72108c72df50bf3a5a93c9eda\"><strong>Your current version: <\/strong>Your website will need to be running the latest Craft 5 release before upgrading.<\/li><li data-list-item-id=\"ededed385ae51915e254afea6f5a9ff79\"><strong>Custom functionality:<\/strong> Bespoke modules may need testing or refactoring depending on the upgrade approach.<\/li><li data-list-item-id=\"ea2ec3c425237f9147299a813ef17b38a\"><strong>Third-party plugins:<\/strong> We'll review every plugin for compatibility and update or replace anything that needs attention.<\/li><\/ul><p>Following our technical audit, we'll provide a clear project plan, timeline and fixed estimate, so you'll know exactly what to expect before any work begins.<\/p>"}},{"@type":"Question","name":"Will our existing web hosting platform or server environment need to be updated to support Craft 6?","acceptedAnswer":{"@type":"Answer","text":"<p>Only if it's fallen behind.<\/p><p>If your website has been kept up to date, it's likely already running the PHP and Craft versions needed for Craft 6. If any server or hosting changes are required, we'll identify them during our audit and help you make the necessary updates well before launch.<\/p>"}}]}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="craft-cms-6-alpha-what-it-means-for-your-website.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Craft CMS 6 Alpha: what it means for your website&quot;,&quot;description&quot;:&quot;Pixel &amp; Tonic has released the Craft CMS 6 alpha, moving it to Laravel. Here\u2019s what the shift means for your Craft CMS website, and how to prepare for launch.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website&quot;,&quot;shareTitle&quot;:&quot;Craft CMS 6 Alpha: what it means for your website&quot;,&quot;shareDescription&quot;:&quot;Pixel &amp; Tonic has released the Craft CMS 6 alpha, moving it to Laravel. Here\u2019s what the shift means for your Craft CMS website, and how to prepare for launch.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website\&quot;,\&quot;headline\&quot;:\&quot;Craft CMS 6 Alpha: what it means for your website\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/adam-gilleard#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Craft-CMS-6-Alpha-what-it-means-for-your-website\\\/Engage_Blog_Hero_06.18_CB_V1-1.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-07-28T13:19:43+01:00\&quot;,\&quot;description\&quot;:\&quot;Pixel &amp; Tonic has released the Craft CMS 6 alpha, moving it to Laravel. Here\\u2019s what the shift means for your Craft CMS website, and how to prepare for launch.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website\&quot;,\&quot;name\&quot;:\&quot;Craft CMS 6 Alpha: what it means for your website\&quot;,\&quot;description\&quot;:\&quot;Pixel &amp; Tonic has released the Craft CMS 6 alpha, moving it to Laravel. Here\\u2019s what the shift means for your Craft CMS website, and how to prepare for launch.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Craft CMS 6 Alpha: What it means for your website\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Craft-CMS-6-Alpha-what-it-means-for-your-website\\\/Engage_Blog_Hero_06.18_CB_V1-1.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-07-28T13:19:43+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-10T09:13:55+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website#blogposting\&quot;}},{\&quot;@type\&quot;:\&quot;FAQPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website#faqpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website\&quot;,\&quot;mainEntity\&quot;:[{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Do we need to do anything right now ahead of Craft 6, and how involved will our team need to be?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Not yet. In fact, your team&#039;s involvement is likely to be pretty light.&lt;\\\/p&gt;&lt;p&gt;We&#039;ll start with a technical audit to understand the best route for your website. Depending on how your site has been built, that could mean a full native Laravel refactor or a more streamlined upgrade using Craft&#039;s official Yii2 adapter.&lt;\\\/p&gt;&lt;p&gt;Once we&#039;ve agreed the right approach, we&#039;ll take care of the heavy lifting. From migration and testing through to launch, we&#039;ll manage the process from end to end and keep you updated along the way.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Will our website experience any downtime, and can we keep editing content during the upgrade?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Your website can stay live, and your content team can keep working as normal.&lt;\\\/p&gt;&lt;p&gt;We carry out the upgrade in a staging environment, so day-to-day content updates continue right up until launch. When it&#039;s time to switch over, we&#039;ll schedule a short content freeze while we synchronise the final database changes. Think of it like any well-managed website release. Quick, planned and with no nasty surprises.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Will any features, plugins or third-party integrations like our CRM or Google Ads stop working?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;In almost every case, no. Your website&#039;s functionality is designed to move across with the upgrade, and we&#039;ll make sure everything is working as expected before launch.&lt;\\\/p&gt;&lt;p&gt;&lt;strong&gt;Custom code and integrations: &lt;\\\/strong&gt;Bespoke modules, APIs and CRM integrations are part of your codebase, so we&#039;ll adapt and test them as part of the upgrade.&lt;\\\/p&gt;&lt;p&gt;&lt;strong&gt;Plugins: &lt;\\\/strong&gt;Craft&#039;s official compatibility layer gives plugin developers a smooth transition path, and we expect the major plugins to support Craft 6 quickly. If you&#039;re relying on an older or unsupported plugin, we can replace that functionality with a custom module where needed.&lt;\\\/p&gt;&lt;p&gt;&lt;strong&gt;Marketing tools: &lt;\\\/strong&gt;Tracking scripts, Google Ads, analytics platforms and other front-end marketing tools operate independently of Craft&#039;s core architecture, so they&#039;ll continue working as they do today.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Do we need to upgrade as soon as Craft 6 is released?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;No. There&#039;s no need to rush.&lt;\\\/p&gt;&lt;p&gt;Pixel &amp;amp; Tonic has committed to supporting Craft 5 as a Long-Term Support (LTS) release for five years after Craft 6 launches. That gives you plenty of breathing room to plan the upgrade around your priorities, budget and roadmap.&lt;\\\/p&gt;&lt;p&gt;That said, upgrading sooner means you&#039;ll benefit from the latest platform improvements and keep your website in the best shape for the years ahead.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;How long will the Craft 6 upgrade take?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Every website is different, so timings depend on the complexity of your build.&lt;\\\/p&gt;&lt;p&gt;The biggest factors usually include:&lt;\\\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\\\&quot;e082e75c72108c72df50bf3a5a93c9eda\\\&quot;&gt;&lt;strong&gt;Your current version: &lt;\\\/strong&gt;Your website will need to be running the latest Craft 5 release before upgrading.&lt;\\\/li&gt;&lt;li data-list-item-id=\\\&quot;ededed385ae51915e254afea6f5a9ff79\\\&quot;&gt;&lt;strong&gt;Custom functionality:&lt;\\\/strong&gt; Bespoke modules may need testing or refactoring depending on the upgrade approach.&lt;\\\/li&gt;&lt;li data-list-item-id=\\\&quot;ea2ec3c425237f9147299a813ef17b38a\\\&quot;&gt;&lt;strong&gt;Third-party plugins:&lt;\\\/strong&gt; We&#039;ll review every plugin for compatibility and update or replace anything that needs attention.&lt;\\\/li&gt;&lt;\\\/ul&gt;&lt;p&gt;Following our technical audit, we&#039;ll provide a clear project plan, timeline and fixed estimate, so you&#039;ll know exactly what to expect before any work begins.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Will our existing web hosting platform or server environment need to be updated to support Craft 6?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Only if it&#039;s fallen behind.&lt;\\\/p&gt;&lt;p&gt;If your website has been kept up to date, it&#039;s likely already running the PHP and Craft versions needed for Craft 6. If any server or hosting changes are required, we&#039;ll identify them during our audit and help you make the necessary updates well before launch.&lt;\\\/p&gt;\&quot;}}]}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Craft CMS 6 Alpha: What it means for your website&quot;,&quot;date&quot;:&quot;21st July 2026&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Adam&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/adam-gilleard&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 6 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;The first official alpha release of Craft 6 has landed. If you use\u00a0&lt;\/strong&gt;&lt;a href=\&quot;https:\/\/docs.google.com\/document\/d\/1ERlrluh5wVzaCJ3aBBfVTX9LmgTic2h7x3fOIrqwMhM\/edit?usp=sharing\&quot;&gt;&lt;strong&gt;&lt;u&gt;Craft CMS&lt;\/u&gt;&lt;\/strong&gt;&lt;\/a&gt;&lt;strong&gt; to power your website, this marks the beginning of a major foundational evolution.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;To clarify what this means up front: the CMS as a product is not drastically changing. The editing experience and flexibility that make Craft what it is remain intact. What\u2019s changing is the technology underneath it.\u00a0&lt;a href=\&quot;https:\/\/pixelandtonic.com\/\&quot;&gt;&lt;u&gt;Pixel &amp;amp; Tonic&lt;\/u&gt;&lt;\/a&gt; (the creators of Craft) have completed the initial backend port, moving the system&#039;s underlying engine from the legacy Yii framework over to Laravel.&lt;\/p&gt;&lt;p&gt;For our team, this is great news. We&#039;ve been building web applications on the Laravel framework for over a decade, so seeing our preferred content management system adopt the same underlying architecture fits perfectly with our technical expertise. It also gives us a clear view of how we can help you plan ahead, reduce risk and make the move to Craft 6 at the right time.&lt;\/p&gt;&lt;p&gt;We touched on why this framework shift is important in our\u00a0&lt;a href=\&quot;https:\/\/engage.agency\/blog\/dot-all-2025-whats-next-for-craft-cms\&quot;&gt;&lt;u&gt;Craft conference recap&lt;\/u&gt;&lt;\/a&gt; last year, and this alpha release is the first tangible milestone in that transition.&lt;\/p&gt;&lt;h2&gt;What is Laravel?&lt;\/h2&gt;&lt;p&gt;Laravel is a globally trusted framework that handles the standard building blocks of any modern web application like ensuring security, connecting to databases, and making pages load fast. The framework handles these basic web fundamentals, leaving Craft to focus on what it does best: providing the incredibly flexible and intuitive content management tools that editors love to use.&lt;\/p&gt;&lt;p&gt;Craft has always built its system on top of a foundational framework like this, but it is now moving away from a more niche framework to the industry-leading foundation of Laravel.&lt;\/p&gt;&lt;p&gt;Pixel &amp;amp; Tonic, the team behind Craft CMS,\u00a0&lt;a href=\&quot;https:\/\/craftcms.com\/blog\/laravel\&quot;&gt;&lt;u&gt;described Laravel as the most familiar PHP framework among Craft developers&lt;\/u&gt;&lt;\/a&gt; and pointed to its wider ecosystem of packages and services as a major reason for the move.&lt;\/p&gt;&lt;p&gt;For Engage, that alignment is great news. Laravel is already part of our web development toolkit, alongside Craft CMS, Vue.js, Tailwind CSS, AWS and other platforms we use to build high-performance digital experiences.&lt;\/p&gt;&lt;p&gt;In other words, Craft is moving closer to the way we already build.&lt;\/p&gt;&lt;h2&gt;Latest timings&lt;\/h2&gt;&lt;p&gt;Rather than an immediate rollout, Pixel &amp;amp; Tonic have mapped out a clear, deliberate timeline for the release:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ea9e542ecd54e6f60b05f08b2769a43c5\&quot;&gt;&lt;strong&gt;Alpha release&lt;\/strong&gt;: with the Laravel port completed in May &#039;26, an initial six-month testing phase for reviewing existing functionality&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7b62c5e0353a5f2af9632c26efd511ef\&quot;&gt;&lt;strong&gt;Beta phase&lt;\/strong&gt;: a three-month phase to test new functionality and the rebuilt UI&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e353167e482c5f0683bd0f231aa8548fe\&quot;&gt;&lt;strong&gt;General availability (GA)&lt;\/strong&gt;: Craft 6.0 is currently expected to launch in March 2027, giving you a useful window to prepare&lt;\/li&gt;&lt;\/ul&gt;&quot;}}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Is your Craft site ready for what\u2019s next?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;What we now know from the Alpha&lt;\/h2&gt;&lt;p&gt;This initial release, alongside\u00a0&lt;a href=\&quot;https:\/\/craftquest.io\/livestreams\/craft-6-with-brandon-and-rias\&quot;&gt;&lt;u&gt;Brandon and Rias\u2019 CraftQuest appearance&lt;\/u&gt;&lt;\/a&gt;, gives us a clear picture of exactly how Craft 6 is taking shape:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e051d6dd9f201c679b7340d978b7d2cf9\&quot;&gt;&lt;strong&gt;Backend engine is ready&lt;\/strong&gt;: With the core PHP refactoring complete, the foundational logic is stable. Existing functionality should work as expected\u2014sections can be created and entries queried to form pages&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef0cd0f4a58defcccaf0d56e4ffb00a5d\&quot;&gt;&lt;strong&gt;New user interface is being held back&lt;\/strong&gt;: The new control panel UI is being kept away from the alpha until it\u2019s mostly finalised. This was a change of tack, hence changes being isolated to the settings area for now&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e27b023fac67d930d035aa3bfa5913b94\&quot;&gt;&lt;strong&gt;Front-end tech stack&lt;\/strong&gt;: The control panel is being built on Inertia &amp;amp; Vue, so expect a much faster authoring experience&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3a7e8c8f3b41757c0a137bec0250d09c\&quot;&gt;&lt;strong&gt;New features&lt;\/strong&gt;: The alpha focuses on the architecture. The suite of new features will be developed as part of the beta phase&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;Technical alignment&lt;\/h2&gt;&lt;p&gt;Outside of the wider Laravel shift, Inertia and Vue are both frameworks we already use regularly.\u00a0 That means the direction of Craft 6 aligns closely with our existing development approach. But Craft isn&#039;t abandoning what works; it still utilises Twig where it makes practical sense, such as for dynamic setting fields and standard template-based routing.&lt;\/p&gt;&lt;p&gt;So while this is a major technical shift, it\u2019s not a complete change of identity for Craft. The flexibility and content management experience that make it so useful for your team are still very much part of the picture.&lt;\/p&gt;&lt;h2&gt;Our plans moving forward&lt;\/h2&gt;&lt;p&gt;We\u2019re already well underway refactoring our approach to be Laravel-first. Because of how Craft 6 is architected, it functions as an unlinked dependency that can simply be pulled into a clean Laravel application.\u00a0 With the underlying backend logic now firmly in place, our team can begin working with it early, while future UI updates and new features can be pulled in as the release matures.&lt;\/p&gt;&lt;p&gt;Between now and the March 2027 launch, we will be proactively discussing the best transition paths with our existing clients.\u00a0&lt;\/p&gt;&lt;p&gt;Depending on the age, complexity, and current set up of your site, this will involve reviewing whether an upgrade can be handled seamlessly as part of your ongoing maintenance, or whether timing the move alongside a wider strategic rebuild would offer better long-term value.&lt;\/p&gt;&lt;p&gt;That is where early planning helps. A well-managed migration gives you time to review your plugins, hosting, integrations, content workflows and custom functionality before anything becomes urgent.&lt;\/p&gt;&lt;p&gt;It\u2019s also very much how we like to work: thoughtful, considered and focused on getting the detail just right.&lt;\/p&gt;&quot;}}]}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Frequently asked questions&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Do we need to do anything right now ahead of Craft 6, and how involved will our team need to be?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Not yet. In fact, your team&#039;s involvement is likely to be pretty light.&lt;\/p&gt;&lt;p&gt;We&#039;ll start with a technical audit to understand the best route for your website. Depending on how your site has been built, that could mean a full native Laravel refactor or a more streamlined upgrade using Craft&#039;s official Yii2 adapter.&lt;\/p&gt;&lt;p&gt;Once we&#039;ve agreed the right approach, we&#039;ll take care of the heavy lifting. From migration and testing through to launch, we&#039;ll manage the process from end to end and keep you updated along the way.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Will our website experience any downtime, and can we keep editing content during the upgrade?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Your website can stay live, and your content team can keep working as normal.&lt;\/p&gt;&lt;p&gt;We carry out the upgrade in a staging environment, so day-to-day content updates continue right up until launch. When it&#039;s time to switch over, we&#039;ll schedule a short content freeze while we synchronise the final database changes. Think of it like any well-managed website release. Quick, planned and with no nasty surprises.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Will any features, plugins or third-party integrations like our CRM or Google Ads stop working?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;In almost every case, no. Your website&#039;s functionality is designed to move across with the upgrade, and we&#039;ll make sure everything is working as expected before launch.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Custom code and integrations: &lt;\/strong&gt;Bespoke modules, APIs and CRM integrations are part of your codebase, so we&#039;ll adapt and test them as part of the upgrade.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Plugins: &lt;\/strong&gt;Craft&#039;s official compatibility layer gives plugin developers a smooth transition path, and we expect the major plugins to support Craft 6 quickly. If you&#039;re relying on an older or unsupported plugin, we can replace that functionality with a custom module where needed.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Marketing tools: &lt;\/strong&gt;Tracking scripts, Google Ads, analytics platforms and other front-end marketing tools operate independently of Craft&#039;s core architecture, so they&#039;ll continue working as they do today.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Do we need to upgrade as soon as Craft 6 is released?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;No. There&#039;s no need to rush.&lt;\/p&gt;&lt;p&gt;Pixel &amp;amp; Tonic has committed to supporting Craft 5 as a Long-Term Support (LTS) release for five years after Craft 6 launches. That gives you plenty of breathing room to plan the upgrade around your priorities, budget and roadmap.&lt;\/p&gt;&lt;p&gt;That said, upgrading sooner means you&#039;ll benefit from the latest platform improvements and keep your website in the best shape for the years ahead.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How long will the Craft 6 upgrade take?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Every website is different, so timings depend on the complexity of your build.&lt;\/p&gt;&lt;p&gt;The biggest factors usually include:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e082e75c72108c72df50bf3a5a93c9eda\&quot;&gt;&lt;strong&gt;Your current version: &lt;\/strong&gt;Your website will need to be running the latest Craft 5 release before upgrading.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ededed385ae51915e254afea6f5a9ff79\&quot;&gt;&lt;strong&gt;Custom functionality:&lt;\/strong&gt; Bespoke modules may need testing or refactoring depending on the upgrade approach.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea2ec3c425237f9147299a813ef17b38a\&quot;&gt;&lt;strong&gt;Third-party plugins:&lt;\/strong&gt; We&#039;ll review every plugin for compatibility and update or replace anything that needs attention.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Following our technical audit, we&#039;ll provide a clear project plan, timeline and fixed estimate, so you&#039;ll know exactly what to expect before any work begins.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Will our existing web hosting platform or server environment need to be updated to support Craft 6?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Only if it&#039;s fallen behind.&lt;\/p&gt;&lt;p&gt;If your website has been kept up to date, it&#039;s likely already running the PHP and Craft versions needed for Craft 6. If any server or hosting changes are required, we&#039;ll identify them during our audit and help you make the necessary updates well before launch.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Ready to craft your migration plan?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Craft-CMS-6-Alpha-what-it-means-for-your-website/Engage_Blog_Hero_06.18_CB_V1-1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Craft-CMS-6-Alpha-what-it-means-for-your-website/Engage_Blog_Hero_06.18_CB_V1-1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Craft-CMS-6-Alpha-what-it-means-for-your-website/Engage_Blog_Hero_06.18_CB_V1-1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Craft-CMS-6-Alpha-what-it-means-for-your-website/Engage_Blog_Hero_06.18_CB_V1-1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Craft-CMS-6-Alpha-what-it-means-for-your-website/Engage_Blog_Hero_06.18_CB_V1-1.png"
+		alt="Engage Blog Hero 06 18 CB V1 1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Craft CMS 6 Alpha: What it means for your website</h1>
+	
+			<p>21st July 2026</p>
+	
+	
+			<p>Roughly a 6 minute read by</p>
+	
+						<p>
+									<a href="../team/adam-gilleard.html">
+						Adam
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>The first official alpha release of Craft 6 has landed. If you use </strong><a href="https://docs.google.com/document/d/1ERlrluh5wVzaCJ3aBBfVTX9LmgTic2h7x3fOIrqwMhM/edit?usp=sharing"><strong><u>Craft CMS</u></strong></a><strong> to power your website, this marks the beginning of a major foundational evolution.</strong></p><p>To clarify what this means up front: the CMS as a product is not drastically changing. The editing experience and flexibility that make Craft what it is remain intact. What’s changing is the technology underneath it. <a href="https://pixelandtonic.com/"><u>Pixel &amp; Tonic</u></a> (the creators of Craft) have completed the initial backend port, moving the system's underlying engine from the legacy Yii framework over to Laravel.</p><p>For our team, this is great news. We've been building web applications on the Laravel framework for over a decade, so seeing our preferred content management system adopt the same underlying architecture fits perfectly with our technical expertise. It also gives us a clear view of how we can help you plan ahead, reduce risk and make the move to Craft 6 at the right time.</p><p>We touched on why this framework shift is important in our <a href="dot-all-2025-whats-next-for-craft-cms.html"><u>Craft conference recap</u></a> last year, and this alpha release is the first tangible milestone in that transition.</p><h2>What is Laravel?</h2><p>Laravel is a globally trusted framework that handles the standard building blocks of any modern web application like ensuring security, connecting to databases, and making pages load fast. The framework handles these basic web fundamentals, leaving Craft to focus on what it does best: providing the incredibly flexible and intuitive content management tools that editors love to use.</p><p>Craft has always built its system on top of a foundational framework like this, but it is now moving away from a more niche framework to the industry-leading foundation of Laravel.</p><p>Pixel &amp; Tonic, the team behind Craft CMS, <a href="https://craftcms.com/blog/laravel"><u>described Laravel as the most familiar PHP framework among Craft developers</u></a> and pointed to its wider ecosystem of packages and services as a major reason for the move.</p><p>For Engage, that alignment is great news. Laravel is already part of our web development toolkit, alongside Craft CMS, Vue.js, Tailwind CSS, AWS and other platforms we use to build high-performance digital experiences.</p><p>In other words, Craft is moving closer to the way we already build.</p><h2>Latest timings</h2><p>Rather than an immediate rollout, Pixel &amp; Tonic have mapped out a clear, deliberate timeline for the release:</p><ul><li data-list-item-id="ea9e542ecd54e6f60b05f08b2769a43c5"><strong>Alpha release</strong>: with the Laravel port completed in May '26, an initial six-month testing phase for reviewing existing functionality</li><li data-list-item-id="e7b62c5e0353a5f2af9632c26efd511ef"><strong>Beta phase</strong>: a three-month phase to test new functionality and the rebuilt UI</li><li data-list-item-id="e353167e482c5f0683bd0f231aa8548fe"><strong>General availability (GA)</strong>: Craft 6.0 is currently expected to launch in March 2027, giving you a useful window to prepare</li></ul>
+	
+	
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Is your Craft site ready for what’s next?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>What we now know from the Alpha</h2><p>This initial release, alongside <a href="https://craftquest.io/livestreams/craft-6-with-brandon-and-rias"><u>Brandon and Rias’ CraftQuest appearance</u></a>, gives us a clear picture of exactly how Craft 6 is taking shape:</p><ul><li data-list-item-id="e051d6dd9f201c679b7340d978b7d2cf9"><strong>Backend engine is ready</strong>: With the core PHP refactoring complete, the foundational logic is stable. Existing functionality should work as expected—sections can be created and entries queried to form pages</li><li data-list-item-id="ef0cd0f4a58defcccaf0d56e4ffb00a5d"><strong>New user interface is being held back</strong>: The new control panel UI is being kept away from the alpha until it’s mostly finalised. This was a change of tack, hence changes being isolated to the settings area for now</li><li data-list-item-id="e27b023fac67d930d035aa3bfa5913b94"><strong>Front-end tech stack</strong>: The control panel is being built on Inertia &amp; Vue, so expect a much faster authoring experience</li><li data-list-item-id="e3a7e8c8f3b41757c0a137bec0250d09c"><strong>New features</strong>: The alpha focuses on the architecture. The suite of new features will be developed as part of the beta phase</li></ul><h2>Technical alignment</h2><p>Outside of the wider Laravel shift, Inertia and Vue are both frameworks we already use regularly.  That means the direction of Craft 6 aligns closely with our existing development approach. But Craft isn't abandoning what works; it still utilises Twig where it makes practical sense, such as for dynamic setting fields and standard template-based routing.</p><p>So while this is a major technical shift, it’s not a complete change of identity for Craft. The flexibility and content management experience that make it so useful for your team are still very much part of the picture.</p><h2>Our plans moving forward</h2><p>We’re already well underway refactoring our approach to be Laravel-first. Because of how Craft 6 is architected, it functions as an unlinked dependency that can simply be pulled into a clean Laravel application.  With the underlying backend logic now firmly in place, our team can begin working with it early, while future UI updates and new features can be pulled in as the release matures.</p><p>Between now and the March 2027 launch, we will be proactively discussing the best transition paths with our existing clients. </p><p>Depending on the age, complexity, and current set up of your site, this will involve reviewing whether an upgrade can be handled seamlessly as part of your ongoing maintenance, or whether timing the move alongside a wider strategic rebuild would offer better long-term value.</p><p>That is where early planning helps. A well-managed migration gives you time to review your plugins, hosting, integrations, content workflows and custom functionality before anything becomes urgent.</p><p>It’s also very much how we like to work: thoughtful, considered and focused on getting the detail just right.</p>
+	
+	
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Frequently asked questions
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Do we need to do anything right now ahead of Craft 6, and how involved will our team need to be?
+					</h3>
+	
+	
+			<p>Not yet. In fact, your team's involvement is likely to be pretty light.</p><p>We'll start with a technical audit to understand the best route for your website. Depending on how your site has been built, that could mean a full native Laravel refactor or a more streamlined upgrade using Craft's official Yii2 adapter.</p><p>Once we've agreed the right approach, we'll take care of the heavy lifting. From migration and testing through to launch, we'll manage the process from end to end and keep you updated along the way.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Will our website experience any downtime, and can we keep editing content during the upgrade?
+					</h3>
+	
+	
+			<p>Your website can stay live, and your content team can keep working as normal.</p><p>We carry out the upgrade in a staging environment, so day-to-day content updates continue right up until launch. When it's time to switch over, we'll schedule a short content freeze while we synchronise the final database changes. Think of it like any well-managed website release. Quick, planned and with no nasty surprises.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Will any features, plugins or third-party integrations like our CRM or Google Ads stop working?
+					</h3>
+	
+	
+			<p>In almost every case, no. Your website's functionality is designed to move across with the upgrade, and we'll make sure everything is working as expected before launch.</p><p><strong>Custom code and integrations: </strong>Bespoke modules, APIs and CRM integrations are part of your codebase, so we'll adapt and test them as part of the upgrade.</p><p><strong>Plugins: </strong>Craft's official compatibility layer gives plugin developers a smooth transition path, and we expect the major plugins to support Craft 6 quickly. If you're relying on an older or unsupported plugin, we can replace that functionality with a custom module where needed.</p><p><strong>Marketing tools: </strong>Tracking scripts, Google Ads, analytics platforms and other front-end marketing tools operate independently of Craft's core architecture, so they'll continue working as they do today.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Do we need to upgrade as soon as Craft 6 is released?
+					</h3>
+	
+	
+			<p>No. There's no need to rush.</p><p>Pixel &amp; Tonic has committed to supporting Craft 5 as a Long-Term Support (LTS) release for five years after Craft 6 launches. That gives you plenty of breathing room to plan the upgrade around your priorities, budget and roadmap.</p><p>That said, upgrading sooner means you'll benefit from the latest platform improvements and keep your website in the best shape for the years ahead.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							How long will the Craft 6 upgrade take?
+					</h3>
+	
+	
+			<p>Every website is different, so timings depend on the complexity of your build.</p><p>The biggest factors usually include:</p><ul><li data-list-item-id="e082e75c72108c72df50bf3a5a93c9eda"><strong>Your current version: </strong>Your website will need to be running the latest Craft 5 release before upgrading.</li><li data-list-item-id="ededed385ae51915e254afea6f5a9ff79"><strong>Custom functionality:</strong> Bespoke modules may need testing or refactoring depending on the upgrade approach.</li><li data-list-item-id="ea2ec3c425237f9147299a813ef17b38a"><strong>Third-party plugins:</strong> We'll review every plugin for compatibility and update or replace anything that needs attention.</li></ul><p>Following our technical audit, we'll provide a clear project plan, timeline and fixed estimate, so you'll know exactly what to expect before any work begins.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Will our existing web hosting platform or server environment need to be updated to support Craft 6?
+					</h3>
+	
+	
+			<p>Only if it's fallen behind.</p><p>If your website has been kept up to date, it's likely already running the PHP and Craft versions needed for Craft 6. If any server or hosting changes are required, we'll identify them during our audit and help you make the necessary updates well before launch.</p>
+	
+	
+	
+	
+		
+	</article>
+			</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Ready to craft your migration plan?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403bf448ef6c479',t:'MTc5MDI3MzQzOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

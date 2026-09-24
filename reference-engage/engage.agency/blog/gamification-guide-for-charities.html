@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Fundraising Gamification: A full guide for charities</title>
+<meta name="description" content="Discover how gamification can supercharge your charity’s fundraising efforts, boost volunteer engagement, strengthen corporate partnerships and more.">
+
+	<link rel="canonical" href="gamification-guide-for-charities.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="gamification-guide-for-charities.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Fundraising Gamification: A full guide for charities">
+<meta property="og:description" content="Discover how gamification can supercharge your charity’s fundraising efforts, boost volunteer engagement, strengthen corporate partnerships and more.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/gamification-guide-for-charities">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/gamification-guide-for-charities#blogposting","url":"https:\/\/engage.agency\/blog\/gamification-guide-for-charities","headline":"Fundraising Gamification: A full guide for charities","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/matt-slater#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/gamification-guide-for-charities#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/blog_gamificationfundraising_1x1.png","datePublished":"2023-01-24T14:29:09+00:00","description":"Discover how gamification can supercharge your charity\u2019s fundraising efforts, boost volunteer engagement, strengthen corporate partnerships and more."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/gamification-guide-for-charities#webpage","url":"https:\/\/engage.agency\/blog\/gamification-guide-for-charities","name":"Fundraising Gamification: A full guide for charities","description":"Discover how gamification can supercharge your charity\u2019s fundraising efforts, boost volunteer engagement, strengthen corporate partnerships and more.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/gamification-guide-for-charities#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Fundraising Gamification: A full guide for charities","item":"https:\/\/engage.agency\/blog\/gamification-guide-for-charities"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/blog_gamificationfundraising_1x1.png"},"datePublished":"2023-01-24T14:29:09+00:00","dateModified":"2026-07-22T18:53:15+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/gamification-guide-for-charities#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="gamification-guide-for-charities.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Fundraising Gamification: A full guide for charities&quot;,&quot;description&quot;:&quot;Discover how gamification can supercharge your charity\u2019s fundraising efforts, boost volunteer engagement, strengthen corporate partnerships and more.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/gamification-guide-for-charities&quot;,&quot;shareTitle&quot;:&quot;Fundraising Gamification: A full guide for charities&quot;,&quot;shareDescription&quot;:&quot;Discover how gamification can supercharge your charity\u2019s fundraising efforts, boost volunteer engagement, strengthen corporate partnerships and more.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/gamification-guide-for-charities#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/gamification-guide-for-charities\&quot;,\&quot;headline\&quot;:\&quot;Fundraising Gamification: A full guide for charities\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/matt-slater#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/gamification-guide-for-charities#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Gamification-for-fundraising-A-guide-for-charities\\\/blog_gamificationfundraising_1x1.png\&quot;,\&quot;datePublished\&quot;:\&quot;2023-01-24T14:29:09+00:00\&quot;,\&quot;description\&quot;:\&quot;Discover how gamification can supercharge your charity\\u2019s fundraising efforts, boost volunteer engagement, strengthen corporate partnerships and more.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/gamification-guide-for-charities#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/gamification-guide-for-charities\&quot;,\&quot;name\&quot;:\&quot;Fundraising Gamification: A full guide for charities\&quot;,\&quot;description\&quot;:\&quot;Discover how gamification can supercharge your charity\\u2019s fundraising efforts, boost volunteer engagement, strengthen corporate partnerships and more.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/gamification-guide-for-charities#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Fundraising Gamification: A full guide for charities\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/gamification-guide-for-charities\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Gamification-for-fundraising-A-guide-for-charities\\\/blog_gamificationfundraising_1x1.png\&quot;},\&quot;datePublished\&quot;:\&quot;2023-01-24T14:29:09+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-07-22T18:53:15+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/gamification-guide-for-charities#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Fundraising Gamification: A full guide for charities&quot;,&quot;date&quot;:&quot;23rd September 2024&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Matt&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/matt-slater&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/purpose&quot;},&quot;readtime&quot;:&quot;Roughly a 9 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Blog gamificationfundraising 1x1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/blog_gamificationfundraising_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/blog_gamificationfundraising_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/blog_gamificationfundraising_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/blog_gamificationfundraising_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/blog_gamificationfundraising_1x1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;Gamification is quickly becoming a powerful tool for charities looking to make digital fundraising more engaging, memorable and measurable. Done well, it can turn a standard donation journey into something supporters actively want to take part in. Which is quite useful, really.&lt;\/p&gt;&lt;p&gt;By adding game-like mechanics to campaigns, events and supporter journeys, charities can use&lt;a href=\&quot;https:\/\/engage.agency\/services\/digital-activations\&quot;&gt;\u00a0&lt;u&gt;digital activations&lt;\/u&gt;&lt;\/a&gt; to encourage more donations, grow CRM data, increase volunteer engagement, educate audiences and create stronger corporate partnerships.&lt;\/p&gt;&lt;p&gt;This guide explores how fundraising gamification can help charities connect with supporters in a more interactive way, with practical ideas, real-world examples and key considerations to help you get it right. Not just badges for the sake of badges. Nobody needs that.&lt;\/p&gt;&lt;p&gt;\u00a0&lt;\/p&gt;&lt;h2&gt;Fundraising gamification ideas for charities&lt;\/h2&gt;&lt;p&gt;Fundraising gamification works best when the game mechanic has a clear job to do. It should not just make the campaign more fun, although that helps. It should make the next action clearer, easier or more rewarding for the supporter.&lt;\/p&gt;&lt;p&gt;Here are a few ways charities can use gamified fundraising:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e4097fc6993e50e16262e319b33010cee\&quot;&gt;&lt;strong&gt;Leaderboards&lt;\/strong&gt;: Encourage friendly competition between supporters, teams or locations.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e866a7dad87cdad139e9ef4a48255ef5c\&quot;&gt;&lt;strong&gt;Progress bars&lt;\/strong&gt;: Show how close a campaign is to its target and give people a reason to help push it over the line.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0317582875ac66bf2763fb232084afc0\&quot;&gt;&lt;strong&gt;Achievement badges&lt;\/strong&gt;: Reward supporters for actions like signing up, making a first donation or reaching a fundraising milestone.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e531a74bab31ac1bebb04b895de9a5fb6\&quot;&gt;&lt;strong&gt;Donation triggers&lt;\/strong&gt;: Connect real-world actions, such as steps walked or miles cycled, to fundraising goals.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e2d71311b09c519de683651483366e18a\&quot;&gt;&lt;strong&gt;Quizzes and challenges&lt;\/strong&gt;: Help supporters learn about your mission while taking part in something more interactive.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef1e45f336d29f03dd8dc2ad002748796\&quot;&gt;&lt;strong&gt;Instant rewards&lt;\/strong&gt;: Use scratchcards, prize draws or unlockable content to give supporters a reason to engage there and then.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;The key is to keep the mechanic tied to the mission. A game for the sake of a game is just noise with a leaderboard attached.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Blog Image 3 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3_2.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h3&gt;&lt;strong&gt;2. CRM growth: Building\u00a0relationships&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;A robust Customer Relationship Management (CRM) system is vital for nurturing relationships with donors, volunteers, and partners, while also providing a lasting and valued stewardship\u00a0journey.&lt;\/p&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/www.gartner.com\/smarterwithgartner\/how-gamification-boosts-consumer-engagement\&quot;&gt;According to a Gartner report&lt;\/a&gt;, organisations that successfully integrate gamification into their CRM strategy can expect to see a 30% increase in user engagement. This engagement is crucial to maintaining strong relationships and driving tangible ROI through donations and committed giving. With this in\u00a0mind:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Acquire first-party data: &lt;\/strong&gt;Create gamified activations and experiences that require user sign-ups, gathering valuable data for your CRM. For example, a challenge-based gamified activation that\u2019s well aligned with your mission can educate users while also collecting valuable information for future campaigns.\u00a0Win-win.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Personalise your approach:&lt;\/strong&gt; Use CRM data to tailor campaigns to each user\u2019s interests. For instance, if someone often supports animal welfare, create a fun virtual pet based challenge just for them. This tailored content will boost engagement and donations, strengthening your bonds with\u00a0supporters.&lt;\/li&gt;&lt;\/ul&gt;&lt;h3&gt;&lt;strong&gt;3. Corporate partnerships: Amplify your\u00a0impact&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Corporate partnerships can provide substantial value for both charities and businesses. Adding gamified activations into the mix strengthens these partnerships to be more attractive and effective for all\u00a0involved:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Co-branded activations and experiences, to drive data collection and donations:&lt;\/strong&gt; Collaborate with corporate partners on joint campaigns where achievements translate directly to donations. For example, collecting virtual coins could result in real money donations. Hosting these across audiences means more data collection and mission\u00a0exposure.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Internal fundraising platforms: &lt;\/strong&gt;Develop gamified platforms for corporate partners where employees\u2019 physical activities, such as miles run, link to fundraising efforts. You can easily integrate with fitness apps like Strava to track and motivate participation, turning corporate wellness into a cause-driven\u00a0activity.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Blog Image 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_2.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;Real world example: Raising the bar for charity and our wellbeing with the Engage\u00a0Elympics.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;The &lt;a href=\&quot;https:\/\/elym.pics\/\&quot;&gt;Engage Elympics&lt;\/a&gt; is our annual challenge to become the healthiest agency in the UK, all while raising money for our nominated\u00a0charities.&lt;\/p&gt;&lt;p&gt;As part of this initiative, different exercises are assigned varying values based on the effort involved. All activities are tracked using Strava, allowing us to collect valuable data which feeds into our monthly Elympics leaderboard. The more activity we complete, the more we donate - fueling friendly competition, (and a buzz around the\u00a0office!).&lt;\/p&gt;&lt;p&gt;Now in its 8th year, we\u2019ve raised nearly \u00a370,000, and our team is happier and healthier as a\u00a0result!&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;4. Education and inspiration: Bring your mission to\u00a0life&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Charities often struggle to convey their mission and impact effectively, at pace. Yet research by &lt;a href=\&quot;https:\/\/www.nptechforgood.com\/\&quot;&gt;Tech for Good&lt;\/a&gt; shows that non-profits that prioritise educational content centred around their mission and impact of work, receive 29% higher engagement compared to those that don\u2019t. Here\u2019s where gamification comes in; it offers the opportunity to deliver speedy experiences that can both educate and engage, for\u00a0example:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Interactive quizzes: &lt;\/strong&gt;Create quizzes that test users\u2019 knowledge about your cause. Not only do they engage participants, but they also provide insights into their understanding and interests, helping you tailor future content and\u00a0campaigns.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Mission-based gamified activations: &lt;\/strong&gt;By developing gamified activations that reflect your charity\u2019s goals through storytelling, you can drive engagement and educate users, while capturing data for marketing\u00a0efforts.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Blog Image 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;A real-world case study: Old Mout Cider\u2019s CSR initiative engages audiences and drives\u00a0impact&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Old Mout Cider aimed to save New Zealand\u2019s native kiwi bird from extinction with a CSR initiative focused on action, not just awareness. We partnered with Mitchells &amp;amp; Butlers to create \u201cKiwi Cycle,\u201d a fun and impactful gamified\u00a0activation.&lt;\/p&gt;&lt;p&gt;Players helped a kiwi bird collect fruit and Old Mout bottles for recycling, with each bottle donating 1p to WWF. Integrated into the Mitchells &amp;amp; Butlers app, the gamified activation entertained and educated players on Old Mout\u2019s sustainability\u00a0efforts.&lt;\/p&gt;&lt;p&gt;The campaign drove 40,000 app downloads, a 70% reward redemption rate, and raised over \u00a310,000 for WWF, creating real conservation impact while boosting brand visibility, mobilising communities, and increasing footfall into Mitchell &amp;amp; Butlers\u00a0pubs.&lt;\/p&gt;&lt;p&gt;Want to see how it works? &lt;a href=\&quot;https:\/\/gamification.engageinteractive.co.uk\/activation\/kiwi-cycle\&quot;&gt;Play the demo\u00a0here&lt;\/a&gt;.&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;5. Volunteer engagement: Energise your\u00a0teams&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Keeping volunteers motivated and engaged is crucial for sustained success and to prevent fatigue. Track progress and gamify achievements in a way that keeps them\u00a0moving:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Volunteer platforms:&lt;\/strong&gt; Why not implement platforms that gamify volunteer tasks? These let you track progress, offer badges and rewards for completed tasks, and create leaderboards to create that vital sense of community and competition. Looking for inspiration? &lt;a href=\&quot;https:\/\/engage.agency\/work\/catch-a-bespoke-volunteering-platform\&quot;&gt;Find out more about the volunteering development platform we created&lt;\/a&gt; for Catch, our charity\u00a0partner.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Blog Image 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Gamification-for-fundraising-A-guide-for-charities\/Blog_Image_3.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h3&gt;&lt;strong&gt;Key considerations for charities in\u00a0gamification&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Incorporating gamification in the non-profit landscape can be transformative \u2014 for a range of departmental objectives \u2014 but it\u2019s not without its challenges. Here\u2019s how to address some of the most\u00a0common:&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;1. Cost and\u00a0resources&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;&lt;strong&gt;The challenge:&lt;\/strong&gt; Limited budgets might make gamification seem like a big\u00a0investment.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;The solution: &lt;\/strong&gt;Gamification drives tangible, measurable results, making it a smart investment with clear ROI. By starting with a scalable solution, you can quickly demonstrate tangible outcomes like additional CRM opt-ins, higher conversions, donations - making the investment worthwhile and modelable from the\u00a0outset.&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;2. Engagement\u00a0fatigue&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;&lt;strong&gt;The challenge: &lt;\/strong&gt;Over time, participants may lose interest if the gamified elements become repetitive or\u00a0predictable.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;The solution: &lt;\/strong&gt;Keep the experience fresh by rotating challenges, updating rewards, and introducing new elements periodically. For example, you could change the themes of challenges based on current events or seasons, or offer limited-time rewards that encourage ongoing participation. Variety is key to sustaining interest and avoiding\u00a0burnout.&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;3. Data\u00a0privacy&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;&lt;strong&gt;The challenge: &lt;\/strong&gt;Collecting data through these campaigns can raise privacy and compliance\u00a0concerns.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;The&lt;\/strong&gt; &lt;strong&gt;solution: &lt;\/strong&gt;It\u2019s crucial to prioritise data protection. Make sure you\u2019re transparent with participants about what data you collect and why. Comply with relevant privacy regulations such as GDPR by implementing robust security measures and providing clear, accessible privacy policies. Not so much a challenge when considered from the\u00a0get-go.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;It\u2019s game\u00a0time&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Gamified activations and campaigns offer not-for-profits a fresh, strategic avenue to engage their audiences in a memorable, interactive way. Deepening connections while driving mission-aligned\u00a0objectives.&lt;\/p&gt;&lt;p&gt;And the impact of gamification is real. In fact, &lt;a href=\&quot;https:\/\/www.slideshare.net\/slideshow\/gamification-in-2012-trends-in-consumer-and-enterprise-markets-13453048\/13453048\&quot;&gt;M2 Research&lt;\/a&gt; found that effective gamification can lead to a 100%-150% increase in engagement metrics, &lt;a href=\&quot;https:\/\/adact.me\/blog\/gamification-marketing-statistics\/#:~:text=In%202023%2C%20research%20indicates%20that,of%20exclusivity%2C%20driving%20customer%20loyalty.\&quot;&gt;with supporting studies&lt;\/a&gt; suggesting a notable 22% boost in\u00a0loyalty.&lt;\/p&gt;&lt;p&gt;What does this mean for your non-profit? Well, if you can successfully integrate gamification into your strategy, you can expect to see more active and committed supporters, along with a measurable rise in donations and volunteer\u00a0participation.&lt;\/p&gt;&lt;p&gt;Ready to get started? You\u2019ve come to the right place. At Engage, we work with a number of leading charities to help them win online. And yours could be next. &lt;a href=\&quot;https:\/\/engage.agency\/contact\&quot;&gt;Get in touch today&lt;\/a&gt; to discover how we can\u00a0help!&lt;\/p&gt;&lt;h2&gt;FAQs&lt;\/h2&gt;&lt;h3&gt;What is a gamified charity campaign?&lt;\/h3&gt;&lt;p&gt;A gamified charity campaign uses game-like elements to encourage people to engage with a cause. This could include challenges, rewards, points, quizzes, leaderboards or donation milestones. Done well, it helps supporters understand the mission, take action and feel part of something bigger.&lt;\/p&gt;&lt;h3&gt;How can charities use gamification for fundraising?&lt;\/h3&gt;&lt;p&gt;Charities can use gamification through fundraising leaderboards, donation challenges, interactive quizzes, digital badges, prize-based activations, corporate fitness challenges or progress-based campaigns. The best approach depends on the audience, the goal and how much effort you can realistically ask people to give.&lt;\/p&gt;&lt;h3&gt;How can gamification improve donor engagement?&lt;\/h3&gt;&lt;p&gt;Gamification can improve donor engagement by making the experience more interactive and less passive. Instead of asking someone to donate once and disappear, charities can invite them to complete challenges, track progress, earn rewards or share results. Much better than another lonely form sitting at the end of a landing page.&lt;\/p&gt;&lt;h3&gt;Is gamification useful for CSR campaigns?&lt;\/h3&gt;&lt;p&gt;Yes, gamification can work well for CSR campaigns because it gives employees, customers or communities a clear way to take part. Challenges, progress tracking and donation triggers can make corporate fundraising feel more active, measurable and connected to the cause.&lt;\/p&gt;&lt;h3&gt;How do you measure a gamified fundraising campaign?&lt;\/h3&gt;&lt;p&gt;Measure a gamified fundraising campaign by looking at donations, sign-ups, CRM opt-ins, completion rates, repeat engagement, shares, reward redemptions and supporter feedback. The right metrics depend on the goal. If the campaign was built to grow your database, do not judge it only on donations. Context, annoyingly, matters.&lt;\/p&gt;&quot;}}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/blog_gamificationfundraising_1x1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/blog_gamificationfundraising_1x1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/blog_gamificationfundraising_1x1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/blog_gamificationfundraising_1x1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/blog_gamificationfundraising_1x1.png"
+		alt="Blog gamificationfundraising 1x1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Fundraising Gamification: A full guide for charities</h1>
+	
+			<p>23rd September 2024</p>
+	
+	
+			<p>Roughly a 9 minute read by</p>
+	
+						<p>
+									<a href="../team/matt-slater.html">
+						Matt
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>Gamification is quickly becoming a powerful tool for charities looking to make digital fundraising more engaging, memorable and measurable. Done well, it can turn a standard donation journey into something supporters actively want to take part in. Which is quite useful, really.</p><p>By adding game-like mechanics to campaigns, events and supporter journeys, charities can use<a href="../services/digital-activations.html"> <u>digital activations</u></a> to encourage more donations, grow CRM data, increase volunteer engagement, educate audiences and create stronger corporate partnerships.</p><p>This guide explores how fundraising gamification can help charities connect with supporters in a more interactive way, with practical ideas, real-world examples and key considerations to help you get it right. Not just badges for the sake of badges. Nobody needs that.</p><p> </p><h2>Fundraising gamification ideas for charities</h2><p>Fundraising gamification works best when the game mechanic has a clear job to do. It should not just make the campaign more fun, although that helps. It should make the next action clearer, easier or more rewarding for the supporter.</p><p>Here are a few ways charities can use gamified fundraising:</p><ul><li data-list-item-id="e4097fc6993e50e16262e319b33010cee"><strong>Leaderboards</strong>: Encourage friendly competition between supporters, teams or locations.</li><li data-list-item-id="e866a7dad87cdad139e9ef4a48255ef5c"><strong>Progress bars</strong>: Show how close a campaign is to its target and give people a reason to help push it over the line.</li><li data-list-item-id="e0317582875ac66bf2763fb232084afc0"><strong>Achievement badges</strong>: Reward supporters for actions like signing up, making a first donation or reaching a fundraising milestone.</li><li data-list-item-id="e531a74bab31ac1bebb04b895de9a5fb6"><strong>Donation triggers</strong>: Connect real-world actions, such as steps walked or miles cycled, to fundraising goals.</li><li data-list-item-id="e2d71311b09c519de683651483366e18a"><strong>Quizzes and challenges</strong>: Help supporters learn about your mission while taking part in something more interactive.</li><li data-list-item-id="ef1e45f336d29f03dd8dc2ad002748796"><strong>Instant rewards</strong>: Use scratchcards, prize draws or unlockable content to give supporters a reason to engage there and then.</li></ul><p>The key is to keep the mechanic tied to the mission. A game for the sake of a game is just noise with a leaderboard attached.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3_2.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3_2.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3_2.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3_2.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3_2.png"
+		alt="Blog Image 3 2"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h3><strong>2. CRM growth: Building relationships</strong></h3><p>A robust Customer Relationship Management (CRM) system is vital for nurturing relationships with donors, volunteers, and partners, while also providing a lasting and valued stewardship journey.</p><p><a href="https://www.gartner.com/smarterwithgartner/how-gamification-boosts-consumer-engagement">According to a Gartner report</a>, organisations that successfully integrate gamification into their CRM strategy can expect to see a 30% increase in user engagement. This engagement is crucial to maintaining strong relationships and driving tangible ROI through donations and committed giving. With this in mind:</p><ul><li><strong>Acquire first-party data: </strong>Create gamified activations and experiences that require user sign-ups, gathering valuable data for your CRM. For example, a challenge-based gamified activation that’s well aligned with your mission can educate users while also collecting valuable information for future campaigns. Win-win.</li><li><strong>Personalise your approach:</strong> Use CRM data to tailor campaigns to each user’s interests. For instance, if someone often supports animal welfare, create a fun virtual pet based challenge just for them. This tailored content will boost engagement and donations, strengthening your bonds with supporters.</li></ul><h3><strong>3. Corporate partnerships: Amplify your impact</strong></h3><p>Corporate partnerships can provide substantial value for both charities and businesses. Adding gamified activations into the mix strengthens these partnerships to be more attractive and effective for all involved:</p><ul><li><strong>Co-branded activations and experiences, to drive data collection and donations:</strong> Collaborate with corporate partners on joint campaigns where achievements translate directly to donations. For example, collecting virtual coins could result in real money donations. Hosting these across audiences means more data collection and mission exposure.</li><li><strong>Internal fundraising platforms: </strong>Develop gamified platforms for corporate partners where employees’ physical activities, such as miles run, link to fundraising efforts. You can easily integrate with fitness apps like Strava to track and motivate participation, turning corporate wellness into a cause-driven activity.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_2.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_2.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_2.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_2.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_2.png"
+		alt="Blog Image 2"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>Real world example: Raising the bar for charity and our wellbeing with the Engage Elympics.</strong></p><p>The <a href="https://elym.pics/">Engage Elympics</a> is our annual challenge to become the healthiest agency in the UK, all while raising money for our nominated charities.</p><p>As part of this initiative, different exercises are assigned varying values based on the effort involved. All activities are tracked using Strava, allowing us to collect valuable data which feeds into our monthly Elympics leaderboard. The more activity we complete, the more we donate - fueling friendly competition, (and a buzz around the office!).</p><p>Now in its 8th year, we’ve raised nearly £70,000, and our team is happier and healthier as a result!</p><h3><strong>4. Education and inspiration: Bring your mission to life</strong></h3><p>Charities often struggle to convey their mission and impact effectively, at pace. Yet research by <a href="https://www.nptechforgood.com/">Tech for Good</a> shows that non-profits that prioritise educational content centred around their mission and impact of work, receive 29% higher engagement compared to those that don’t. Here’s where gamification comes in; it offers the opportunity to deliver speedy experiences that can both educate and engage, for example:</p><ul><li><strong>Interactive quizzes: </strong>Create quizzes that test users’ knowledge about your cause. Not only do they engage participants, but they also provide insights into their understanding and interests, helping you tailor future content and campaigns.</li><li><strong>Mission-based gamified activations: </strong>By developing gamified activations that reflect your charity’s goals through storytelling, you can drive engagement and educate users, while capturing data for marketing efforts.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_1.png"
+		alt="Blog Image 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>A real-world case study: Old Mout Cider’s CSR initiative engages audiences and drives impact</strong></p><p>Old Mout Cider aimed to save New Zealand’s native kiwi bird from extinction with a CSR initiative focused on action, not just awareness. We partnered with Mitchells &amp; Butlers to create “Kiwi Cycle,” a fun and impactful gamified activation.</p><p>Players helped a kiwi bird collect fruit and Old Mout bottles for recycling, with each bottle donating 1p to WWF. Integrated into the Mitchells &amp; Butlers app, the gamified activation entertained and educated players on Old Mout’s sustainability efforts.</p><p>The campaign drove 40,000 app downloads, a 70% reward redemption rate, and raised over £10,000 for WWF, creating real conservation impact while boosting brand visibility, mobilising communities, and increasing footfall into Mitchell &amp; Butlers pubs.</p><p>Want to see how it works? <a href="https://gamification.engageinteractive.co.uk/activation/kiwi-cycle">Play the demo here</a>.</p><h3><strong>5. Volunteer engagement: Energise your teams</strong></h3><p>Keeping volunteers motivated and engaged is crucial for sustained success and to prevent fatigue. Track progress and gamify achievements in a way that keeps them moving:</p><ul><li><strong>Volunteer platforms:</strong> Why not implement platforms that gamify volunteer tasks? These let you track progress, offer badges and rewards for completed tasks, and create leaderboards to create that vital sense of community and competition. Looking for inspiration? <a href="../work/catch-a-bespoke-volunteering-platform.html">Find out more about the volunteering development platform we created</a> for Catch, our charity partner.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Gamification-for-fundraising-A-guide-for-charities/Blog_Image_3.png"
+		alt="Blog Image 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h3><strong>Key considerations for charities in gamification</strong></h3><p>Incorporating gamification in the non-profit landscape can be transformative — for a range of departmental objectives — but it’s not without its challenges. Here’s how to address some of the most common:</p><h3><strong>1. Cost and resources</strong></h3><p><strong>The challenge:</strong> Limited budgets might make gamification seem like a big investment.</p><p><strong>The solution: </strong>Gamification drives tangible, measurable results, making it a smart investment with clear ROI. By starting with a scalable solution, you can quickly demonstrate tangible outcomes like additional CRM opt-ins, higher conversions, donations - making the investment worthwhile and modelable from the outset.</p><h3><strong>2. Engagement fatigue</strong></h3><p><strong>The challenge: </strong>Over time, participants may lose interest if the gamified elements become repetitive or predictable.</p><p><strong>The solution: </strong>Keep the experience fresh by rotating challenges, updating rewards, and introducing new elements periodically. For example, you could change the themes of challenges based on current events or seasons, or offer limited-time rewards that encourage ongoing participation. Variety is key to sustaining interest and avoiding burnout.</p><h3><strong>3. Data privacy</strong></h3><p><strong>The challenge: </strong>Collecting data through these campaigns can raise privacy and compliance concerns.</p><p><strong>The</strong> <strong>solution: </strong>It’s crucial to prioritise data protection. Make sure you’re transparent with participants about what data you collect and why. Comply with relevant privacy regulations such as GDPR by implementing robust security measures and providing clear, accessible privacy policies. Not so much a challenge when considered from the get-go.</p><h2><strong>It’s game time</strong></h2><p>Gamified activations and campaigns offer not-for-profits a fresh, strategic avenue to engage their audiences in a memorable, interactive way. Deepening connections while driving mission-aligned objectives.</p><p>And the impact of gamification is real. In fact, <a href="https://www.slideshare.net/slideshow/gamification-in-2012-trends-in-consumer-and-enterprise-markets-13453048/13453048">M2 Research</a> found that effective gamification can lead to a 100%-150% increase in engagement metrics, <a href="https://adact.me/blog/gamification-marketing-statistics/#:~:text=In%202023%2C%20research%20indicates%20that,of%20exclusivity%2C%20driving%20customer%20loyalty.">with supporting studies</a> suggesting a notable 22% boost in loyalty.</p><p>What does this mean for your non-profit? Well, if you can successfully integrate gamification into your strategy, you can expect to see more active and committed supporters, along with a measurable rise in donations and volunteer participation.</p><p>Ready to get started? You’ve come to the right place. At Engage, we work with a number of leading charities to help them win online. And yours could be next. <a href="../contact.html">Get in touch today</a> to discover how we can help!</p><h2>FAQs</h2><h3>What is a gamified charity campaign?</h3><p>A gamified charity campaign uses game-like elements to encourage people to engage with a cause. This could include challenges, rewards, points, quizzes, leaderboards or donation milestones. Done well, it helps supporters understand the mission, take action and feel part of something bigger.</p><h3>How can charities use gamification for fundraising?</h3><p>Charities can use gamification through fundraising leaderboards, donation challenges, interactive quizzes, digital badges, prize-based activations, corporate fitness challenges or progress-based campaigns. The best approach depends on the audience, the goal and how much effort you can realistically ask people to give.</p><h3>How can gamification improve donor engagement?</h3><p>Gamification can improve donor engagement by making the experience more interactive and less passive. Instead of asking someone to donate once and disappear, charities can invite them to complete challenges, track progress, earn rewards or share results. Much better than another lonely form sitting at the end of a landing page.</p><h3>Is gamification useful for CSR campaigns?</h3><p>Yes, gamification can work well for CSR campaigns because it gives employees, customers or communities a clear way to take part. Challenges, progress tracking and donation triggers can make corporate fundraising feel more active, measurable and connected to the cause.</p><h3>How do you measure a gamified fundraising campaign?</h3><p>Measure a gamified fundraising campaign by looking at donations, sign-ups, CRM opt-ins, completion rates, repeat engagement, shares, reward redemptions and supporter feedback. The right metrics depend on the goal. If the campaign was built to grow your database, do not judge it only on donations. Context, annoyingly, matters.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c21e887bc479',t:'MTc5MDI3MzU1Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

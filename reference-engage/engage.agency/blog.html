@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>The Latest Digital Agency Insights &amp; News | Engage Blog</title>
+<meta name="description" content="Discover expert insights from a top UK digital agency. Explore SEO, UX, Craft CMS, gamification &amp; digital marketing trends on Engage’s award-winning blog.">
+
+	<link rel="canonical" href="blog.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="static/img/meta/icon-180.png">
+<link rel="icon" href="static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+
+<link rel="preload" as="style" href="build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="build/assets/app-CZ4HxMW9.js" /><script type="module" src="build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="The Latest Digital Agency Insights &amp; News | Engage Blog">
+<meta property="og:description" content="Discover expert insights from a top UK digital agency. Explore SEO, UX, Craft CMS, gamification &amp; digital marketing trends on Engage’s award-winning blog.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog#webpage","url":"https:\/\/engage.agency\/blog","name":"The Latest Digital Agency Insights & News | Engage Blog","description":"Discover expert insights from a top UK digital agency. Explore SEO, UX, Craft CMS, gamification & digital marketing trends on Engage\u2019s award-winning blog.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"}]},"datePublished":"2025-02-27T16:46:04+00:00","dateModified":"2025-07-23T09:00:00+01:00","inLanguage":"en-GB"},{"@type":"CollectionPage","@id":"https:\/\/engage.agency\/blog#collectionpage","url":"https:\/\/engage.agency\/blog","name":"The Latest Digital Agency Insights & News | Engage Blog","description":"Discover expert insights from a top UK digital agency. Explore SEO, UX, Craft CMS, gamification & digital marketing trends on Engage\u2019s award-winning blog.","mainEntity":{"@type":"ItemList","itemListElement":[{"@type":"ListItem","position":1,"url":"https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum","name":"Engage named among the world\u2019s top independent agencies by The Drum"},{"@type":"ListItem","position":2,"url":"https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026","name":"Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026"},{"@type":"ListItem","position":3,"url":"https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026","name":"Digital marketing news and trends: September 2026"},{"@type":"ListItem","position":4,"url":"https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification","name":"Engage achieves ISO\/IEC 27001 certification"},{"@type":"ListItem","position":5,"url":"https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms","name":"Managing SEO in Craft CMS: A practical guide to getting it right"},{"@type":"ListItem","position":6,"url":"https:\/\/engage.agency\/blog\/digital-marketing-in-the-legal-sector","name":"Attention on trial: Digital marketing in the legal sector"},{"@type":"ListItem","position":7,"url":"https:\/\/engage.agency\/blog\/digital-marketing-news-and-trends-august-2026","name":"Digital marketing news and trends: August 2026"},{"@type":"ListItem","position":8,"url":"https:\/\/engage.agency\/blog\/employee-ownership-q-and-a-matt-and-charlotte","name":"Q&A with Matt & Charlotte: Celebrating our EO, OG\u2019s"},{"@type":"ListItem","position":9,"url":"https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce","name":"More signal, less noise: Digital marketing in retail and e-commerce"},{"@type":"ListItem","position":10,"url":"https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website","name":"Craft CMS 6 Alpha: What it means for your website"}]}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="blog.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;The Latest Digital Agency Insights &amp; News | Engage Blog&quot;,&quot;description&quot;:&quot;Discover expert insights from a top UK digital agency. Explore SEO, UX, Craft CMS, gamification &amp; digital marketing trends on Engage\u2019s award-winning blog.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;shareTitle&quot;:&quot;The Latest Digital Agency Insights &amp; News | Engage Blog&quot;,&quot;shareDescription&quot;:&quot;Discover expert insights from a top UK digital agency. Explore SEO, UX, Craft CMS, gamification &amp; digital marketing trends on Engage\u2019s award-winning blog.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;,\&quot;name\&quot;:\&quot;The Latest Digital Agency Insights &amp; News | Engage Blog\&quot;,\&quot;description\&quot;:\&quot;Discover expert insights from a top UK digital agency. Explore SEO, UX, Craft CMS, gamification &amp; digital marketing trends on Engage\\u2019s award-winning blog.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;}]},\&quot;datePublished\&quot;:\&quot;2025-02-27T16:46:04+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2025-07-23T09:00:00+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;},{\&quot;@type\&quot;:\&quot;CollectionPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog#collectionpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;,\&quot;name\&quot;:\&quot;The Latest Digital Agency Insights &amp; News | Engage Blog\&quot;,\&quot;description\&quot;:\&quot;Discover expert insights from a top UK digital agency. Explore SEO, UX, Craft CMS, gamification &amp; digital marketing trends on Engage\\u2019s award-winning blog.\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;ItemList\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum\&quot;,\&quot;name\&quot;:\&quot;Engage named among the world\\u2019s top independent agencies by The Drum\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/best-cms-for-enterprise-marketing-teams-2026\&quot;,\&quot;name\&quot;:\&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-news-september-2026\&quot;,\&quot;name\&quot;:\&quot;Digital marketing news and trends: September 2026\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:4,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/engage-achieves-iso-iec-27001-certification\&quot;,\&quot;name\&quot;:\&quot;Engage achieves ISO\\\/IEC 27001 certification\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:5,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/managing-seo-in-craft-cms\&quot;,\&quot;name\&quot;:\&quot;Managing SEO in Craft CMS: A practical guide to getting it right\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:6,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-the-legal-sector\&quot;,\&quot;name\&quot;:\&quot;Attention on trial: Digital marketing in the legal sector\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:7,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-news-and-trends-august-2026\&quot;,\&quot;name\&quot;:\&quot;Digital marketing news and trends: August 2026\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:8,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/employee-ownership-q-and-a-matt-and-charlotte\&quot;,\&quot;name\&quot;:\&quot;Q&amp;A with Matt &amp; Charlotte: Celebrating our EO, OG\\u2019s\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:9,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce\&quot;,\&quot;name\&quot;:\&quot;More signal, less noise: Digital marketing in retail and e-commerce\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:10,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/craft-cms-6-alpha-what-it-means-for-your-website\&quot;,\&quot;name\&quot;:\&quot;Craft CMS 6 Alpha: What it means for your website\&quot;}]}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:true}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;blog&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Here\u2019s everything from the blog&quot;,&quot;filter&quot;:{&quot;title&quot;:&quot;Filter by&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Everything&quot;,&quot;value&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;current&quot;:true},{&quot;title&quot;:&quot;People&quot;,&quot;value&quot;:&quot;https:\/\/engage.agency\/blog\/people&quot;,&quot;current&quot;:false},{&quot;title&quot;:&quot;Performance&quot;,&quot;value&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;,&quot;current&quot;:false},{&quot;title&quot;:&quot;Purpose&quot;,&quot;value&quot;:&quot;https:\/\/engage.agency\/blog\/purpose&quot;,&quot;current&quot;:false},{&quot;title&quot;:&quot;News&quot;,&quot;value&quot;:&quot;https:\/\/engage.agency\/blog\/news&quot;,&quot;current&quot;:false}]}}},&quot;content&quot;:{&quot;type&quot;:&quot;article-archive&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;date&quot;:&quot;14th September 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;}},{&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: why Craft CMS stands out in 2026&quot;,&quot;date&quot;:&quot;9th September 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=800\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=400\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;featured&quot;:true},{&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;date&quot;:&quot;9th September 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;}},{&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;}},{&quot;title&quot;:&quot;Managing SEO in Craft CMS: A practical guide to getting it right&quot;,&quot;date&quot;:&quot;25th August 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 5&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right\/Engage_Blog_Hero_06.18_CB_V1-5.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/managing-seo-in-craft-cms&quot;}},{&quot;title&quot;:&quot;Attention on trial: digital marketing in the legal sector&quot;,&quot;date&quot;:&quot;13th August 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 05 27 01 CB V1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=800\/engage-website\/production\/Blog\/Attention-on-trial-digital-marketing-in-the-legal-sector\/Engage_Blog_Hero_05.27_01_CB_V1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=400\/engage-website\/production\/Blog\/Attention-on-trial-digital-marketing-in-the-legal-sector\/Engage_Blog_Hero_05.27_01_CB_V1.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-in-the-legal-sector&quot;},&quot;featured&quot;:true},{&quot;title&quot;:&quot;Digital marketing news and trends: August 2026&quot;,&quot;date&quot;:&quot;12th August 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/Blog\/MMM-August-26\/Engage_MMM_Blog-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-August-26\/Engage_MMM_Blog-1.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-and-trends-august-2026&quot;}},{&quot;title&quot;:&quot;Q&amp;A with Matt &amp; Charlotte: celebrating our EO, OG\u2019s&quot;,&quot;date&quot;:&quot;11th August 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;EO res matt charlotte&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/People-images\/EO-res-matt-charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/People-images\/EO-res-matt-charlotte.jpg&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/employee-ownership-q-and-a-matt-and-charlotte&quot;}},{&quot;title&quot;:&quot;More signal, less noise: digital marketing in retail and e-commerce&quot;,&quot;date&quot;:&quot;10th August 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Ecomm blog hero&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce\/Ecomm-blog-hero.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce&quot;}},{&quot;title&quot;:&quot;Craft CMS 6 Alpha: what it means for your website&quot;,&quot;date&quot;:&quot;21st July 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Craft-CMS-6-Alpha-what-it-means-for-your-website\/Engage_Blog_Hero_06.18_CB_V1-1.png&quot;],&quot;sizes&quot;:[1280]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/craft-cms-6-alpha-what-it-means-for-your-website&quot;}}],&quot;pagination&quot;:{&quot;detail&quot;:&quot;Showing &lt;b&gt;1&lt;\/b&gt; \u2013 &lt;b&gt;10&lt;\/b&gt; of &lt;b&gt;66&lt;\/b&gt; results&quot;,&quot;first&quot;:{&quot;title&quot;:&quot;First&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;},&quot;last&quot;:{&quot;title&quot;:&quot;Last&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/page-7&quot;},&quot;prev&quot;:{&quot;title&quot;:&quot;Prev&quot;,&quot;href&quot;:null},&quot;next&quot;:{&quot;title&quot;:&quot;Next&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/page-2&quot;},&quot;links&quot;:[{&quot;title&quot;:&quot;1&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;active&quot;:true},{&quot;title&quot;:&quot;2&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/page-2&quot;,&quot;active&quot;:false},{&quot;title&quot;:&quot;3&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/page-3&quot;,&quot;active&quot;:false},{&quot;title&quot;:&quot;4&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/page-4&quot;,&quot;active&quot;:false},{&quot;title&quot;:&quot;5&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/page-5&quot;,&quot;active&quot;:false}]}}},&quot;blocks&quot;:null,&quot;crosslink&quot;:null}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+	
+			<h1>Here’s everything from the blog</h1>
+	
+	
+	
+	
+	
+	</header>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+	
+	
+							
+						<article>
+	
+	
+
+			<h2>
+							Engage named among the world’s top independent agencies by The Drum
+					</h2>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Best CMS for enterprise marketing teams: why Craft CMS stands out in 2026
+					</h2>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=800/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=400/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Digital marketing news and trends: September 2026
+					</h2>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Engage achieves ISO/IEC 27001 certification
+					</h2>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Managing SEO in Craft CMS: A practical guide to getting it right
+					</h2>
+	
+			<p>25th August 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/Blog/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right/Engage_Blog_Hero_06.18_CB_V1-5.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Managing-SEO-in-Craft-CMS-A-practical-guide-to-getting-it-right/Engage_Blog_Hero_06.18_CB_V1-5.png"
+		alt="Engage Blog Hero 06 18 CB V1 5"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/managing-seo-in-craft-cms.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Attention on trial: digital marketing in the legal sector
+					</h2>
+	
+			<p>13th August 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=800/engage-website/production/Blog/Attention-on-trial-digital-marketing-in-the-legal-sector/Engage_Blog_Hero_05.27_01_CB_V1.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=400/engage-website/production/Blog/Attention-on-trial-digital-marketing-in-the-legal-sector/Engage_Blog_Hero_05.27_01_CB_V1.png"
+		alt="Engage Blog Hero 05 27 01 CB V1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/digital-marketing-in-the-legal-sector.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Digital marketing news and trends: August 2026
+					</h2>
+	
+			<p>12th August 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/Blog/MMM-August-26/Engage_MMM_Blog-1.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-August-26/Engage_MMM_Blog-1.png"
+		alt="Engage MMM Blog 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/digital-marketing-news-and-trends-august-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Q&A with Matt & Charlotte: celebrating our EO, OG’s
+					</h2>
+	
+			<p>11th August 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/People-images/EO-res-matt-charlotte.jpg"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/People-images/EO-res-matt-charlotte.jpg"
+		alt="EO res matt charlotte"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/employee-ownership-q-and-a-matt-and-charlotte.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							More signal, less noise: digital marketing in retail and e-commerce
+					</h2>
+	
+			<p>10th August 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/Blog/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce/Ecomm-blog-hero.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/More-signal-less-noise-digital-marketing-in-retail-and-e-commerce/Ecomm-blog-hero.png"
+		alt="Ecomm blog hero"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/more-signal-less-noise-digital-marketing-in-retail-and-e-commerce.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Craft CMS 6 Alpha: what it means for your website
+					</h2>
+	
+			<p>21st July 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/Blog/Craft-CMS-6-Alpha-what-it-means-for-your-website/Engage_Blog_Hero_06.18_CB_V1-1.png"
+			 media="(min-width: 1280px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Craft-CMS-6-Alpha-what-it-means-for-your-website/Engage_Blog_Hero_06.18_CB_V1-1.png"
+		alt="Engage Blog Hero 06 18 CB V1 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="blog/craft-cms-6-alpha-what-it-means-for-your-website.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</div>
+		
+	
+	
+	</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403be3fefa7c479',t:'MTc5MDI3MzM5Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

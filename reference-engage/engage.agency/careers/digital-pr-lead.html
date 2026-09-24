@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Career Vacancies: Digital PR Lead</title>
+<meta name="description" content="Join Engage as Digital PR Lead and build our Digital PR offering, delivering creative, performance-led campaigns that drive authority and organic growth.">
+
+	<link rel="canonical" href="digital-pr-lead.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="digital-pr-lead.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Career Vacancies: Digital PR Lead">
+<meta property="og:description" content="Join Engage as Digital PR Lead and build our Digital PR offering, delivering creative, performance-led campaigns that drive authority and organic growth.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/careers/digital-pr-lead">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/People-images/Ste-Livsey.JPG">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/digital-pr-lead#jobposting","url":"https:\/\/engage.agency\/careers\/digital-pr-lead","title":"Digital PR Lead","directApply":true,"datePosted":"2026-03-09T12:43:00+00:00","validThrough":null,"hiringOrganization":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"jobLocation":{"@type":"Place","address":{"@type":"PostalAddress","streetAddress":"1st Floor, Munro House, Duke Street","addressLocality":"Leeds","addressRegion":"West Yorkshire","postalCode":"LS9 8AG","addressCountry":"GB"}},"description":"Join Engage as Digital PR Lead and build our Digital PR offering, delivering creative, performance-led campaigns that drive authority and organic growth.","employmentType":"FULL_TIME","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/digital-pr-lead#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/digital-pr-lead#webpage","url":"https:\/\/engage.agency\/careers\/digital-pr-lead","name":"Career Vacancies: Digital PR Lead","description":"Join Engage as Digital PR Lead and build our Digital PR offering, delivering creative, performance-led campaigns that drive authority and organic growth.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/careers\/digital-pr-lead#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Join the team","item":"https:\/\/engage.agency\/careers"},{"@type":"ListItem","position":3,"name":"Digital PR Lead","item":"https:\/\/engage.agency\/careers\/digital-pr-lead"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/People-images\/ATD-Office.jpg"},"datePublished":"2026-08-07T10:38:42+01:00","dateModified":"2026-09-17T10:56:39+01:00","inLanguage":"en-GB","mainEntity":{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/digital-pr-lead#jobposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="digital-pr-lead.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Career Vacancies: Digital PR Lead&quot;,&quot;description&quot;:&quot;Join Engage as Digital PR Lead and build our Digital PR offering, delivering creative, performance-led campaigns that drive authority and organic growth.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/careers\/digital-pr-lead&quot;,&quot;shareTitle&quot;:&quot;Career Vacancies: Digital PR Lead&quot;,&quot;shareDescription&quot;:&quot;Join Engage as Digital PR Lead and build our Digital PR offering, delivering creative, performance-led campaigns that drive authority and organic growth.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/digital-pr-lead#jobposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/digital-pr-lead\&quot;,\&quot;title\&quot;:\&quot;Digital PR Lead\&quot;,\&quot;directApply\&quot;:true,\&quot;datePosted\&quot;:\&quot;2026-03-09T12:43:00+00:00\&quot;,\&quot;validThrough\&quot;:null,\&quot;hiringOrganization\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;jobLocation\&quot;:{\&quot;@type\&quot;:\&quot;Place\&quot;,\&quot;address\&quot;:{\&quot;@type\&quot;:\&quot;PostalAddress\&quot;,\&quot;streetAddress\&quot;:\&quot;1st Floor, Munro House, Duke Street\&quot;,\&quot;addressLocality\&quot;:\&quot;Leeds\&quot;,\&quot;addressRegion\&quot;:\&quot;West Yorkshire\&quot;,\&quot;postalCode\&quot;:\&quot;LS9 8AG\&quot;,\&quot;addressCountry\&quot;:\&quot;GB\&quot;}},\&quot;description\&quot;:\&quot;Join Engage as Digital PR Lead and build our Digital PR offering, delivering creative, performance-led campaigns that drive authority and organic growth.\&quot;,\&quot;employmentType\&quot;:\&quot;FULL_TIME\&quot;,\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/digital-pr-lead#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/digital-pr-lead#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/digital-pr-lead\&quot;,\&quot;name\&quot;:\&quot;Career Vacancies: Digital PR Lead\&quot;,\&quot;description\&quot;:\&quot;Join Engage as Digital PR Lead and build our Digital PR offering, delivering creative, performance-led campaigns that drive authority and organic growth.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/digital-pr-lead#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Join the team\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Digital PR Lead\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/digital-pr-lead\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/People-images\\\/ATD-Office.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2026-08-07T10:38:42+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-17T10:56:39+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/digital-pr-lead#jobposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;basic&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Digital PR Lead&quot;,&quot;copy&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes&quot;},&quot;video&quot;:null,&quot;image&quot;:{&quot;alt&quot;:&quot;ATD Office&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;stat&quot;:null}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Salary&lt;\/h2&gt;&lt;p&gt;\u00a348,000 - \u00a355,000&lt;\/p&gt;&lt;h2&gt;Hours and\u00a0location&lt;\/h2&gt;&lt;p&gt;This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a\u00a0week.&lt;\/p&gt;&lt;h2&gt;Benefits\u00a0package&lt;\/h2&gt;&lt;p&gt;As part of our commitment to making Engage a great place to work, we\u2019ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks\u00a0are:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e2c85787a6eb254a40738d5aae4e9801c\&quot;&gt;We&#039;re &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;employee owned&lt;\/a&gt;&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e94355a390a84110b75432867ffc81d7c\&quot;&gt;25 days holiday + bank holidays (rising after 5\u00a0years)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e81aa54596a3bff11884f77848974a0e9\&quot;&gt;Company performance linked bonus scheme (this is depending on the business\u2019 performance and is not a contractual\u00a0benefit)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea4a969d8b35dfeea5ef9df513411f5c4\&quot;&gt;Comprehensive private health\u00a0insurance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee1586c630a56c8c666a55195540c59ce\&quot;&gt;5% company pension\u00a0scheme&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e073bc33919c1b32b2e2952b0ee937248\&quot;&gt;Access to financial\u00a0coaching&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e514664c1313a733bfd99c25ba77a69bc\&quot;&gt;A company culture that promotes work-life\u00a0balance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec5cb06ee8cf7e5ee9081aa670f586045\&quot;&gt;Access to mental health\u00a0support&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4b0694e9012319f15e85abf77bc25d75\&quot;&gt;Free on-site\u00a0gym&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e211317672aed3b4a936f574a93f0f0a4\&quot;&gt;Hybrid working&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e440a3153a494bd3a049877981f016231\&quot;&gt;An award-winning office&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ece3aa84dd4e9d1e65f055fc9430ed7cb\&quot;&gt;Your birthday\u00a0off&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e018f1a070bf80517a9ed37e0507488d2\&quot;&gt;Regular socials, epic Summer parties and\u00a0more\u2026&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}}]}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Yas Phoebe&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;What we&#039;re looking for&lt;\/h2&gt;&lt;p&gt;Reporting to the Head of SEO, we&#039;re seeking a strategic, commercially minded and results-driven Digital PR Lead to establish and scale a Digital PR function at Engage.&lt;\/p&gt;&lt;p&gt;This pivotal role will focus on building the foundations of our Digital PR capability, integrating closely with SEO and Social to deliver authority building campaigns that drive measurable performance outcomes for our clients.&lt;\/p&gt;&lt;p&gt;As Digital PR Lead, you will be responsible for creating and implementing Digital PR strategies that align with organic growth objectives, delivering high-quality media coverage, authoritative backlinks and brand visibility that directly contributes to SEO performance, brand equity and commercial growth.&lt;\/p&gt;&lt;h2&gt;Vision for the role\u00a0&lt;\/h2&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e4f741b612157afe0a0eb693f77f74a58\&quot;&gt;The Digital PR Lead will work across a wide range of clients, collaborating closely with SEO, Social, Content and Accounts teams to position Digital PR as a core pillar within Engage\u2019s organic growth proposition.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4cc9148b53ee38fff4690221f293d573\&quot;&gt;The role will focus on:&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eca558dff13565745b95547d2a8cb86bb\&quot;&gt;Establishing Digital PR processes, frameworks and quality benchmarks&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1f06f2b3ae2fd705b7c725d3e3e3a648\&quot;&gt;Creating integrated campaigns that align with SEO and Social strategies&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7643790be44ee08d713df6f56cb92a7e\&quot;&gt;Demonstrating the commercial value of Digital PR through measurable impact.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e697ec5bcd30b5b5fdb1a76ed85d91a58\&quot;&gt;Supporting new business and elevating Engage\u2019s authority as an integrated performance agency&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eaff8113b07cbd0155c2c2acb6260c849\&quot;&gt;This is a unique opportunity to build a function from the ground up and shape how Digital PR integrates into a performance-first agency model.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now &quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Ste Livsey&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Duties and responsibilities\u00a0&lt;\/h2&gt;&lt;h4&gt;Leadership&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e918fd9356e5e7256efbc7884e70aeb00\&quot;&gt;Establish and lead the Digital PR function within Engage.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea45fa8034d99f7d2f381e611e3e272c0\&quot;&gt;Support on building the Digital PR roadmap, processes and best practice frameworks.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e780a60f75d756af3ac000103f8264a30\&quot;&gt;Collaborate closely with SEO and Social leads to create fully integrated organic strategies, benefitting all channels.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0c1ab5c8003ab1e8a27ff63c2b84225b\&quot;&gt;Act as the senior point of contact for Digital PR across client accounts.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e642b775c35aa93f1cd93cf7eb0deb480\&quot;&gt;Support the recruitment, onboarding and development of future Digital PR team members.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5de9223665be706e8ff40ea41cd11310\&quot;&gt;Champion creativity, innovation and performance-led thinking across campaigns.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Strategic requirements&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e9cee2b52d3686dfaebdb6c46248192a0\&quot;&gt;Develop Digital PR strategies aligned to SEO objectives including authority growth, keyword targeting and link acquisition.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5364f2e38b64033e0a85d2ac6f9e27a1\&quot;&gt;Create data-led, creative campaign concepts designed to earn high-quality media coverage.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed09584f1daddc072f122014bd3610210\&quot;&gt;Build reactive PR campaigns to capitalise on trends, cultural moments and industry developments.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e47d9e5c58e9a473406feb359fc5455a9\&quot;&gt;Align campaign messaging with brand tone, positioning and commercial objectives.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e66d2852652457b07c356fe426630a6aa\&quot;&gt;Work closely with other teams to produce press assets, reports, surveys and interactive content.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3427044555ff5e01f22c49f20b5a6bf3\&quot;&gt;Ensure campaigns are designed with measurable performance outcomes in mind.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Outreach and media relations&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e21b2139cb4fb2ab1c89ceb1320344c72\&quot;&gt;Develop and maintain strong relationships with journalists, editors and media contacts.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eb76a3706a41c1670142a2b62d04912fb\&quot;&gt;Manage proactive outreach strategies to secure national, regional and industry coverage.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eaab71e0303acef71de861529ff2b7fa3\&quot;&gt;Oversee press list creation and refinement.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1d92d398b8b00d1b50009e35cafe6466\&quot;&gt;Ensure coverage quality aligns with SEO and brand authority goals.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef462bed51899099d6175a9751bf7acc0\&quot;&gt;Monitor competitor activity and identify media opportunities.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Organic relations&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e2810687c66ace29d703a0ab25b9fa588\&quot;&gt;Work with SEO teams to align Digital PR campaigns with keyword and authority strategies.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e31977b31f7a2cd82dd69532474c6659d\&quot;&gt;Ensure link acquisition supports technical and on-page SEO priorities.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e8bf9e9a24e45c4898d8c9080d78e5a29\&quot;&gt;Collaborate with Social teams to amplify campaign coverage and maximise reach.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1bc90f23b51e7979a0c2ca36e4751749\&quot;&gt;Identify opportunities for social-first PR campaigns and influencer collaboration.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e63e614ea0f784a55f045299598411e53\&quot;&gt;Provide insight into how media coverage can be repurposed across organic and paid channels.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Measuring performance&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e4a039e37abf3b982b288f542d5b61172\&quot;&gt;Define KPIs for Digital PR campaigns aligned with client objectives, working closely with the SEO team and data and reporting analyst.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eed061e26933610c5885bbdb1041eca42\&quot;&gt;Measure performance including:&lt;ul&gt;&lt;li data-list-item-id=\&quot;eb8eda1dc1212f06acc67f22e2b2b31db\&quot;&gt;Authority growth&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1b20d4c04911908ebeab2b3029f24c0f\&quot;&gt;Link quality and relevance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e280db398034d65dbb3d21f96c4c5ab39\&quot;&gt;Coverage reach and engagement&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e04861141ca95884cce366170fd94a8c9\&quot;&gt;Organic traffic uplift&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0cee45ed68d8cac17627056d1f756850\&quot;&gt;Brand search growth&lt;ul&gt;&lt;li data-list-item-id=\&quot;eaaa96f434b9ed33caec3c618370b8eef\&quot;&gt;Provide clear, commercially focused reporting that demonstrates value.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e8c76126c8fe38b81ebacdab9eca1cdb9\&quot;&gt;Ensure accurate attribution and reporting by working closely with Data &amp;amp; Reporting.&lt;\/li&gt;&lt;\/ul&gt;&lt;\/li&gt;&lt;\/ul&gt;&lt;\/li&gt;&lt;\/ul&gt;&lt;h3&gt;New business&lt;\/h3&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e85b28f5f4f8ebbbf99e63a33956db167\&quot;&gt;Work closely with New Business to pitch for Digital PR work and grow the offering for Engage.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e93f4725ea91580a6f9eb923d5e1ec2e0\&quot;&gt;Identify opportunities to introduce Digital PR into existing clients, existing SEO or Social specific clients.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e07a4b06efb2a3a40b763dd2ea3fdad8f\&quot;&gt;Support case study creation and thought leadership initiatives.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e672d496552477db3f90532f0814a1d1f\&quot;&gt;Help position Engage as an integrated performance marketing agency through PR-driven authority building.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Charlie Matt Charlotte&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Skills and qualifications\u00a0&lt;\/h2&gt;&lt;h3&gt;Essential skills&lt;\/h3&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e62efff794377d115baa94106b7e1edda\&quot;&gt;5+ years\u2019 experience in Digital PR, ideally within an agency environment.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1136a64991815284f2a6f2e169a5551a\&quot;&gt;Proven experience delivering campaigns that earn high-authority, relevant backlinks.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e8fbfdbd35dbc26bbf3e0a62a1022f8bc\&quot;&gt;Strong understanding of SEO principles and how Digital PR impacts organic performance.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e545208a37dc33bb4afcdaf8c70abaf5e\&quot;&gt;Strong understanding of the direct link between Digital PR, LLM visibility, and the digital entity of a brand.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7e6c82b9e7053845b78f61d8682027f8\&quot;&gt;Demonstrable success securing national and industry media coverage.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee6decbc33970784d3cdc90c70501b5c6\&quot;&gt;Strong campaign ideation skills with a data-led approach.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e58374ceffdb5144885a3a64301753dda\&quot;&gt;Experience working collaboratively with SEO and content teams.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e30ae3a1a54065d974a8796049467cb59\&quot;&gt;Strong commercial understanding and ability to link activity to business outcomes.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee6e2d02e4995473476b3ffa1057e426a\&quot;&gt;Excellent written communication and storytelling ability.&lt;\/li&gt;&lt;\/ul&gt;&lt;h3&gt;Desirable skills&lt;\/h3&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e3adf49d945e140f893d13e48d8a228a2\&quot;&gt;Experience using SEO tools such as Ahrefs, or SEMrush.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4409e74edc45821ca2b36f5a09d2c4cc\&quot;&gt;Experience working with reactive PR and newsjacking strategies.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec6f25a847dc88beec0ef58445dd7f8cb\&quot;&gt;Knowledge of influencer marketing and social amplification strategies.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eece5693fd6781b802b6248834f9b176a\&quot;&gt;Experience contributing to integrated content marketing campaigns.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e93ecdbff495dc8885c67ff40d54eeeef\&quot;&gt;Experience working within performance-focused marketing agencies.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;Authority&lt;\/h2&gt;&lt;p&gt;Within this role you will be responsible for shaping and defining Digital PR as a core service offering within Engage.&lt;\/p&gt;&lt;p&gt;You will have ownership over:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e708878b378695946cffe0523359766d0\&quot;&gt;Digital PR strategy and frameworks.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e62446c0f9c8be8e66bc160e2e5ea51bf\&quot;&gt;Campaign quality and output standards.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;edaab4b700bc6b383b46752ce0e63abb6\&quot;&gt;Outreach strategy and media relationship management.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e31177aaa0e40b8677831ba4186c67b14\&quot;&gt;Demonstrating the commercial impact of PR activity.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;You will be expected to operate with strategic autonomy while aligning closely with the Head of SEO, Head of Social and wider leadership team.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Tom Pensive&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Person Specification&lt;\/h2&gt;&lt;h4&gt;Skills and abilities&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ebf896652dcfe4aec84131a2e933e0d3d\&quot;&gt;Excellent verbal and written communication skills, with the ability to pitch ideas persuasively.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e890fbed0403494f3ff053b83420d3380\&quot;&gt;Strong creative thinking combined with analytical thinking.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3806c7791126d830aa217ec4fcd46325\&quot;&gt;Ability to manage multiple campaigns simultaneously.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed9d52cda49f49c72b7e6c37c77cbcbfb\&quot;&gt;Confident presenting strategies and results to clients.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e754ec5a636ee74faced0303bd0c8a859\&quot;&gt;Highly organised with strong attention to detail.\u00a0&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Experience and Knowledge&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e36598d810660634df987b981b829fab9\&quot;&gt;Over 5 years experience in Digital PR.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e20d0256f43b1074927ce37cd42e2a5c0\&quot;&gt;Strong understanding of SEO and link building strategy.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1da22ea61868d54bbe4bf362b0519866\&quot;&gt;Experience delivering campaigns and measurable authority growth.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eb44f4f1a9e936019b0c8d0f5dbb4362c\&quot;&gt;Proven media relationship network.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eb8d70d90e479b3f2875461615d6911ed\&quot;&gt;Experience working within cross-functional marketing teams.\u00a0&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Education and Training&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e4cd306f2c7688c88b118f9e49565470d\&quot;&gt;Able to provide training and guidance internally on Digital PR best practices.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e8197631d9730e9d46743aaf989cdd2ea\&quot;&gt;Proactively seeks continued professional development and industry knowledge.\u00a0&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Attitudes&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;efe48b3879b987e8fbbec5b266e950309\&quot;&gt;Highly motivated individual\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5d60f77a09fc3db64577fa6bf9846bb1\&quot;&gt;Performance driven and commercially aware.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e903f71ed4e0f0c2236ac8ec057e01477\&quot;&gt;Collaborative and supportive across teams.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e67ca77dc8b62583f252ce904c6655670\&quot;&gt;Open to feedback and continuous improvement.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ebcc6d3cb9e96a183ffbbf846f991cc7b\&quot;&gt;Takes ownership and accountability.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e184632034ed38e5e6fc82e342b51162a\&quot;&gt;Positive and proactive contributor to agency culture.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;What does success look like in this role?&lt;\/h2&gt;&lt;p&gt;The Digital PR Lead OKRs and performance will be measured against the following criteria:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ebd881f8edc0406fd2b54eab27936cd83\&quot;&gt;Successful establishment of a scalable Digital PR function.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4398979c0b19fbf5fe100a5c8511a22b\&quot;&gt;Demonstrable growth in client authority and high-quality link acquisition.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9928a25b733c2784fed6bbbe2bf3af28\&quot;&gt;Clear measurable contribution to SEO performance and organic growth.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e90bd5dc5abd3d690163c799a44721024\&quot;&gt;Quality, creativity and effectiveness of campaign output.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1792cc974a0ffe1f2a4eb46cb3b2a479\&quot;&gt;Successful collaboration with SEO, Social and wider teams.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e68589b9ae6e6284dbf1270ac780a665f\&quot;&gt;Contribution to new business growth and agency positioning.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1384ebc590506bfdfbaf3a27e9063255\&quot;&gt;Achieving at or above the agreed annual benchmark score in review.&lt;\/li&gt;&lt;\/ul&gt;&quot;}}]}},{&quot;type&quot;:&quot;fifty-fifty&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;A bit about us&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Founded in 2007, we\u2019re the digital agency for brands that demand attention. &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;100% employee owned&lt;\/a&gt;, we\u2019re a tight-knit team, motivated to achieve more - for our people, partners, and the planet. That&#039;s what led us to become Leeds&#039; first &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/b-corp\&quot;&gt;B Corp&lt;\/a&gt;.\u00a0&lt;\/p&gt;&lt;p&gt;Find out more &lt;a href=\&quot;https:\/\/engage.agency\/about-us\&quot;&gt;about us&lt;\/a&gt;, &lt;a href=\&quot;https:\/\/engage.agency\/team\&quot;&gt;meet the team&lt;\/a&gt; and be sure to check out our &lt;a href=\&quot;https:\/\/engage.agency\/work\&quot;&gt;latest work&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;Thinking we might be a good fit?\u00a0&lt;\/p&gt;&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1280,1024],&quot;ratio&quot;:&quot;3\/2&quot;},&quot;video&quot;:null,&quot;reverse&quot;:false}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;featured-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;There&#039;s more to explore&quot;,&quot;items&quot;:[{&quot;prefix&quot;:null,&quot;title&quot;:&quot;We\u2019re proudly employee owned&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;We\u2019re proudly employee owned&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Meet the team&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Meet the team&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}}],&quot;elympics&quot;:{&quot;title&quot;:&quot;Engage Elympics&quot;,&quot;action&quot;:&quot;https:\/\/engage.agency\/api\/elympics\/stats&quot;},&quot;awards&quot;:[{&quot;image&quot;:{&quot;alt&quot;:&quot;PNCA 25 WINNER footer WHITE&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=160\/engage-website\/production\/Awards\/PNCA-25-WINNER-footer-WHITE.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=107\/engage-website\/production\/Awards\/PNCA-25-WINNER-footer-WHITE.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:625,&quot;height&quot;:334},&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;UK Company culture awards&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=229\/engage-website\/production\/Awards\/UK-Company-culture-awards.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=153\/engage-website\/production\/Awards\/UK-Company-culture-awards.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:768,&quot;height&quot;:587},&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Drum recommended&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=106\/engage-website\/production\/Awards\/Drum-recommended.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=71\/engage-website\/production\/Awards\/Drum-recommended.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:144,&quot;height&quot;:51},&quot;href&quot;:null,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Certified b corp white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=498\/engage-website\/production\/Awards\/certified-b-corp-white.svg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=332\/engage-website\/production\/Awards\/certified-b-corp-white.svg&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:386,&quot;height&quot;:641},&quot;href&quot;:null,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Proudly employee owned round holo&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=300\/engage-website\/production\/Awards\/proudly-employee-owned-round-holo.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=200\/engage-website\/production\/Awards\/proudly-employee-owned-round-holo.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:1518,&quot;height&quot;:1518},&quot;href&quot;:null,&quot;shape&quot;:&quot;circle&quot;}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/People-images/ATD-Office.jpg"
+		alt="ATD Office"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Digital PR Lead</h1>
+	
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes"
+	>
+	Apply now
+</a>
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Salary</h2><p>£48,000 - £55,000</p><h2>Hours and location</h2><p>This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a week.</p><h2>Benefits package</h2><p>As part of our commitment to making Engage a great place to work, we’ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks are:</p><ul><li data-list-item-id="e2c85787a6eb254a40738d5aae4e9801c">We're <a href="../about-us/proudly-employee-owned.html">employee owned</a></li><li data-list-item-id="e94355a390a84110b75432867ffc81d7c">25 days holiday + bank holidays (rising after 5 years)</li><li data-list-item-id="e81aa54596a3bff11884f77848974a0e9">Company performance linked bonus scheme (this is depending on the business’ performance and is not a contractual benefit)</li><li data-list-item-id="ea4a969d8b35dfeea5ef9df513411f5c4">Comprehensive private health insurance</li><li data-list-item-id="ee1586c630a56c8c666a55195540c59ce">5% company pension scheme</li><li data-list-item-id="e073bc33919c1b32b2e2952b0ee937248">Access to financial coaching</li><li data-list-item-id="e514664c1313a733bfd99c25ba77a69bc">A company culture that promotes work-life balance</li><li data-list-item-id="ec5cb06ee8cf7e5ee9081aa670f586045">Access to mental health support</li><li data-list-item-id="e4b0694e9012319f15e85abf77bc25d75">Free on-site gym</li><li data-list-item-id="e211317672aed3b4a936f574a93f0f0a4">Hybrid working</li><li data-list-item-id="e440a3153a494bd3a049877981f016231">An award-winning office</li><li data-list-item-id="ece3aa84dd4e9d1e65f055fc9430ed7cb">Your birthday off</li><li data-list-item-id="e018f1a070bf80517a9ed37e0507488d2">Regular socials, epic Summer parties and more…</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+			
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Yas-Phoebe.JPG"
+		alt="Yas Phoebe"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>What we're looking for</h2><p>Reporting to the Head of SEO, we're seeking a strategic, commercially minded and results-driven Digital PR Lead to establish and scale a Digital PR function at Engage.</p><p>This pivotal role will focus on building the foundations of our Digital PR capability, integrating closely with SEO and Social to deliver authority building campaigns that drive measurable performance outcomes for our clients.</p><p>As Digital PR Lead, you will be responsible for creating and implementing Digital PR strategies that align with organic growth objectives, delivering high-quality media coverage, authoritative backlinks and brand visibility that directly contributes to SEO performance, brand equity and commercial growth.</p><h2>Vision for the role </h2><ul><li data-list-item-id="e4f741b612157afe0a0eb693f77f74a58">The Digital PR Lead will work across a wide range of clients, collaborating closely with SEO, Social, Content and Accounts teams to position Digital PR as a core pillar within Engage’s organic growth proposition.</li><li data-list-item-id="e4cc9148b53ee38fff4690221f293d573">The role will focus on:</li><li data-list-item-id="eca558dff13565745b95547d2a8cb86bb">Establishing Digital PR processes, frameworks and quality benchmarks</li><li data-list-item-id="e1f06f2b3ae2fd705b7c725d3e3e3a648">Creating integrated campaigns that align with SEO and Social strategies</li><li data-list-item-id="e7643790be44ee08d713df6f56cb92a7e">Demonstrating the commercial value of Digital PR through measurable impact.</li><li data-list-item-id="e697ec5bcd30b5b5fdb1a76ed85d91a58">Supporting new business and elevating Engage’s authority as an integrated performance agency</li><li data-list-item-id="eaff8113b07cbd0155c2c2acb6260c849">This is a unique opportunity to build a function from the ground up and shape how Digital PR integrates into a performance-first agency model.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes"
+	>
+	Apply now 
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Ste-Livsey.JPG"
+		alt="Ste Livsey"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Duties and responsibilities </h2><h4>Leadership</h4><ul><li data-list-item-id="e918fd9356e5e7256efbc7884e70aeb00">Establish and lead the Digital PR function within Engage.</li><li data-list-item-id="ea45fa8034d99f7d2f381e611e3e272c0">Support on building the Digital PR roadmap, processes and best practice frameworks.</li><li data-list-item-id="e780a60f75d756af3ac000103f8264a30">Collaborate closely with SEO and Social leads to create fully integrated organic strategies, benefitting all channels.</li><li data-list-item-id="e0c1ab5c8003ab1e8a27ff63c2b84225b">Act as the senior point of contact for Digital PR across client accounts.</li><li data-list-item-id="e642b775c35aa93f1cd93cf7eb0deb480">Support the recruitment, onboarding and development of future Digital PR team members.</li><li data-list-item-id="e5de9223665be706e8ff40ea41cd11310">Champion creativity, innovation and performance-led thinking across campaigns.</li></ul><h4>Strategic requirements</h4><ul><li data-list-item-id="e9cee2b52d3686dfaebdb6c46248192a0">Develop Digital PR strategies aligned to SEO objectives including authority growth, keyword targeting and link acquisition.</li><li data-list-item-id="e5364f2e38b64033e0a85d2ac6f9e27a1">Create data-led, creative campaign concepts designed to earn high-quality media coverage.</li><li data-list-item-id="ed09584f1daddc072f122014bd3610210">Build reactive PR campaigns to capitalise on trends, cultural moments and industry developments.</li><li data-list-item-id="e47d9e5c58e9a473406feb359fc5455a9">Align campaign messaging with brand tone, positioning and commercial objectives.</li><li data-list-item-id="e66d2852652457b07c356fe426630a6aa">Work closely with other teams to produce press assets, reports, surveys and interactive content.</li><li data-list-item-id="e3427044555ff5e01f22c49f20b5a6bf3">Ensure campaigns are designed with measurable performance outcomes in mind.</li></ul><h4>Outreach and media relations</h4><ul><li data-list-item-id="e21b2139cb4fb2ab1c89ceb1320344c72">Develop and maintain strong relationships with journalists, editors and media contacts.</li><li data-list-item-id="eb76a3706a41c1670142a2b62d04912fb">Manage proactive outreach strategies to secure national, regional and industry coverage.</li><li data-list-item-id="eaab71e0303acef71de861529ff2b7fa3">Oversee press list creation and refinement.</li><li data-list-item-id="e1d92d398b8b00d1b50009e35cafe6466">Ensure coverage quality aligns with SEO and brand authority goals.</li><li data-list-item-id="ef462bed51899099d6175a9751bf7acc0">Monitor competitor activity and identify media opportunities.</li></ul><h4>Organic relations</h4><ul><li data-list-item-id="e2810687c66ace29d703a0ab25b9fa588">Work with SEO teams to align Digital PR campaigns with keyword and authority strategies.</li><li data-list-item-id="e31977b31f7a2cd82dd69532474c6659d">Ensure link acquisition supports technical and on-page SEO priorities.</li><li data-list-item-id="e8bf9e9a24e45c4898d8c9080d78e5a29">Collaborate with Social teams to amplify campaign coverage and maximise reach.</li><li data-list-item-id="e1bc90f23b51e7979a0c2ca36e4751749">Identify opportunities for social-first PR campaigns and influencer collaboration.</li><li data-list-item-id="e63e614ea0f784a55f045299598411e53">Provide insight into how media coverage can be repurposed across organic and paid channels.</li></ul><h4>Measuring performance</h4><ul><li data-list-item-id="e4a039e37abf3b982b288f542d5b61172">Define KPIs for Digital PR campaigns aligned with client objectives, working closely with the SEO team and data and reporting analyst.</li><li data-list-item-id="eed061e26933610c5885bbdb1041eca42">Measure performance including:<ul><li data-list-item-id="eb8eda1dc1212f06acc67f22e2b2b31db">Authority growth</li><li data-list-item-id="e1b20d4c04911908ebeab2b3029f24c0f">Link quality and relevance</li><li data-list-item-id="e280db398034d65dbb3d21f96c4c5ab39">Coverage reach and engagement</li><li data-list-item-id="e04861141ca95884cce366170fd94a8c9">Organic traffic uplift</li><li data-list-item-id="e0cee45ed68d8cac17627056d1f756850">Brand search growth<ul><li data-list-item-id="eaaa96f434b9ed33caec3c618370b8eef">Provide clear, commercially focused reporting that demonstrates value.</li><li data-list-item-id="e8c76126c8fe38b81ebacdab9eca1cdb9">Ensure accurate attribution and reporting by working closely with Data &amp; Reporting.</li></ul></li></ul></li></ul><h3>New business</h3><ul><li data-list-item-id="e85b28f5f4f8ebbbf99e63a33956db167">Work closely with New Business to pitch for Digital PR work and grow the offering for Engage.</li><li data-list-item-id="e93f4725ea91580a6f9eb923d5e1ec2e0">Identify opportunities to introduce Digital PR into existing clients, existing SEO or Social specific clients.</li><li data-list-item-id="e07a4b06efb2a3a40b763dd2ea3fdad8f">Support case study creation and thought leadership initiatives.</li><li data-list-item-id="e672d496552477db3f90532f0814a1d1f">Help position Engage as an integrated performance marketing agency through PR-driven authority building.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+		alt="Charlie Matt Charlotte"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Skills and qualifications </h2><h3>Essential skills</h3><ul><li data-list-item-id="e62efff794377d115baa94106b7e1edda">5+ years’ experience in Digital PR, ideally within an agency environment.</li><li data-list-item-id="e1136a64991815284f2a6f2e169a5551a">Proven experience delivering campaigns that earn high-authority, relevant backlinks.</li><li data-list-item-id="e8fbfdbd35dbc26bbf3e0a62a1022f8bc">Strong understanding of SEO principles and how Digital PR impacts organic performance.</li><li data-list-item-id="e545208a37dc33bb4afcdaf8c70abaf5e">Strong understanding of the direct link between Digital PR, LLM visibility, and the digital entity of a brand.</li><li data-list-item-id="e7e6c82b9e7053845b78f61d8682027f8">Demonstrable success securing national and industry media coverage.</li><li data-list-item-id="ee6decbc33970784d3cdc90c70501b5c6">Strong campaign ideation skills with a data-led approach.</li><li data-list-item-id="e58374ceffdb5144885a3a64301753dda">Experience working collaboratively with SEO and content teams.</li><li data-list-item-id="e30ae3a1a54065d974a8796049467cb59">Strong commercial understanding and ability to link activity to business outcomes.</li><li data-list-item-id="ee6e2d02e4995473476b3ffa1057e426a">Excellent written communication and storytelling ability.</li></ul><h3>Desirable skills</h3><ul><li data-list-item-id="e3adf49d945e140f893d13e48d8a228a2">Experience using SEO tools such as Ahrefs, or SEMrush.</li><li data-list-item-id="e4409e74edc45821ca2b36f5a09d2c4cc">Experience working with reactive PR and newsjacking strategies.</li><li data-list-item-id="ec6f25a847dc88beec0ef58445dd7f8cb">Knowledge of influencer marketing and social amplification strategies.</li><li data-list-item-id="eece5693fd6781b802b6248834f9b176a">Experience contributing to integrated content marketing campaigns.</li><li data-list-item-id="e93ecdbff495dc8885c67ff40d54eeeef">Experience working within performance-focused marketing agencies.</li></ul><h2>Authority</h2><p>Within this role you will be responsible for shaping and defining Digital PR as a core service offering within Engage.</p><p>You will have ownership over:</p><ul><li data-list-item-id="e708878b378695946cffe0523359766d0">Digital PR strategy and frameworks.</li><li data-list-item-id="e62446c0f9c8be8e66bc160e2e5ea51bf">Campaign quality and output standards.</li><li data-list-item-id="edaab4b700bc6b383b46752ce0e63abb6">Outreach strategy and media relationship management.</li><li data-list-item-id="e31177aaa0e40b8677831ba4186c67b14">Demonstrating the commercial impact of PR activity.</li></ul><p>You will be expected to operate with strategic autonomy while aligning closely with the Head of SEO, Head of Social and wider leadership team.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Tom-Pensive.JPG"
+		alt="Tom Pensive"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Person Specification</h2><h4>Skills and abilities</h4><ul><li data-list-item-id="ebf896652dcfe4aec84131a2e933e0d3d">Excellent verbal and written communication skills, with the ability to pitch ideas persuasively. </li><li data-list-item-id="e890fbed0403494f3ff053b83420d3380">Strong creative thinking combined with analytical thinking.</li><li data-list-item-id="e3806c7791126d830aa217ec4fcd46325">Ability to manage multiple campaigns simultaneously. </li><li data-list-item-id="ed9d52cda49f49c72b7e6c37c77cbcbfb">Confident presenting strategies and results to clients. </li><li data-list-item-id="e754ec5a636ee74faced0303bd0c8a859">Highly organised with strong attention to detail. </li></ul><h4>Experience and Knowledge</h4><ul><li data-list-item-id="e36598d810660634df987b981b829fab9">Over 5 years experience in Digital PR. </li><li data-list-item-id="e20d0256f43b1074927ce37cd42e2a5c0">Strong understanding of SEO and link building strategy. </li><li data-list-item-id="e1da22ea61868d54bbe4bf362b0519866">Experience delivering campaigns and measurable authority growth. </li><li data-list-item-id="eb44f4f1a9e936019b0c8d0f5dbb4362c">Proven media relationship network. </li><li data-list-item-id="eb8d70d90e479b3f2875461615d6911ed">Experience working within cross-functional marketing teams. </li></ul><h4>Education and Training</h4><ul><li data-list-item-id="e4cd306f2c7688c88b118f9e49565470d">Able to provide training and guidance internally on Digital PR best practices. </li><li data-list-item-id="e8197631d9730e9d46743aaf989cdd2ea">Proactively seeks continued professional development and industry knowledge. </li></ul><h4>Attitudes</h4><ul><li data-list-item-id="efe48b3879b987e8fbbec5b266e950309">Highly motivated individual </li><li data-list-item-id="e5d60f77a09fc3db64577fa6bf9846bb1">Performance driven and commercially aware. </li><li data-list-item-id="e903f71ed4e0f0c2236ac8ec057e01477">Collaborative and supportive across teams. </li><li data-list-item-id="e67ca77dc8b62583f252ce904c6655670">Open to feedback and continuous improvement. </li><li data-list-item-id="ebcc6d3cb9e96a183ffbbf846f991cc7b">Takes ownership and accountability. </li><li data-list-item-id="e184632034ed38e5e6fc82e342b51162a">Positive and proactive contributor to agency culture.</li></ul><h2>What does success look like in this role?</h2><p>The Digital PR Lead OKRs and performance will be measured against the following criteria:</p><ul><li data-list-item-id="ebd881f8edc0406fd2b54eab27936cd83">Successful establishment of a scalable Digital PR function.</li><li data-list-item-id="e4398979c0b19fbf5fe100a5c8511a22b">Demonstrable growth in client authority and high-quality link acquisition.</li><li data-list-item-id="e9928a25b733c2784fed6bbbe2bf3af28">Clear measurable contribution to SEO performance and organic growth.</li><li data-list-item-id="e90bd5dc5abd3d690163c799a44721024">Quality, creativity and effectiveness of campaign output.</li><li data-list-item-id="e1792cc974a0ffe1f2a4eb46cb3b2a479">Successful collaboration with SEO, Social and wider teams.</li><li data-list-item-id="e68589b9ae6e6284dbf1270ac780a665f">Contribution to new business growth and agency positioning.</li><li data-list-item-id="e1384ebc590506bfdfbaf3a27e9063255">Achieving at or above the agreed annual benchmark score in review.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							A bit about us
+					</h2>
+	
+	
+			<p>Founded in 2007, we’re the digital agency for brands that demand attention. <a href="../about-us/proudly-employee-owned.html">100% employee owned</a>, we’re a tight-knit team, motivated to achieve more - for our people, partners, and the planet. That's what led us to become Leeds' first <a href="../about-us/b-corp.html">B Corp</a>. </p><p>Find out more <a href="../about-us.html">about us</a>, <a href="../team.html">meet the team</a> and be sure to check out our <a href="../work.html">latest work</a>.</p><p>Thinking we might be a good fit? </p>
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333/engage-website/production/People-images/Team-photo-March-26.jpg"
+		alt="Team photo March 26"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Digital+PR+Lead&amp;team=Performance+Marketing&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							There's more to explore
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							We’re proudly employee owned
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="We’re proudly employee owned"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../about-us/proudly-employee-owned.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Meet the team
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Meet the team"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../team.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c02bebd5c479',t:'MTc5MDI3MzQ3Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

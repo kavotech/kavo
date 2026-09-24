@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Digital Careers: Head of Design</title>
+<meta name="description" content="Join Engage as Head of Design. Explore the role, responsibilities, and opportunities to grow your career.">
+
+	<link rel="canonical" href="head-of-design.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="head-of-design.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Digital Careers: Head of Design">
+<meta property="og:description" content="Join Engage as Head of Design. Explore the role, responsibilities, and opportunities to grow your career.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/careers/head-of-design">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/head-of-design#jobposting","url":"https:\/\/engage.agency\/careers\/head-of-design","title":"Head of Design (maternity cover)","directApply":true,"datePosted":"2026-03-09T12:43:00+00:00","validThrough":null,"hiringOrganization":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"jobLocation":{"@type":"Place","address":{"@type":"PostalAddress","streetAddress":"1st Floor, Munro House, Duke Street","addressLocality":"Leeds","addressRegion":"West Yorkshire","postalCode":"LS9 8AG","addressCountry":"GB"}},"description":"Join Engage as Head of Design. Explore the role, responsibilities, and opportunities to grow your career.","employmentType":"FULL_TIME","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/head-of-design#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/head-of-design#webpage","url":"https:\/\/engage.agency\/careers\/head-of-design","name":"Digital Careers: Head of Design","description":"Join Engage as Head of Design. Explore the role, responsibilities, and opportunities to grow your career.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/careers\/head-of-design#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Join the team","item":"https:\/\/engage.agency\/careers"},{"@type":"ListItem","position":3,"name":"Head of Design (maternity cover)","item":"https:\/\/engage.agency\/careers\/head-of-design"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/People-images\/ATD-Office.jpg"},"datePublished":"2026-09-24T13:41:59+01:00","dateModified":"2026-09-24T14:08:53+01:00","inLanguage":"en-GB","mainEntity":{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/head-of-design#jobposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="head-of-design.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Digital Careers: Head of Design&quot;,&quot;description&quot;:&quot;Join Engage as Head of Design. Explore the role, responsibilities, and opportunities to grow your career.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/careers\/head-of-design&quot;,&quot;shareTitle&quot;:&quot;Digital Careers: Head of Design&quot;,&quot;shareDescription&quot;:&quot;Join Engage as Head of Design. Explore the role, responsibilities, and opportunities to grow your career.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/head-of-design#jobposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/head-of-design\&quot;,\&quot;title\&quot;:\&quot;Head of Design (maternity cover)\&quot;,\&quot;directApply\&quot;:true,\&quot;datePosted\&quot;:\&quot;2026-03-09T12:43:00+00:00\&quot;,\&quot;validThrough\&quot;:null,\&quot;hiringOrganization\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;jobLocation\&quot;:{\&quot;@type\&quot;:\&quot;Place\&quot;,\&quot;address\&quot;:{\&quot;@type\&quot;:\&quot;PostalAddress\&quot;,\&quot;streetAddress\&quot;:\&quot;1st Floor, Munro House, Duke Street\&quot;,\&quot;addressLocality\&quot;:\&quot;Leeds\&quot;,\&quot;addressRegion\&quot;:\&quot;West Yorkshire\&quot;,\&quot;postalCode\&quot;:\&quot;LS9 8AG\&quot;,\&quot;addressCountry\&quot;:\&quot;GB\&quot;}},\&quot;description\&quot;:\&quot;Join Engage as Head of Design. Explore the role, responsibilities, and opportunities to grow your career.\&quot;,\&quot;employmentType\&quot;:\&quot;FULL_TIME\&quot;,\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/head-of-design#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/head-of-design#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/head-of-design\&quot;,\&quot;name\&quot;:\&quot;Digital Careers: Head of Design\&quot;,\&quot;description\&quot;:\&quot;Join Engage as Head of Design. Explore the role, responsibilities, and opportunities to grow your career.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/head-of-design#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Join the team\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Head of Design (maternity cover)\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/head-of-design\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/People-images\\\/ATD-Office.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2026-09-24T13:41:59+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-24T14:08:53+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/head-of-design#jobposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;basic&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Head of Design (maternity cover)&quot;,&quot;copy&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes&quot;},&quot;video&quot;:null,&quot;image&quot;:{&quot;alt&quot;:&quot;ATD Office&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;stat&quot;:null}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Salary&lt;\/h2&gt;&lt;p&gt;&lt;strong&gt;\u00a355,000 - \u00a365,000&lt;\/strong&gt;&lt;\/p&gt;&lt;h2&gt;Hours and\u00a0location&lt;\/h2&gt;&lt;p&gt;This is a full-time, 12 month fixed-term maternity cover role based in Leeds, UK.&lt;\/p&gt;&lt;p&gt;This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a week.&lt;\/p&gt;&lt;p&gt;&lt;u&gt;Note&lt;\/u&gt;: As this is a fixed-term, we\u2019re open to discussing more flexible hours or a different working pattern.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Contract dates:&lt;\/strong&gt; December 2026 - December 2027 (negotiable)\u00a0&lt;\/p&gt;&lt;h2&gt;What we&#039;re looking for&lt;\/h2&gt;&lt;p&gt;We\u2019re looking for an experienced creative leader to head up Design at Engage while our current Head of Design is on maternity leave.&lt;\/p&gt;&lt;p&gt;You\u2019ll lead a multidisciplinary team working across brand and campaigns, UX\/UI, digital experiences, motion and performance creative. You\u2019ll set a clear creative standard, guide our most important work and help the team do its best work without every decision needing to come through you.&lt;\/p&gt;&lt;p&gt;This is a broad agency leadership role. You\u2019ll work closely with our Web, Performance and Activation teams, as well as Client Services and the wider leadership team, to make sure creative thinking shapes the work from the outset.&lt;\/p&gt;&lt;h2&gt;Vision for the role&lt;\/h2&gt;&lt;p&gt;We want Design to be a strong creative partner across the agency: involved early, confident in its thinking and able to deliver work that looks great and solves the right problem.&lt;\/p&gt;&lt;p&gt;You\u2019ll bring senior direction to complex projects and pitches, help develop the people around you and keep the department running well day to day. You\u2019ll also have the judgement to balance creative ambition with client objectives, deadlines and budgets.&lt;\/p&gt;&lt;h2&gt;Benefits\u00a0package&lt;\/h2&gt;&lt;p&gt;As part of our commitment to making Engage a great place to work, we\u2019ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks\u00a0are:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e7a0bab39deb8a1eba29a558ae0b634e7\&quot;&gt;We&#039;re &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;employee owned&lt;\/a&gt;&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e2e83ab48a036878ba98c846edb258077\&quot;&gt;25 days holiday + bank holidays (rising after 5\u00a0years)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4b68edc5574047a62b56ce1229c65ec4\&quot;&gt;Company performance linked bonus scheme (this is depending on the business\u2019 performance and is not a contractual\u00a0benefit)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e066923c912185eda8587ff378a0cba59\&quot;&gt;Comprehensive private health\u00a0insurance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec071443cc47e37127a7ff8be345d73f5\&quot;&gt;5% company pension\u00a0scheme&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e734c0b0a5c02b30bff3929874b41dea5\&quot;&gt;Access to financial\u00a0coaching&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e22dc920eca4c8ff8f8c09481e6769e09\&quot;&gt;A company culture that promotes work-life\u00a0balance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed8ef6ba1c6f008aa86af4090be3e5c8a\&quot;&gt;Access to mental health\u00a0support&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e39da06069fc7221c26e083e377ede25f\&quot;&gt;Free on-site\u00a0gym&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0e0e50d5af0c9d4d3562ba6f3e40be50\&quot;&gt;Hybrid working&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ead76abb753ad65f3c8eb53d2ccdaf570\&quot;&gt;An award-winning office&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6d4e5035bd62b89ddc1d1b657a23eb82\&quot;&gt;Your birthday\u00a0off&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed77ec1d123edf431f63b59466719cd56\&quot;&gt;Regular socials, epic Summer parties and\u00a0more\u2026&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}}]}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;251110 0858&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/251110-0858.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/251110-0858.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/251110-0858.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/251110-0858.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/251110-0858.JPG&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Duties and responsibilities\u00a0&lt;\/h2&gt;&lt;p&gt;&lt;strong&gt;Creative leadership&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e9da7a1cc43d6a2a73fee9eef5d73e116\&quot;&gt;Set and uphold the creative standard across the Design Team.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e597f97ae00b797cdac6908c26f176fd4\&quot;&gt;Provide direction, constructive challenge and quality control on significant projects.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ead8b095c70991495f856f2c127a538bc\&quot;&gt;Help teams connect creative decisions to audience needs, client objectives and evidence.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eba1bb0cb6cef2f2a5c3ea16c8042f316\&quot;&gt;Give senior designers the support and space to lead work independently.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec85d6ce62e54062a0829e253bdc5acde\&quot;&gt;Champion craft, usability and attention to detail in the finished work.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Creative strategy and client work&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e69fdcf7f9ab5d896a10622041576ddb0\&quot;&gt;Turn business, brand and audience challenges into clear creative directions.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ecef7c1b70b5c874ad4cc1480e1d9936e\&quot;&gt;Shape campaign concepts, digital experiences and creative recommendations alongside specialists across the agency.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef87add73c26cc439c73b9d22ec73cd77\&quot;&gt;Challenge briefs where needed and help teams get to the heart of the problem.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef3461a1a2be68d50a216aef2362d206d\&quot;&gt;Present creative thinking confidently to senior clients, explaining the thinking behind the work.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee787a7874f37b24272f7f8b013ca7b54\&quot;&gt;Act as a trusted senior creative partner on key client accounts.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Web, Performance and Activation&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e7c358d015968a58bff407335b49d0c12\&quot;&gt;Guide the creative approach to websites and digital experiences, working closely with UX\/UI and Development.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7a507451e6edfa5d3946d0c0ed1a7ebe\&quot;&gt;Help Performance teams use audience, platform and results data to improve creative effectiveness.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e957bfef4255f8f8e51ca564d55898adf\&quot;&gt;Provide direction across campaigns, social, content and motion, ensuring ideas work across channels.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec6c1dd3a29e824008e6dce7ed71e6c76\&quot;&gt;Help develop the creative capabilities and ways of working within each of these areas.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;Team and department leadership&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;edc45b5223742ca7f1eace5dc6766bbd9\&quot;&gt;Lead, coach and develop a multidisciplinary Design Team.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e18b77ce1b7e1fb329cb0f8df96dc3bc7\&quot;&gt;Set clear priorities and expectations, and support people with regular feedback and progression.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5735a0bf1349386d0aa4656dd15863ef\&quot;&gt;Work with other teams to plan capacity and make sensible decisions when priorities compete.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e60b16db423eb5dc10475ed53a7da22e0\&quot;&gt;Keep an appropriate eye on budgets, utilisation and the commercial performance of the department.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e05b0b964be0f94cc3899f1641329aab3\&quot;&gt;Improve processes and ways of working where they help the team produce better work.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;New business&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e8198ac809f7e3b02a51810154e2e7ed2\&quot;&gt;Help shape the creative angle and ambition of proposals and pitches.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7a8156238fee0c0938026a814e20ca4c\&quot;&gt;Lead or support creative pitch work and present ideas to prospective clients.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6e4be1c64dc8bf2b752c6d570e63c115\&quot;&gt;Identify opportunities to bring stronger creative thinking into existing client relationships.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now &quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Charlie Matt Charlotte&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Skills and experience&lt;\/h2&gt;&lt;p&gt;We\u2019d like to hear from people who have:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ee4eaafa10c336c464e9f39d39225e5d3\&quot;&gt;Senior creative or design leadership experience in a digital or integrated agency.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e287e4830d1df4fb5b00638c45127fd1d\&quot;&gt;Led and developed designers across more than one discipline.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0175309f9d4e5eba7440b21d872ad955\&quot;&gt;A strong track record in creative direction and strategy, as well as design craft.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eba7abb9df2a9c03ab57bfa578c815385\&quot;&gt;A good understanding of digital experiences and how Design works with Development.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7927c6e0021a395f62e01f9c292f2e89\&quot;&gt;Experience with campaign creative and an understanding of how it contributes to marketing outcomes.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4246ff450201998f084e690e5c9483ad\&quot;&gt;Confidence in presenting, storytelling and defending creative thinking with senior stakeholders.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef507dbafd5d6b1225f1bfb7ed920bb1f\&quot;&gt;Sound commercial judgement around scope, budgets, resourcing and delivery.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;You don\u2019t need to be the strongest \u2018hands-on\u2019 in every specialism, this role is more focussed on having the breadth and judgement to ask good questions, recognise excellent work and bring specialists together around a shared direction.&lt;\/p&gt;&lt;h2&gt;Authority&lt;\/h2&gt;&lt;p&gt;You\u2019ll lead the Design team and have ownership of its creative standards, team development and day-to-day direction. You\u2019ll be the senior Design voice in agency leadership conversations and across important client opportunities.&lt;\/p&gt;&lt;p&gt;This is primarily a leadership and direction role. There will be moments to get hands-on, particularly in early concepting, pitches or difficult creative challenges, but your greatest impact will come through the work you help others produce.&lt;\/p&gt;&lt;h2&gt;Person specification&lt;\/h2&gt;&lt;p&gt;You\u2019re a confident, collaborative creative leader who can make decisions when there are competing views or imperfect information. You give clear feedback, bring people with you and care about developing the capability of the team.&lt;\/p&gt;&lt;p&gt;You can move comfortably between creative strategy, client conversations, people leadership and the practical realities of agency delivery. You know when work needs more time and attention, and when a pragmatic solution is the right call.&lt;\/p&gt;&lt;h2&gt;What does success look like in this role?&lt;\/h2&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e930fb96f04038d0d1020ea52d17d7eaa\&quot;&gt;Engage continues to produce strong, strategically grounded creative work across Web, Performance and Activation.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;efd0b5d2ec1ed5e058be82f7323aa9d4d\&quot;&gt;The Design Team has clear priorities, ownership and support, with senior people confident leading their work.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6b81682f97cb00f2e9b6c391647ea61b\&quot;&gt;Design is involved early enough to shape opportunities and client work.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e08e110f0c79d8f25ece480bab111d3a2\&quot;&gt;Creative quality stays high while projects are delivered efficiently and commercially.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec63c5416e7581f8815c24a40722709af\&quot;&gt;Clients and colleagues see you as a credible, constructive senior creative partner.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}}]}},{&quot;type&quot;:&quot;fifty-fifty&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;A bit about us&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Founded in 2007, we\u2019re the digital agency for brands that demand attention. We&#039;re &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;100% employee owned&lt;\/a&gt; and a certified B Corp, with a team that brings together strategy, creative, technology and performance.&lt;\/p&gt;&lt;p&gt;Find out more &lt;a href=\&quot;https:\/\/engage.agency\/about-us\&quot;&gt;about us&lt;\/a&gt;, &lt;a href=\&quot;https:\/\/engage.agency\/team\&quot;&gt;meet the team&lt;\/a&gt; and be sure to check out our &lt;a href=\&quot;https:\/\/engage.agency\/work\&quot;&gt;latest work&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;Thinking we might be a good fit?\u00a0&lt;\/p&gt;&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/to\/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1280,1024],&quot;ratio&quot;:&quot;3\/2&quot;},&quot;video&quot;:null,&quot;reverse&quot;:false}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Find out more about us&quot;,&quot;items&quot;:[{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Meet the team&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Meet the team&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Join the team&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Join the team&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Case studies index&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Case studies index&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Blog index&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Blog index&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/People-images/ATD-Office.jpg"
+		alt="ATD Office"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Head of Design (maternity cover)</h1>
+	
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Salary</h2><p><strong>£55,000 - £65,000</strong></p><h2>Hours and location</h2><p>This is a full-time, 12 month fixed-term maternity cover role based in Leeds, UK.</p><p>This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a week.</p><p><u>Note</u>: As this is a fixed-term, we’re open to discussing more flexible hours or a different working pattern.</p><p><strong>Contract dates:</strong> December 2026 - December 2027 (negotiable) </p><h2>What we're looking for</h2><p>We’re looking for an experienced creative leader to head up Design at Engage while our current Head of Design is on maternity leave.</p><p>You’ll lead a multidisciplinary team working across brand and campaigns, UX/UI, digital experiences, motion and performance creative. You’ll set a clear creative standard, guide our most important work and help the team do its best work without every decision needing to come through you.</p><p>This is a broad agency leadership role. You’ll work closely with our Web, Performance and Activation teams, as well as Client Services and the wider leadership team, to make sure creative thinking shapes the work from the outset.</p><h2>Vision for the role</h2><p>We want Design to be a strong creative partner across the agency: involved early, confident in its thinking and able to deliver work that looks great and solves the right problem.</p><p>You’ll bring senior direction to complex projects and pitches, help develop the people around you and keep the department running well day to day. You’ll also have the judgement to balance creative ambition with client objectives, deadlines and budgets.</p><h2>Benefits package</h2><p>As part of our commitment to making Engage a great place to work, we’ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks are:</p><ul><li data-list-item-id="e7a0bab39deb8a1eba29a558ae0b634e7">We're <a href="../about-us/proudly-employee-owned.html">employee owned</a></li><li data-list-item-id="e2e83ab48a036878ba98c846edb258077">25 days holiday + bank holidays (rising after 5 years)</li><li data-list-item-id="e4b68edc5574047a62b56ce1229c65ec4">Company performance linked bonus scheme (this is depending on the business’ performance and is not a contractual benefit)</li><li data-list-item-id="e066923c912185eda8587ff378a0cba59">Comprehensive private health insurance</li><li data-list-item-id="ec071443cc47e37127a7ff8be345d73f5">5% company pension scheme</li><li data-list-item-id="e734c0b0a5c02b30bff3929874b41dea5">Access to financial coaching</li><li data-list-item-id="e22dc920eca4c8ff8f8c09481e6769e09">A company culture that promotes work-life balance</li><li data-list-item-id="ed8ef6ba1c6f008aa86af4090be3e5c8a">Access to mental health support</li><li data-list-item-id="e39da06069fc7221c26e083e377ede25f">Free on-site gym</li><li data-list-item-id="e0e0e50d5af0c9d4d3562ba6f3e40be50">Hybrid working</li><li data-list-item-id="ead76abb753ad65f3c8eb53d2ccdaf570">An award-winning office</li><li data-list-item-id="e6d4e5035bd62b89ddc1d1b657a23eb82">Your birthday off</li><li data-list-item-id="ed77ec1d123edf431f63b59466719cd56">Regular socials, epic Summer parties and more…</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+			
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/251110-0858.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/251110-0858.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/251110-0858.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/251110-0858.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/251110-0858.JPG"
+		alt="251110 0858"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Duties and responsibilities </h2><p><strong>Creative leadership</strong></p><ul><li data-list-item-id="e9da7a1cc43d6a2a73fee9eef5d73e116">Set and uphold the creative standard across the Design Team.</li><li data-list-item-id="e597f97ae00b797cdac6908c26f176fd4">Provide direction, constructive challenge and quality control on significant projects.</li><li data-list-item-id="ead8b095c70991495f856f2c127a538bc">Help teams connect creative decisions to audience needs, client objectives and evidence.</li><li data-list-item-id="eba1bb0cb6cef2f2a5c3ea16c8042f316">Give senior designers the support and space to lead work independently.</li><li data-list-item-id="ec85d6ce62e54062a0829e253bdc5acde">Champion craft, usability and attention to detail in the finished work.</li></ul><p><strong>Creative strategy and client work</strong></p><ul><li data-list-item-id="e69fdcf7f9ab5d896a10622041576ddb0">Turn business, brand and audience challenges into clear creative directions.</li><li data-list-item-id="ecef7c1b70b5c874ad4cc1480e1d9936e">Shape campaign concepts, digital experiences and creative recommendations alongside specialists across the agency.</li><li data-list-item-id="ef87add73c26cc439c73b9d22ec73cd77">Challenge briefs where needed and help teams get to the heart of the problem.</li><li data-list-item-id="ef3461a1a2be68d50a216aef2362d206d">Present creative thinking confidently to senior clients, explaining the thinking behind the work.</li><li data-list-item-id="ee787a7874f37b24272f7f8b013ca7b54">Act as a trusted senior creative partner on key client accounts.</li></ul><p><strong>Web, Performance and Activation</strong></p><ul><li data-list-item-id="e7c358d015968a58bff407335b49d0c12">Guide the creative approach to websites and digital experiences, working closely with UX/UI and Development.</li><li data-list-item-id="e7a507451e6edfa5d3946d0c0ed1a7ebe">Help Performance teams use audience, platform and results data to improve creative effectiveness.</li><li data-list-item-id="e957bfef4255f8f8e51ca564d55898adf">Provide direction across campaigns, social, content and motion, ensuring ideas work across channels.</li><li data-list-item-id="ec6c1dd3a29e824008e6dce7ed71e6c76">Help develop the creative capabilities and ways of working within each of these areas.</li></ul><p><strong>Team and department leadership</strong></p><ul><li data-list-item-id="edc45b5223742ca7f1eace5dc6766bbd9">Lead, coach and develop a multidisciplinary Design Team.</li><li data-list-item-id="e18b77ce1b7e1fb329cb0f8df96dc3bc7">Set clear priorities and expectations, and support people with regular feedback and progression.</li><li data-list-item-id="e5735a0bf1349386d0aa4656dd15863ef">Work with other teams to plan capacity and make sensible decisions when priorities compete.</li><li data-list-item-id="e60b16db423eb5dc10475ed53a7da22e0">Keep an appropriate eye on budgets, utilisation and the commercial performance of the department.</li><li data-list-item-id="e05b0b964be0f94cc3899f1641329aab3">Improve processes and ways of working where they help the team produce better work.</li></ul><p><strong>New business</strong></p><ul><li data-list-item-id="e8198ac809f7e3b02a51810154e2e7ed2">Help shape the creative angle and ambition of proposals and pitches.</li><li data-list-item-id="e7a8156238fee0c0938026a814e20ca4c">Lead or support creative pitch work and present ideas to prospective clients.</li><li data-list-item-id="e6e4be1c64dc8bf2b752c6d570e63c115">Identify opportunities to bring stronger creative thinking into existing client relationships.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes"
+	>
+	Apply now 
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+		alt="Charlie Matt Charlotte"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Skills and experience</h2><p>We’d like to hear from people who have:</p><ul><li data-list-item-id="ee4eaafa10c336c464e9f39d39225e5d3">Senior creative or design leadership experience in a digital or integrated agency.</li><li data-list-item-id="e287e4830d1df4fb5b00638c45127fd1d">Led and developed designers across more than one discipline.</li><li data-list-item-id="e0175309f9d4e5eba7440b21d872ad955">A strong track record in creative direction and strategy, as well as design craft.</li><li data-list-item-id="eba7abb9df2a9c03ab57bfa578c815385">A good understanding of digital experiences and how Design works with Development.</li><li data-list-item-id="e7927c6e0021a395f62e01f9c292f2e89">Experience with campaign creative and an understanding of how it contributes to marketing outcomes.</li><li data-list-item-id="e4246ff450201998f084e690e5c9483ad">Confidence in presenting, storytelling and defending creative thinking with senior stakeholders.</li><li data-list-item-id="ef507dbafd5d6b1225f1bfb7ed920bb1f">Sound commercial judgement around scope, budgets, resourcing and delivery.</li></ul><p>You don’t need to be the strongest ‘hands-on’ in every specialism, this role is more focussed on having the breadth and judgement to ask good questions, recognise excellent work and bring specialists together around a shared direction.</p><h2>Authority</h2><p>You’ll lead the Design team and have ownership of its creative standards, team development and day-to-day direction. You’ll be the senior Design voice in agency leadership conversations and across important client opportunities.</p><p>This is primarily a leadership and direction role. There will be moments to get hands-on, particularly in early concepting, pitches or difficult creative challenges, but your greatest impact will come through the work you help others produce.</p><h2>Person specification</h2><p>You’re a confident, collaborative creative leader who can make decisions when there are competing views or imperfect information. You give clear feedback, bring people with you and care about developing the capability of the team.</p><p>You can move comfortably between creative strategy, client conversations, people leadership and the practical realities of agency delivery. You know when work needs more time and attention, and when a pragmatic solution is the right call.</p><h2>What does success look like in this role?</h2><ul><li data-list-item-id="e930fb96f04038d0d1020ea52d17d7eaa">Engage continues to produce strong, strategically grounded creative work across Web, Performance and Activation.</li><li data-list-item-id="efd0b5d2ec1ed5e058be82f7323aa9d4d">The Design Team has clear priorities, ownership and support, with senior people confident leading their work.</li><li data-list-item-id="e6b81682f97cb00f2e9b6c391647ea61b">Design is involved early enough to shape opportunities and client work.</li><li data-list-item-id="e08e110f0c79d8f25ece480bab111d3a2">Creative quality stays high while projects are delivered efficiently and commercially.</li><li data-list-item-id="ec63c5416e7581f8815c24a40722709af">Clients and colleagues see you as a credible, constructive senior creative partner.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							A bit about us
+					</h2>
+	
+	
+			<p>Founded in 2007, we’re the digital agency for brands that demand attention. We're <a href="../about-us/proudly-employee-owned.html">100% employee owned</a> and a certified B Corp, with a team that brings together strategy, creative, technology and performance.</p><p>Find out more <a href="../about-us.html">about us</a>, <a href="../team.html">meet the team</a> and be sure to check out our <a href="../work.html">latest work</a>.</p><p>Thinking we might be a good fit? </p>
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333/engage-website/production/People-images/Team-photo-March-26.jpg"
+		alt="Team photo March 26"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="https://engageinteractive.typeform.com/to/ocm3L127?typeform-source=engageinteractive.co.uk#role=Head+of+Design&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Find out more about us
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Meet the team
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Meet the team"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../team.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Join the team
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Join the team"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../careers.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Case studies index
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Case studies index"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Blog index
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Blog index"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c01c0dfec479',t:'MTc5MDI3MzQ3Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

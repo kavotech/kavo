@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Alex Willcocks | Managing Director | Engage</title>
+<meta name="description" content="Alex co-founded Engage and leads the agency with a focus on creativity, performance, and long-term client success.">
+
+	<link rel="canonical" href="alex-willcocks.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="alex-willcocks.html" media="(width < 1024px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Alex Willcocks | Managing Director | Engage">
+<meta property="og:description" content="Alex co-founded Engage and leads the agency with a focus on creativity, performance, and long-term client success.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/team/alex-willcocks">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Teams/Headshots/Alex-Willcocks.jpeg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"Person","@id":"https:\/\/engage.agency\/team\/alex-willcocks#person","url":"https:\/\/engage.agency\/team\/alex-willcocks","name":"Alex Willcocks","jobTitle":"Managing Director","worksFor":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"description":"Alex co-founded Engage and leads the agency with a focus on creativity, performance, and long-term client success.","image":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Teams\/Headshots\/Alex_Willcocks-1.jpg","caption":"Alex Willcocks \u2013 Managing Director"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/team\/alex-willcocks#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/team\/alex-willcocks#webpage","url":"https:\/\/engage.agency\/team\/alex-willcocks","name":"Alex Willcocks | Managing Director | Engage","description":"Alex co-founded Engage and leads the agency with a focus on creativity, performance, and long-term client success.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/team\/alex-willcocks#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Meet the team","item":"https:\/\/engage.agency\/team"},{"@type":"ListItem","position":3,"name":"Alex Willcocks","item":"https:\/\/engage.agency\/team\/alex-willcocks"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Teams\/Headshots\/Alex_Willcocks-1.jpg"},"datePublished":"2025-01-28T15:49:07+00:00","dateModified":"2026-04-23T14:32:44+01:00","inLanguage":"en-GB","mainEntity":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/alex-willcocks#person"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="alex-willcocks.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Alex Willcocks | Managing Director | Engage&quot;,&quot;description&quot;:&quot;Alex co-founded Engage and leads the agency with a focus on creativity, performance, and long-term client success.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Teams\/Headshots\/Alex-Willcocks.jpeg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/team\/alex-willcocks&quot;,&quot;shareTitle&quot;:&quot;Alex Willcocks | Managing Director | Engage&quot;,&quot;shareDescription&quot;:&quot;Alex co-founded Engage and leads the agency with a focus on creativity, performance, and long-term client success.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/alex-willcocks#person\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/alex-willcocks\&quot;,\&quot;name\&quot;:\&quot;Alex Willcocks\&quot;,\&quot;jobTitle\&quot;:\&quot;Managing Director\&quot;,\&quot;worksFor\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;description\&quot;:\&quot;Alex co-founded Engage and leads the agency with a focus on creativity, performance, and long-term client success.\&quot;,\&quot;image\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Teams\\\/Headshots\\\/Alex_Willcocks-1.jpg\&quot;,\&quot;caption\&quot;:\&quot;Alex Willcocks \\u2013 Managing Director\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/alex-willcocks#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/alex-willcocks#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/alex-willcocks\&quot;,\&quot;name\&quot;:\&quot;Alex Willcocks | Managing Director | Engage\&quot;,\&quot;description\&quot;:\&quot;Alex co-founded Engage and leads the agency with a focus on creativity, performance, and long-term client success.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/alex-willcocks#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Meet the team\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Alex Willcocks\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/alex-willcocks\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Teams\\\/Headshots\\\/Alex_Willcocks-1.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2025-01-28T15:49:07+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-04-23T14:32:44+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/alex-willcocks#person\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;profile&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Alex Willcocks&quot;,&quot;role&quot;:&quot;Managing Director&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Alex Willcocks 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=640,height=640\/engage-website\/production\/Teams\/Headshots\/Alex_Willcocks-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=320,height=320\/engage-website\/production\/Teams\/Headshots\/Alex_Willcocks-1.jpg&quot;],&quot;sizes&quot;:[1024]},&quot;favouriteGif&quot;:{&quot;alt&quot;:&quot;Alex Willcocks&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=640,height=640\/engage-website\/production\/Teams\/Gifs\/Alex-Willcocks.gif&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=320,height=320\/engage-website\/production\/Teams\/Gifs\/Alex-Willcocks.gif&quot;],&quot;sizes&quot;:[1024]},&quot;yearsLost&quot;:18}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;callout&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Why the glasses icon?&quot;,&quot;copy&quot;:&quot;I&#039;ve embraced being bespectacled from a young age, when I used to do a great Harry Potter impression... long before anyone knew who Harry Potter was. Since then my glasses have stuck with me through thick and thin, evolving with me over time and never being too far from my face in case of emergency.&quot;,&quot;explainer&quot;:&quot;Each team member chooses an icon that best represents them. These proudly line the walls in our studio.&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Alex Willcocks&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Teams\/Icons\/Alex-Willcocks.svg&quot;],&quot;sizes&quot;:null}}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;A bit more about Alex&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;What do you enjoy most about your role?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Building something that actually matters to people. \u00a0I love the moments where everything clicks. When the team\u2019s flying, clients are seeing the impact of what we\u2019ve delivered, and you can feel the momentum across the business. That\u2019s hard to beat.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What challenges do you enjoy solving?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;I love the challenge of alignment. Getting a group of smart, opinionated people all pulling in the same direction is harder than it sounds - but when you get it right, it\u2019s incredibly powerful.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Which project at Engage are you proudest of, and why?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Becoming employee-owned, without a doubt. \u00a0Not just because of what it is structurally, but because of what it represents. It was a big, irreversible decision. Handing over ownership of something you\u2019ve built over years isn\u2019t a small thing. \u00a0But it\u2019s already changed how we think, how we show up, and how we perform. When people genuinely feel like owners, the standard lifts. The care factor goes up. The ambition goes up. We\u2019re still early in that journey - but what we\u2019ve achieved in a short space of time makes me incredibly proud.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What sets Engage apart from other agencies?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;We actually mean it when we talk about quality. \u201cAttention to digital\u2122\u201d isn\u2019t just a line - it\u2019s how we operate. We sweat the details, we care about the craft, and we push work from \&quot;that\u2019ll do\&quot; to \&quot;that\u2019s genuinely excellent\&quot;. \u00a0Layer employee ownership on top of that and it becomes something quite powerful. You\u2019ve got a team of people who care more, think longer-term, and take real pride in what they put their name to. It\u2019s not magic. It\u2019s just a group of people treating the business like it\u2019s theirs - because it is.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What drew you to a career in digital?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;The pace of it. Digital doesn\u2019t sit still. It evolves constantly, which means you\u2019re always learning, always adapting, always figuring things out. That suits me. I also love the blend of creativity and commercial impact. You can build something beautiful, but it also has to work. It has to deliver. That balance keeps things interesting.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What\u2019s the most valuable lesson you\u2019ve learned in your career?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Clarity beats everything. If people understand where you\u2019re going, why it matters, and what\u2019s expected of them - most of the hard stuff becomes easier. If they don\u2019t, even simple things become painful. The other big one - culture isn\u2019t what you say, it\u2019s what you tolerate. The standards you walk past become the standards you accept. Get those two things right, and a lot of the rest tends to follow.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}},{&quot;type&quot;:&quot;article-list&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Alex&#039;s featured content&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Q&amp;A with Matt &amp; Charlotte: Celebrating our EO, OG\u2019s&quot;,&quot;date&quot;:&quot;11th August 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;EO res matt charlotte&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/People-images\/EO-res-matt-charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/People-images\/EO-res-matt-charlotte.jpg&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/employee-ownership-q-and-a-matt-and-charlotte&quot;}},{&quot;title&quot;:&quot;Welcome to the new Engage&quot;,&quot;date&quot;:&quot;20th April 2026&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Header 4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Welcome-to-the-new-engage\/Header-4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Welcome-to-the-new-engage\/Header-4.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/welcome-to-the-new-engage&quot;}},{&quot;title&quot;:&quot;Building a multi award-winning agency: An interview with Founder Alex Willcocks&quot;,&quot;date&quot;:&quot;15th May 2025&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;54507016641 e3ccf25bd5 k&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Building-a-multi-award-winning-agency-An-interview-with-Founder-Alex-Willcocks\/54507016641_e3ccf25bd5_k.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Building-a-multi-award-winning-agency-An-interview-with-Founder-Alex-Willcocks\/54507016641_e3ccf25bd5_k.jpg&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;}},{&quot;title&quot;:&quot;Proudly employee-owned: An interview with Engage Founder and Owner Alex Willcocks&quot;,&quot;date&quot;:&quot;7th August 2024&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Blog EO Alexinterview 19x6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Proudly-employee-owned-An-interview-with-Engage-Founder-and-Owner-Alex-Willcocks\/blog_EOAlexinterview_19x6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Proudly-employee-owned-An-interview-with-Engage-Founder-and-Owner-Alex-Willcocks\/blog_EOAlexinterview_19x6.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/proudly-employee-owned-an-interview-with-engage-founder-and-owner&quot;}},{&quot;title&quot;:&quot;Engage becomes 100 percent employee-owned&quot;,&quot;date&quot;:&quot;30th July 2024&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Blog becoming EO 19x6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-becomes-100-percent-employee-owned\/blog_becomingEO_19x6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Engage-becomes-100-percent-employee-owned\/blog_becomingEO_19x6.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-becomes-100-percent-employee-owned&quot;}},{&quot;title&quot;:&quot;National education charity, the EEF, choose Engage&quot;,&quot;date&quot;:&quot;6th September 2023&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Rebecca Walker Matt Whatt Alice Mc Bride Charlie Duddy Matthew Wilkinson Oliver Livsey Dom Mernock Annabel Lindsay and Adam Gilleard 1 1536x864&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/National-education-charity-the-EEF-choose-Engage\/Rebecca-Walker-Matt-Whatt-Alice-McBride-Charlie-Duddy-Matthew-Wilkinson-Oliver-Livsey-Dom-Mernock-Annabel-Lindsay-and-Adam-Gilleard-1-1536x864.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/National-education-charity-the-EEF-choose-Engage\/Rebecca-Walker-Matt-Whatt-Alice-McBride-Charlie-Duddy-Matthew-Wilkinson-Oliver-Livsey-Dom-Mernock-Annabel-Lindsay-and-Adam-Gilleard-1-1536x864.jpg&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/national-education-charity-the-eef-choose-engage&quot;}},{&quot;title&quot;:&quot;Our journey to becoming a Certified B Corp\u2122&quot;,&quot;date&quot;:&quot;11th July 2023&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;1000 bcorps&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Our-journey-to-becoming-a-Certified-B-Corp\u2122\/1000-bcorps.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Our-journey-to-becoming-a-Certified-B-Corp\u2122\/1000-bcorps.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/our-journey-to-becoming-a-certified-b-corp&quot;}},{&quot;title&quot;:&quot;Going Green: We\u2019re officially Carbon Neutral&quot;,&quot;date&quot;:&quot;10th July 2023&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Carbon neutral&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Going-Green-We\u2019re-officially-Carbon-Neutral\/carbon-neutral.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Going-Green-We\u2019re-officially-Carbon-Neutral\/carbon-neutral.jpg&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/going-green-were-officially-carbon-neutral&quot;}},{&quot;title&quot;:&quot;Prince William presents CATCH with The Queen&#039;s Award&quot;,&quot;date&quot;:&quot;6th July 2023&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Prince william&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Prince-William-presents-CATCH-with-The-Queens-Award\/prince-william.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Prince-William-presents-CATCH-with-The-Queens-Award\/prince-william.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/prince-william-presents-catch-with-the-queens-award&quot;}},{&quot;title&quot;:&quot;Our 2023 Impact Report&quot;,&quot;date&quot;:&quot;4th July 2023&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Impact report&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Our-2023-Impact-Report\/impact-report.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Our-2023-Impact-Report\/impact-report.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/our-2023-impact-report&quot;}},{&quot;title&quot;:&quot;Engage named one of WIRED magazine&#039;s 2023 Trailblazers&quot;,&quot;date&quot;:&quot;3rd July 2023&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Wired Blog Header&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-one-of-WIRED-magazines-2023-Trailblazers\/Engage-Wired-BlogHeader.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400\/engage-website\/production\/Blog\/Engage-named-one-of-WIRED-magazines-2023-Trailblazers\/Engage-Wired-BlogHeader.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-wired-magazine-trailblazer&quot;}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Meet the rest of the Leadership team&quot;,&quot;items&quot;:[{&quot;prefix&quot;:&quot;Commercial Director&quot;,&quot;title&quot;:&quot;Dom Mernock&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/dom-mernock&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Dom Mernock 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Teams\/Headshots\/Dom-Mernock-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Teams\/Headshots\/Dom-Mernock-1.jpg&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:&quot;Financial Director&quot;,&quot;title&quot;:&quot;Lauren Carter&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/lauren-carter&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Lauren Carter&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Teams\/Headshots\/Lauren-Carter.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Teams\/Headshots\/Lauren-Carter.jpg&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:&quot;Operations Director&quot;,&quot;title&quot;:&quot;Tom Schofield&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/tom-schofield&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Tom Schofield&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Teams\/Headshots\/tom-Schofield.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Teams\/Headshots\/tom-Schofield.jpg&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:&quot;Technical Director&quot;,&quot;title&quot;:&quot;Will Blackmore&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/will-blackmore&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Will Blackmore&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Teams\/Headshots\/Will_Blackmore.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Teams\/Headshots\/Will_Blackmore.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=640,height=640/engage-website/production/Teams/Headshots/Alex_Willcocks-1.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=320,height=320/engage-website/production/Teams/Headshots/Alex_Willcocks-1.jpg"
+		alt="Alex Willcocks 1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Alex Willcocks</h1>
+	
+	
+	
+	
+	
+	</header>
+
+	
+	<section>
+	
+	
+
+			<h2>
+							Why the glasses icon?
+					</h2>
+	
+	
+			I've embraced being bespectacled from a young age, when I used to do a great Harry Potter impression... long before anyone knew who Harry Potter was. Since then my glasses have stuck with me through thick and thin, evolving with me over time and never being too far from my face in case of emergency.
+	
+			<figure>
+							<picture>
+	
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Teams/Icons/Alex-Willcocks.svg"
+		alt="Alex Willcocks"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							A bit more about Alex
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							What do you enjoy most about your role?
+					</h3>
+	
+	
+			<p>Building something that actually matters to people.  I love the moments where everything clicks. When the team’s flying, clients are seeing the impact of what we’ve delivered, and you can feel the momentum across the business. That’s hard to beat.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							What challenges do you enjoy solving?
+					</h3>
+	
+	
+			<p>I love the challenge of alignment. Getting a group of smart, opinionated people all pulling in the same direction is harder than it sounds - but when you get it right, it’s incredibly powerful.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Which project at Engage are you proudest of, and why?
+					</h3>
+	
+	
+			<p>Becoming employee-owned, without a doubt.  Not just because of what it is structurally, but because of what it represents. It was a big, irreversible decision. Handing over ownership of something you’ve built over years isn’t a small thing.  But it’s already changed how we think, how we show up, and how we perform. When people genuinely feel like owners, the standard lifts. The care factor goes up. The ambition goes up. We’re still early in that journey - but what we’ve achieved in a short space of time makes me incredibly proud.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							What sets Engage apart from other agencies?
+					</h3>
+	
+	
+			<p>We actually mean it when we talk about quality. “Attention to digital™” isn’t just a line - it’s how we operate. We sweat the details, we care about the craft, and we push work from "that’ll do" to "that’s genuinely excellent".  Layer employee ownership on top of that and it becomes something quite powerful. You’ve got a team of people who care more, think longer-term, and take real pride in what they put their name to. It’s not magic. It’s just a group of people treating the business like it’s theirs - because it is.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							What drew you to a career in digital?
+					</h3>
+	
+	
+			<p>The pace of it. Digital doesn’t sit still. It evolves constantly, which means you’re always learning, always adapting, always figuring things out. That suits me. I also love the blend of creativity and commercial impact. You can build something beautiful, but it also has to work. It has to deliver. That balance keeps things interesting.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							What’s the most valuable lesson you’ve learned in your career?
+					</h3>
+	
+	
+			<p>Clarity beats everything. If people understand where you’re going, why it matters, and what’s expected of them - most of the hard stuff becomes easier. If they don’t, even simple things become painful. The other big one - culture isn’t what you say, it’s what you tolerate. The standards you walk past become the standards you accept. Get those two things right, and a lot of the rest tends to follow.</p>
+	
+	
+	
+	
+		
+	</article>
+			</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Alex's featured content
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Q&A with Matt & Charlotte: Celebrating our EO, OG’s
+					</h3>
+	
+			<p>11th August 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/People-images/EO-res-matt-charlotte.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/People-images/EO-res-matt-charlotte.jpg"
+		alt="EO res matt charlotte"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/employee-ownership-q-and-a-matt-and-charlotte.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Welcome to the new Engage
+					</h3>
+	
+			<p>20th April 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Welcome-to-the-new-engage/Header-4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Welcome-to-the-new-engage/Header-4.png"
+		alt="Header 4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/welcome-to-the-new-engage.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Building a multi award-winning agency: An interview with Founder Alex Willcocks
+					</h3>
+	
+			<p>15th May 2025</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Building-a-multi-award-winning-agency-An-interview-with-Founder-Alex-Willcocks/54507016641_e3ccf25bd5_k.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Building-a-multi-award-winning-agency-An-interview-with-Founder-Alex-Willcocks/54507016641_e3ccf25bd5_k.jpg"
+		alt="54507016641 e3ccf25bd5 k"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Proudly employee-owned: An interview with Engage Founder and Owner Alex Willcocks
+					</h3>
+	
+			<p>7th August 2024</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Proudly-employee-owned-An-interview-with-Engage-Founder-and-Owner-Alex-Willcocks/blog_EOAlexinterview_19x6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Proudly-employee-owned-An-interview-with-Engage-Founder-and-Owner-Alex-Willcocks/blog_EOAlexinterview_19x6.png"
+		alt="Blog EO Alexinterview 19x6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/proudly-employee-owned-an-interview-with-engage-founder-and-owner.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage becomes 100 percent employee-owned
+					</h3>
+	
+			<p>30th July 2024</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-becomes-100-percent-employee-owned/blog_becomingEO_19x6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Engage-becomes-100-percent-employee-owned/blog_becomingEO_19x6.png"
+		alt="Blog becoming EO 19x6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/engage-becomes-100-percent-employee-owned.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							National education charity, the EEF, choose Engage
+					</h3>
+	
+			<p>6th September 2023</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/National-education-charity-the-EEF-choose-Engage/Rebecca-Walker-Matt-Whatt-Alice-McBride-Charlie-Duddy-Matthew-Wilkinson-Oliver-Livsey-Dom-Mernock-Annabel-Lindsay-and-Adam-Gilleard-1-1536x864.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/National-education-charity-the-EEF-choose-Engage/Rebecca-Walker-Matt-Whatt-Alice-McBride-Charlie-Duddy-Matthew-Wilkinson-Oliver-Livsey-Dom-Mernock-Annabel-Lindsay-and-Adam-Gilleard-1-1536x864.jpg"
+		alt="Rebecca Walker Matt Whatt Alice Mc Bride Charlie Duddy Matthew Wilkinson Oliver Livsey Dom Mernock Annabel Lindsay and Adam Gilleard 1 1536x864"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/national-education-charity-the-eef-choose-engage.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Our journey to becoming a Certified B Corp™
+					</h3>
+	
+			<p>11th July 2023</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Our-journey-to-becoming-a-Certified-B-Corp™/1000-bcorps.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Our-journey-to-becoming-a-Certified-B-Corp™/1000-bcorps.png"
+		alt="1000 bcorps"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/our-journey-to-becoming-a-certified-b-corp.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Going Green: We’re officially Carbon Neutral
+					</h3>
+	
+			<p>10th July 2023</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Going-Green-We’re-officially-Carbon-Neutral/carbon-neutral.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Going-Green-We’re-officially-Carbon-Neutral/carbon-neutral.jpg"
+		alt="Carbon neutral"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/going-green-were-officially-carbon-neutral.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Prince William presents CATCH with The Queen's Award
+					</h3>
+	
+			<p>6th July 2023</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Prince-William-presents-CATCH-with-The-Queens-Award/prince-william.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Prince-William-presents-CATCH-with-The-Queens-Award/prince-william.png"
+		alt="Prince william"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/prince-william-presents-catch-with-the-queens-award.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Our 2023 Impact Report
+					</h3>
+	
+			<p>4th July 2023</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Our-2023-Impact-Report/impact-report.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Our-2023-Impact-Report/impact-report.png"
+		alt="Impact report"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/our-2023-impact-report.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage named one of WIRED magazine's 2023 Trailblazers
+					</h3>
+	
+			<p>3rd July 2023</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-one-of-WIRED-magazines-2023-Trailblazers/Engage-Wired-BlogHeader.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=400,height=400/engage-website/production/Blog/Engage-named-one-of-WIRED-magazines-2023-Trailblazers/Engage-Wired-BlogHeader.png"
+		alt="Engage Wired Blog Header"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/engage-named-wired-magazine-trailblazer.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Meet the rest of the Leadership team
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Dom Mernock
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Teams/Headshots/Dom-Mernock-1.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Teams/Headshots/Dom-Mernock-1.jpg"
+		alt="Dom Mernock 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="dom-mernock.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Lauren Carter
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Teams/Headshots/Lauren-Carter.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Teams/Headshots/Lauren-Carter.jpg"
+		alt="Lauren Carter"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="lauren-carter.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Tom Schofield
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Teams/Headshots/tom-Schofield.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Teams/Headshots/tom-Schofield.jpg"
+		alt="Tom Schofield"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="tom-schofield.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Will Blackmore
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Teams/Headshots/Will_Blackmore.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Teams/Headshots/Will_Blackmore.png"
+		alt="Will Blackmore"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="will-blackmore.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c0869cc2c479',t:'MTc5MDI3MzQ5MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

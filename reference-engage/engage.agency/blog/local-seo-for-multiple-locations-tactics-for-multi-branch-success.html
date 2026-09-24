@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Local SEO for multiple locations: tactics for multi-branch success</title>
+<meta name="description" content="Learn how to scale local SEO across multiple locations, improve visibility in every area you serve and turn local searches into measurable growth.">
+
+	<link rel="canonical" href="local-seo-for-multiple-locations-tactics-for-multi-branch-success.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="local-seo-for-multiple-locations-tactics-for-multi-branch-success.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Local SEO for multiple locations: tactics for multi-branch success">
+<meta property="og:description" content="Learn how to scale local SEO across multiple locations, improve visibility in every area you serve and turn local searches into measurable growth.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/local-seo-for-multiple-locations-tactics-for-multi-branch-success">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#blogposting","url":"https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success","headline":"Local SEO for multiple locations: tactics for multi-branch success","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/rebecca-walker#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png","datePublished":"2026-02-17T15:30:47+00:00","description":"Learn how to scale local SEO across multiple locations, improve visibility in every area you serve and turn local searches into measurable growth."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#webpage","url":"https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success","name":"Local SEO for multiple locations: tactics for multi-branch success","description":"Learn how to scale local SEO across multiple locations, improve visibility in every area you serve and turn local searches into measurable growth.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Local SEO for multiple locations: Tactics for multi-branch success","item":"https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png"},"datePublished":"2026-02-17T15:30:47+00:00","dateModified":"2026-09-10T09:15:17+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="local-seo-for-multiple-locations-tactics-for-multi-branch-success.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Local SEO for multiple locations: tactics for multi-branch success&quot;,&quot;description&quot;:&quot;Learn how to scale local SEO across multiple locations, improve visibility in every area you serve and turn local searches into measurable growth.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/local-seo-for-multiple-locations-tactics-for-multi-branch-success&quot;,&quot;shareTitle&quot;:&quot;Local SEO for multiple locations: tactics for multi-branch success&quot;,&quot;shareDescription&quot;:&quot;Learn how to scale local SEO across multiple locations, improve visibility in every area you serve and turn local searches into measurable growth.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/local-seo-for-multiple-locations-tactics-for-multi-branch-success\&quot;,\&quot;headline\&quot;:\&quot;Local SEO for multiple locations: tactics for multi-branch success\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/rebecca-walker#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\\\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-02-17T15:30:47+00:00\&quot;,\&quot;description\&quot;:\&quot;Learn how to scale local SEO across multiple locations, improve visibility in every area you serve and turn local searches into measurable growth.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/local-seo-for-multiple-locations-tactics-for-multi-branch-success\&quot;,\&quot;name\&quot;:\&quot;Local SEO for multiple locations: tactics for multi-branch success\&quot;,\&quot;description\&quot;:\&quot;Learn how to scale local SEO across multiple locations, improve visibility in every area you serve and turn local searches into measurable growth.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Local SEO for multiple locations: Tactics for multi-branch success\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/local-seo-for-multiple-locations-tactics-for-multi-branch-success\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\\\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-02-17T15:30:47+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-10T09:15:17+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/local-seo-for-multiple-locations-tactics-for-multi-branch-success#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Local SEO for multiple locations: Tactics for multi-branch success&quot;,&quot;date&quot;:&quot;3rd February 2026&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Rebecca&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/rebecca-walker&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 8 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog26 Local SEO for Multiple Locations 1500x900&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;If you manage more than one branch, store, office or venue,\u00a0local SEO for multiple locations can get messy fast. One wrong address, one neglected listing, or one copy-and-paste location page can make it harder for customers to find the right place. Helpful? Not massively.&lt;\/p&gt;&lt;p&gt;The goal is simple: make sure each location can show up for relevant local searches, build trust with nearby customers and still feel part of one joined-up brand. Here\u2019s how to build a scalable, search-friendly setup that works for 2026 and beyond.&lt;\/p&gt;&lt;h2&gt;Multi-location local SEO checklist&lt;\/h2&gt;&lt;p&gt;Before we get into the detail, here\u2019s the short version. Multi-location local SEO works best when every branch has the right local signals, without the whole thing turning into a spreadsheet-shaped nightmare.&lt;\/p&gt;&lt;p&gt;To build a scalable setup, make sure you have:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e6e781bb32d2e451efd8d33e64a1ea748\&quot;&gt;A verified Google Business Profile and Bing Places listing for each location.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e73f06ab363fd5c05537b5b22dd4922b9\&quot;&gt;Consistent Name, Address and Phone Number details across every listing.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1c2aa3764e088f9aacb25e24a6a76744\&quot;&gt;A unique location page for each branch, store or venue.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec7c66030f6d204c4b04a4303e71942ea\&quot;&gt;Localised content that mentions nearby areas, landmarks, services and useful customer information.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9c4b0de3fc53c22507f2b18f7b413e7e\&quot;&gt;Fresh reviews for each location, with replies from the business.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5ae3494180526e1694a9260b5963f748\&quot;&gt;LocalBusiness schema on each location page.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec2eb6112e106e34f239192d3619b4df5\&quot;&gt;Accurate opening hours, images, maps and accessibility information.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e94a734253fb806112d7fb8c23610e8c0\&quot;&gt;A clear URL structure that helps users and search engines understand each location.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5359d3f552978c3d221484d89db3c887\&quot;&gt;A process for tracking rankings, reviews, listings and performance across all branches.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Get those basics right and you give each location a much better chance of showing up where it matters. Which is sort of the point.&lt;\/p&gt;&lt;h2&gt;So, what is local\u00a0SEO?&lt;\/h2&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/services\/marketing\/seo\&quot;&gt;Local SEO&lt;\/a&gt; is the practice of improving your business\u2019s visibility in location-based search results, especially on platforms like Google Maps, the Google Local Pack, and AI-driven tools like ChatGPT Local Panels. It helps nearby customers find and trust your business\u00a0online.&lt;\/p&gt;&lt;p&gt;But, nailing that means balancing two things: a joined-up brand presence that\u2019s consistent everywhere, and localised tactics that account for the quirks of each area. From Google Business Profile (GBP) to Bing Places, consistency is key, but so is going hyperlocal when it\u00a0matters.&lt;\/p&gt;&lt;h2&gt;The tricky bits of local SEO at\u00a0scale&lt;\/h2&gt;&lt;p&gt;Rolling out the same cookie-cutter strategy across all locations? It won\u2019t work. Search engines (and users) expect better.&lt;\/p&gt;&lt;h3&gt;Messy listings = lost\u00a0visibility&lt;\/h3&gt;&lt;p&gt;Duplicate or mismatched listings are a fast track to confusion. Google won\u2019t know which is right, and customers won\u2019t trust you. Make sure your Name, Address and Phone Number (NAP) details are consistent, up-to-date and aligned across every platform. That includes GBP, Bing, Apple Maps and any niche directories you\u2019re\u00a0on.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Top tip:&lt;\/strong&gt; central oversight is a must, especially if franchisees or local teams are\u00a0involved.&lt;\/p&gt;&lt;h3&gt;Getting your business on Google\u00a0Maps&lt;\/h3&gt;&lt;p&gt;To appear on Google Maps, your business needs a fully verified Google Business Profile. Add your location, opening hours, categories and photos and keep everything accurate and up to\u00a0date.&lt;\/p&gt;&lt;p&gt;Already verified? Improve your visibility by focusing\u00a0on:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e61cff09b7d6a19c2b2b3bb92e338be90\&quot;&gt;Adding geotagged\u00a0photos&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee7321dbaf3e88b2aed593050ba15b61f\&quot;&gt;Getting consistent, positive\u00a0reviews&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0e72c29480466de337127a9b538231db\&quot;&gt;Posting regular updates via Google Business\u00a0Posts&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e411abab9fd90ce6fd7ad3b5006b23b42\&quot;&gt;Embedding Google Maps on your location\u00a0pages&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Check out our guide to &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/blog\/google-my-business-seo-guide\&quot;&gt;Google Business Profile&lt;\/a&gt; for Beginners for practical verification steps and more quick wins! Here how we achieved a &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/work\/more-visibility-for-every-restaurant-local-seo-for-c%C3%B4te\&quot;&gt;699% ROI for C\u00f4te Brasserie in our case study\u00a0here&lt;\/a&gt;.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Homepage banner 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Case-study-images\/Cote\/Homepage-banner-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Case-study-images\/Cote\/Homepage-banner-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Case-study-images\/Cote\/Homepage-banner-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Case-study-images\/Cote\/Homepage-banner-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Cote\/Homepage-banner-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Cote\/Homepage-banner-1.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:3840,&quot;height&quot;:2160},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Reviews matter -\u00a0everywhere&lt;\/h2&gt;&lt;p&gt;Reviews are still a heavyweight ranking factor in 2026. But they\u2019re not just for visibility; they build real-world trust too. A single location with poor, unanswered reviews can hurt the whole\u00a0brand.&lt;\/p&gt;&lt;p&gt;So:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Ask for reviews from every\u00a0customer.&lt;\/li&gt;&lt;li&gt;Reply to all reviews (especially the tricky\u00a0ones).&lt;\/li&gt;&lt;li&gt;Mention branches by name in\u00a0responses.&lt;\/li&gt;&lt;li&gt;Flag fake or inappropriate reviews, but don\u2019t try to delete legit\u00a0ones.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Need help? Try these review response\u00a0templates:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Positive&lt;\/strong&gt;: \u201cThanks so much for your kind words! We\u2019re chuffed you enjoyed your visit to our [City] branch. Hope to see you again\u00a0soon!\u201d&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Neutral&lt;\/strong&gt;: \u201cThanks for your feedback - and for visiting our [Branch Name] location. We\u2019re taking this on board to keep\u00a0improving.\u201d&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Negative&lt;\/strong&gt;: \u201cSorry to hear this - we\u2019ve flagged your feedback with our [Location] team and would love to put things right. Please drop us a message at [contact\u00a0info].\u201d&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;Getting your listings right (GBP +\u00a0Bing)&lt;\/h2&gt;&lt;p&gt;As we mentioned, each of your locations needs its own fully verified Google Business Profile and Bing Places listing. Keep categories, hours and descriptions accurate and relevant. If there\u2019s a field to complete, complete it. Use bulk tools to keep things\u00a0manageable.&lt;\/p&gt;&lt;p&gt;To optimise\u00a0listings:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Upload geotagged\u00a0photos.&lt;\/li&gt;&lt;li&gt;Use neighbourhood names, landmarks or local keywords in\u00a0descriptions.&lt;\/li&gt;&lt;li&gt;Engage with Q&amp;amp;As. People check them, and so does\u00a0Google.&lt;\/li&gt;&lt;li&gt;Keep posting updates via the \u201cWhat\u2019s Happening\u201d section (e.g. events, offers, seasonal\u00a0menus).&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Tools to manage listings at\u00a0scale:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=\&quot;https:\/\/www.brightlocal.com\/\&quot;&gt;BrightLocal&lt;\/a&gt;: Manage citations, track rankings, and gather\u00a0reviews.&lt;\/li&gt;&lt;li&gt;&lt;a href=\&quot;https:\/\/www.yext.com\/\&quot;&gt;Yext&lt;\/a&gt;: Centralise business data and push updates to dozens of\u00a0directories.&lt;\/li&gt;&lt;li&gt;&lt;a href=\&quot;https:\/\/moz.com\/products\/local\&quot;&gt;Moz Local&lt;\/a&gt;: Keep NAP consistency and monitor listing\u00a0health.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;The importance of structured data in the age of\u00a0AI&lt;\/h2&gt;&lt;p&gt;Schema markup helps Google \u2018read\u2019 your business better. Use LocalBusiness schema (JSON-LD format is your friend) to serve up all the details search engines\u00a0need:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Name, address,\u00a0phone&lt;\/li&gt;&lt;li&gt;Opening\u00a0hours&lt;\/li&gt;&lt;li&gt;Services&lt;\/li&gt;&lt;li&gt;Location-specific extras (e.g. wheelchair access, parking\u00a0info)&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Here\u2019s a quick\u00a0example:&lt;\/p&gt;&lt;p&gt;&lt;i&gt;{&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201c@context\u201d: \u201chttps:\/\/schema.org\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201c@type\u201d: \u201cLocalBusiness\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201cname\u201d: \u201cJoe\u2019s Deli - Leeds Central\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201caddress\u201d: {&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201c@type\u201d: \u201cPostalAddress\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201cstreetAddress\u201d: \u201c123 High Street\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201caddressLocality\u201d: \u201cLeeds\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201cpostalCode\u201d: \u201cLS1 1AA\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201caddressCountry\u201d: \u201cGB\u201d&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;},&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201ctelephone\u201d: \u201c+44 113 555 1234\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201copeningHours\u201d: [\u201cMo-Fr 08:00-17:00\u201d, \u201cSa 09:00-14:00\u201d],&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201cgeo\u201d: {&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201c@type\u201d: \u201cGeoCoordinates\u201d,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201clatitude\u201d: 53.8008,&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u201clongitude\u201d: -1.5491&lt;\/i&gt;&lt;br \/&gt;&lt;i&gt;\u00a0}&lt;\/i&gt;&lt;\/p&gt;&lt;p&gt;&lt;i&gt;}&lt;\/i&gt;&lt;\/p&gt;&lt;p&gt;Want bonus points? Add Speakable schema for voice search support.&lt;\/p&gt;&lt;h2&gt;Landing pages that actually\u00a0land&lt;\/h2&gt;&lt;p&gt;Each location should have its own landing page on your site - not just a list on a directory. Keep it simple, clear and\u00a0local:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Use relevant keywords (e.g. \u201cbrunch in\u00a0Leeds\u201d).&lt;\/li&gt;&lt;li&gt;Include nearby landmarks and transport\u00a0links.&lt;\/li&gt;&lt;li&gt;Embed maps for easy\u00a0navigation.&lt;\/li&gt;&lt;li&gt;Make sure content is unique for each location (no copy-paste\u00a0jobs).&lt;\/li&gt;&lt;li&gt;Add location-specific images (with optimised alt text!)- people value being able to see where they\u2019re\u00a0going.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;These pages help each branch rank in its own right and give customers what they need\u00a0quickly.&lt;\/p&gt;&lt;h2&gt;Citations and local\u00a0backlinks&lt;\/h2&gt;&lt;p&gt;It\u2019s not just about listings. Mentions of your business across local directories, blogs, and partner sites help reinforce your legitimacy. Prioritise getting listed\u00a0on:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Local business\u00a0directories&lt;\/li&gt;&lt;li&gt;Industry-specific\u00a0portals&lt;\/li&gt;&lt;li&gt;Area-specific blogs and\u00a0publications&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Citations with consistent NAP across these sites boost your authority. And local backlinks? Even better.&lt;\/p&gt;&lt;h2&gt;AI discovery is here: meet ChatGPT Local\u00a0Panels&lt;\/h2&gt;&lt;p&gt;Yep, ChatGPT is in the local SEO game now. From late 2025, OpenAI started rolling out Local Knowledge Panels. Think of them like Google\u2019s version, but baked into AI\u00a0chat.&lt;\/p&gt;&lt;p&gt;They can\u00a0show:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Name, address,\u00a0hours&lt;\/li&gt;&lt;li&gt;Map\u00a0previews&lt;\/li&gt;&lt;li&gt;Photos and carousel\u00a0images&lt;\/li&gt;&lt;li&gt;Website\u00a0links&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;To show up here, your data across GBP, Bing and your own site needs to be squeaky\u00a0clean.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Chat GPT Local Images&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1946\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/ChatGPT-Local-Images.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1788\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/ChatGPT-Local-Images.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=1578\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/ChatGPT-Local-Images.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=1515\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/ChatGPT-Local-Images.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=1052\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/ChatGPT-Local-Images.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=631\/engage-website\/production\/Blog\/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026\/ChatGPT-Local-Images.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:1078,&quot;height&quot;:1134},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;Want to stand\u00a0out?&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ecf27b32ec4c6175559890052f91adcc3\&quot;&gt;Keep schema up to\u00a0date&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3ab66a8fb315ba348c6feb1405552789\&quot;&gt;Add fresh, geotagged\u00a0images&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e23d96fd4ea3cee76ceb4022fcb89450e\&quot;&gt;Optimise for voice\u00a0search&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee668906b1172a8bd80c326e5b3e0cddd\&quot;&gt;Keep your tone natural and helpful (AI reads it like a user\u00a0would)&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Other emerging platforms to\u00a0watch:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e8ac7b75d304820bd367db61329500f7f\&quot;&gt;&lt;strong&gt;Apple Business Connect:&lt;\/strong&gt; Fast becoming vital for Maps and iOS\u00a0visibility.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5bc577ab0d8b602f1432a53fbcd0c8c7\&quot;&gt;&lt;strong&gt;Instagram Local Search:&lt;\/strong&gt; More people are using Instagram to find places\u00a0nearby.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3530c2fe9e23127c5c94d9ca4bd7416d\&quot;&gt;&lt;strong&gt;TikTok Search:&lt;\/strong&gt; Especially important for younger demographics looking for local food, events and\u00a0experiences.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e687ccc1eeb30f429a3528fefde9cf553\&quot;&gt;&lt;strong&gt;Voice assistants: &lt;\/strong&gt;Alexa, Siri and Google Assistant are all pulling from structured data and local\u00a0listings.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;URL structure counts\u00a0too&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Make sure your URLs make sense and are relevant to your business. Something\u00a0like:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;eb1aaf52132f5b25761a52f05c402fd5e\&quot;&gt;\/restaurants\/leeds-central&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e17c4a11d5a26de58d1bfdcc9bff3fe93\&quot;&gt;\/motorway-services\/m1-southbound&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Clean, readable URLs help both users and search engines understand the location and\u00a0purpose.&lt;\/p&gt;&lt;p&gt;&lt;i&gt;&lt;strong&gt;Pro tip:&lt;\/strong&gt;&lt;\/i&gt; This can help your website rank for both location-based and general terms. One of our clients saw a &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/work\/roadchef\&quot;&gt;+1300 keyword lift&lt;\/a&gt; by shifting from generic URLs to location-relevant ones like\u00a0\/motorway-services\/m1-southbound.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Final\u00a0word&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Multi-location local SEO is a juggling act. But with the right balance of consistency and local flavour, it scales\u00a0beautifully.&lt;\/p&gt;&lt;p&gt;Get the basics right: listings, reviews, schema, and landing pages, and you\u2019ll be in a great spot. Embrace the new (hello, ChatGPT panels), and you\u2019ll stay\u00a0ahead.&lt;\/p&gt;&lt;p&gt;Audit what you\u2019ve got, fix what\u2019s broken, and build for the future. Because local search isn\u2019t just search anymore, it\u2019s discovery, trust, and visibility, all rolled into\u00a0one.&lt;\/p&gt;&lt;p&gt;Want more tips? &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/contact\&quot;&gt;Get in touch &lt;\/a&gt;to learn how our team can help you win at local\u00a0SEO!&lt;\/p&gt;&lt;h2&gt;FAQs&lt;\/h2&gt;&lt;h3&gt;How do you do local SEO for multiple locations?&lt;\/h3&gt;&lt;p&gt;Start by creating a unique landing page for each location, then make sure every Google Business Profile, Bing Places listing and citation has accurate Name, Address and Phone Number details. Add local content, reviews, maps, opening hours, images and structured data to help each location rank in its own area.&lt;\/p&gt;&lt;h3&gt;Should every business location have its own landing page?&lt;\/h3&gt;&lt;p&gt;Yes, each location should usually have its own landing page. A dedicated page gives search engines and customers clear information about that specific branch, including address, services, opening hours, nearby landmarks and contact details. One generic locations page rarely does enough heavy lifting.&lt;\/p&gt;&lt;h3&gt;How do I optimise Google Business Profiles for multiple locations?&lt;\/h3&gt;&lt;p&gt;Each location should have its own verified Google Business Profile with the right categories, opening hours, photos, services, contact details and website link. Keep the information consistent across every platform and make sure local teams do not go rogue with random edits. It happens.&lt;\/p&gt;&lt;h3&gt;What are the biggest mistakes in multi-location local SEO?&lt;\/h3&gt;&lt;p&gt;The biggest mistakes are duplicate location pages, inconsistent listings, missing reviews, weak local content, outdated opening hours and no central process for managing updates. Multi-location SEO does not usually fall apart because of one big dramatic issue. It is normally death by tiny admin problems. Very glamorous.&lt;\/p&gt;&quot;}}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Boost your local search presence today&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/Engage_Blog26_Local_SEO_for_Multiple_Locations_1500x900.png"
+		alt="Engage Blog26 Local SEO for Multiple Locations 1500x900"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Local SEO for multiple locations: Tactics for multi-branch success</h1>
+	
+			<p>3rd February 2026</p>
+	
+	
+			<p>Roughly a 8 minute read by</p>
+	
+						<p>
+									<a href="../team/rebecca-walker.html">
+						Rebecca
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>If you manage more than one branch, store, office or venue, local SEO for multiple locations can get messy fast. One wrong address, one neglected listing, or one copy-and-paste location page can make it harder for customers to find the right place. Helpful? Not massively.</p><p>The goal is simple: make sure each location can show up for relevant local searches, build trust with nearby customers and still feel part of one joined-up brand. Here’s how to build a scalable, search-friendly setup that works for 2026 and beyond.</p><h2>Multi-location local SEO checklist</h2><p>Before we get into the detail, here’s the short version. Multi-location local SEO works best when every branch has the right local signals, without the whole thing turning into a spreadsheet-shaped nightmare.</p><p>To build a scalable setup, make sure you have:</p><ul><li data-list-item-id="e6e781bb32d2e451efd8d33e64a1ea748">A verified Google Business Profile and Bing Places listing for each location.</li><li data-list-item-id="e73f06ab363fd5c05537b5b22dd4922b9">Consistent Name, Address and Phone Number details across every listing.</li><li data-list-item-id="e1c2aa3764e088f9aacb25e24a6a76744">A unique location page for each branch, store or venue.</li><li data-list-item-id="ec7c66030f6d204c4b04a4303e71942ea">Localised content that mentions nearby areas, landmarks, services and useful customer information.</li><li data-list-item-id="e9c4b0de3fc53c22507f2b18f7b413e7e">Fresh reviews for each location, with replies from the business.</li><li data-list-item-id="e5ae3494180526e1694a9260b5963f748">LocalBusiness schema on each location page.</li><li data-list-item-id="ec2eb6112e106e34f239192d3619b4df5">Accurate opening hours, images, maps and accessibility information.</li><li data-list-item-id="e94a734253fb806112d7fb8c23610e8c0">A clear URL structure that helps users and search engines understand each location.</li><li data-list-item-id="e5359d3f552978c3d221484d89db3c887">A process for tracking rankings, reviews, listings and performance across all branches.</li></ul><p>Get those basics right and you give each location a much better chance of showing up where it matters. Which is sort of the point.</p><h2>So, what is local SEO?</h2><p><a href="https://engageinteractive.co.uk/services/marketing/seo">Local SEO</a> is the practice of improving your business’s visibility in location-based search results, especially on platforms like Google Maps, the Google Local Pack, and AI-driven tools like ChatGPT Local Panels. It helps nearby customers find and trust your business online.</p><p>But, nailing that means balancing two things: a joined-up brand presence that’s consistent everywhere, and localised tactics that account for the quirks of each area. From Google Business Profile (GBP) to Bing Places, consistency is key, but so is going hyperlocal when it matters.</p><h2>The tricky bits of local SEO at scale</h2><p>Rolling out the same cookie-cutter strategy across all locations? It won’t work. Search engines (and users) expect better.</p><h3>Messy listings = lost visibility</h3><p>Duplicate or mismatched listings are a fast track to confusion. Google won’t know which is right, and customers won’t trust you. Make sure your Name, Address and Phone Number (NAP) details are consistent, up-to-date and aligned across every platform. That includes GBP, Bing, Apple Maps and any niche directories you’re on.</p><p><strong>Top tip:</strong> central oversight is a must, especially if franchisees or local teams are involved.</p><h3>Getting your business on Google Maps</h3><p>To appear on Google Maps, your business needs a fully verified Google Business Profile. Add your location, opening hours, categories and photos and keep everything accurate and up to date.</p><p>Already verified? Improve your visibility by focusing on:</p><ul><li data-list-item-id="e61cff09b7d6a19c2b2b3bb92e338be90">Adding geotagged photos</li><li data-list-item-id="ee7321dbaf3e88b2aed593050ba15b61f">Getting consistent, positive reviews</li><li data-list-item-id="e0e72c29480466de337127a9b538231db">Posting regular updates via Google Business Posts</li><li data-list-item-id="e411abab9fd90ce6fd7ad3b5006b23b42">Embedding Google Maps on your location pages</li></ul><p>Check out our guide to <a href="https://engageinteractive.co.uk/blog/google-my-business-seo-guide">Google Business Profile</a> for Beginners for practical verification steps and more quick wins! Here how we achieved a <a href="https://engageinteractive.co.uk/work/more-visibility-for-every-restaurant-local-seo-for-c%C3%B4te">699% ROI for Côte Brasserie in our case study here</a>.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Case-study-images/Cote/Homepage-banner-1.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Case-study-images/Cote/Homepage-banner-1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Case-study-images/Cote/Homepage-banner-1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Case-study-images/Cote/Homepage-banner-1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Cote/Homepage-banner-1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Cote/Homepage-banner-1.png"
+		alt="Homepage banner 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Reviews matter - everywhere</h2><p>Reviews are still a heavyweight ranking factor in 2026. But they’re not just for visibility; they build real-world trust too. A single location with poor, unanswered reviews can hurt the whole brand.</p><p>So:</p><ul><li>Ask for reviews from every customer.</li><li>Reply to all reviews (especially the tricky ones).</li><li>Mention branches by name in responses.</li><li>Flag fake or inappropriate reviews, but don’t try to delete legit ones.</li></ul><p>Need help? Try these review response templates:</p><ul><li><strong>Positive</strong>: “Thanks so much for your kind words! We’re chuffed you enjoyed your visit to our [City] branch. Hope to see you again soon!”</li><li><strong>Neutral</strong>: “Thanks for your feedback - and for visiting our [Branch Name] location. We’re taking this on board to keep improving.”</li><li><strong>Negative</strong>: “Sorry to hear this - we’ve flagged your feedback with our [Location] team and would love to put things right. Please drop us a message at [contact info].”</li></ul><h2>Getting your listings right (GBP + Bing)</h2><p>As we mentioned, each of your locations needs its own fully verified Google Business Profile and Bing Places listing. Keep categories, hours and descriptions accurate and relevant. If there’s a field to complete, complete it. Use bulk tools to keep things manageable.</p><p>To optimise listings:</p><ul><li>Upload geotagged photos.</li><li>Use neighbourhood names, landmarks or local keywords in descriptions.</li><li>Engage with Q&amp;As. People check them, and so does Google.</li><li>Keep posting updates via the “What’s Happening” section (e.g. events, offers, seasonal menus).</li></ul><p>Tools to manage listings at scale:</p><ul><li><a href="https://www.brightlocal.com/">BrightLocal</a>: Manage citations, track rankings, and gather reviews.</li><li><a href="https://www.yext.com/">Yext</a>: Centralise business data and push updates to dozens of directories.</li><li><a href="https://moz.com/products/local">Moz Local</a>: Keep NAP consistency and monitor listing health.</li></ul><h2>The importance of structured data in the age of AI</h2><p>Schema markup helps Google ‘read’ your business better. Use LocalBusiness schema (JSON-LD format is your friend) to serve up all the details search engines need:</p><ul><li>Name, address, phone</li><li>Opening hours</li><li>Services</li><li>Location-specific extras (e.g. wheelchair access, parking info)</li></ul><p>Here’s a quick example:</p><p><i>{</i><br /><i>“@context”: “https://schema.org”,</i><br /><i>“@type”: “LocalBusiness”,</i><br /><i>“name”: “Joe’s Deli - Leeds Central”,</i><br /><i>“address”: {</i><br /><i>“@type”: “PostalAddress”,</i><br /><i>“streetAddress”: “123 High Street”,</i><br /><i>“addressLocality”: “Leeds”,</i><br /><i>“postalCode”: “LS1 1AA”,</i><br /><i>“addressCountry”: “GB”</i><br /><i>},</i><br /><i>“telephone”: “+44 113 555 1234”,</i><br /><i>“openingHours”: [“Mo-Fr 08:00-17:00”, “Sa 09:00-14:00”],</i><br /><i>“geo”: {</i><br /><i>“@type”: “GeoCoordinates”,</i><br /><i>“latitude”: 53.8008,</i><br /><i>“longitude”: -1.5491</i><br /><i> }</i></p><p><i>}</i></p><p>Want bonus points? Add Speakable schema for voice search support.</p><h2>Landing pages that actually land</h2><p>Each location should have its own landing page on your site - not just a list on a directory. Keep it simple, clear and local:</p><ul><li>Use relevant keywords (e.g. “brunch in Leeds”).</li><li>Include nearby landmarks and transport links.</li><li>Embed maps for easy navigation.</li><li>Make sure content is unique for each location (no copy-paste jobs).</li><li>Add location-specific images (with optimised alt text!)- people value being able to see where they’re going.</li></ul><p>These pages help each branch rank in its own right and give customers what they need quickly.</p><h2>Citations and local backlinks</h2><p>It’s not just about listings. Mentions of your business across local directories, blogs, and partner sites help reinforce your legitimacy. Prioritise getting listed on:</p><ul><li>Local business directories</li><li>Industry-specific portals</li><li>Area-specific blogs and publications</li></ul><p>Citations with consistent NAP across these sites boost your authority. And local backlinks? Even better.</p><h2>AI discovery is here: meet ChatGPT Local Panels</h2><p>Yep, ChatGPT is in the local SEO game now. From late 2025, OpenAI started rolling out Local Knowledge Panels. Think of them like Google’s version, but baked into AI chat.</p><p>They can show:</p><ul><li>Name, address, hours</li><li>Map previews</li><li>Photos and carousel images</li><li>Website links</li></ul><p>To show up here, your data across GBP, Bing and your own site needs to be squeaky clean.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1946/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/ChatGPT-Local-Images.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=1788/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/ChatGPT-Local-Images.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=1578/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/ChatGPT-Local-Images.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=1515/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/ChatGPT-Local-Images.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=1052/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/ChatGPT-Local-Images.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=631/engage-website/production/Blog/Local-SEO-for-multiple-locations-tactics-for-multi-branch-success-in-2026/ChatGPT-Local-Images.png"
+		alt="Chat GPT Local Images"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>Want to stand out?</p><ul><li data-list-item-id="ecf27b32ec4c6175559890052f91adcc3">Keep schema up to date</li><li data-list-item-id="e3ab66a8fb315ba348c6feb1405552789">Add fresh, geotagged images</li><li data-list-item-id="e23d96fd4ea3cee76ceb4022fcb89450e">Optimise for voice search</li><li data-list-item-id="ee668906b1172a8bd80c326e5b3e0cddd">Keep your tone natural and helpful (AI reads it like a user would)</li></ul><p>Other emerging platforms to watch:</p><ul><li data-list-item-id="e8ac7b75d304820bd367db61329500f7f"><strong>Apple Business Connect:</strong> Fast becoming vital for Maps and iOS visibility.</li><li data-list-item-id="e5bc577ab0d8b602f1432a53fbcd0c8c7"><strong>Instagram Local Search:</strong> More people are using Instagram to find places nearby.</li><li data-list-item-id="e3530c2fe9e23127c5c94d9ca4bd7416d"><strong>TikTok Search:</strong> Especially important for younger demographics looking for local food, events and experiences.</li><li data-list-item-id="e687ccc1eeb30f429a3528fefde9cf553"><strong>Voice assistants: </strong>Alexa, Siri and Google Assistant are all pulling from structured data and local listings.</li></ul><h2><strong>URL structure counts too</strong></h2><p>Make sure your URLs make sense and are relevant to your business. Something like:</p><ul><li data-list-item-id="eb1aaf52132f5b25761a52f05c402fd5e">/restaurants/leeds-central</li><li data-list-item-id="e17c4a11d5a26de58d1bfdcc9bff3fe93">/motorway-services/m1-southbound</li></ul><p>Clean, readable URLs help both users and search engines understand the location and purpose.</p><p><i><strong>Pro tip:</strong></i> This can help your website rank for both location-based and general terms. One of our clients saw a <a href="https://engageinteractive.co.uk/work/roadchef">+1300 keyword lift</a> by shifting from generic URLs to location-relevant ones like /motorway-services/m1-southbound.</p><h2><strong>Final word</strong></h2><p>Multi-location local SEO is a juggling act. But with the right balance of consistency and local flavour, it scales beautifully.</p><p>Get the basics right: listings, reviews, schema, and landing pages, and you’ll be in a great spot. Embrace the new (hello, ChatGPT panels), and you’ll stay ahead.</p><p>Audit what you’ve got, fix what’s broken, and build for the future. Because local search isn’t just search anymore, it’s discovery, trust, and visibility, all rolled into one.</p><p>Want more tips? <a href="https://engageinteractive.co.uk/contact">Get in touch </a>to learn how our team can help you win at local SEO!</p><h2>FAQs</h2><h3>How do you do local SEO for multiple locations?</h3><p>Start by creating a unique landing page for each location, then make sure every Google Business Profile, Bing Places listing and citation has accurate Name, Address and Phone Number details. Add local content, reviews, maps, opening hours, images and structured data to help each location rank in its own area.</p><h3>Should every business location have its own landing page?</h3><p>Yes, each location should usually have its own landing page. A dedicated page gives search engines and customers clear information about that specific branch, including address, services, opening hours, nearby landmarks and contact details. One generic locations page rarely does enough heavy lifting.</p><h3>How do I optimise Google Business Profiles for multiple locations?</h3><p>Each location should have its own verified Google Business Profile with the right categories, opening hours, photos, services, contact details and website link. Keep the information consistent across every platform and make sure local teams do not go rogue with random edits. It happens.</p><h3>What are the biggest mistakes in multi-location local SEO?</h3><p>The biggest mistakes are duplicate location pages, inconsistent listings, missing reviews, weak local content, outdated opening hours and no central process for managing updates. Multi-location SEO does not usually fall apart because of one big dramatic issue. It is normally death by tiny admin problems. Very glamorous.</p>
+	
+	
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Boost your local search presence today
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403bfac4cecc479',t:'MTc5MDI3MzQ1Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

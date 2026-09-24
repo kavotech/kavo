@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>What to Feed LLMs: E-E-A-T in Generative Search</title>
+<meta name="description" content="In AI-led search, visibility depends on being citable. Explore how E-E-A-T supports entity signals, trust, and selection across Google AI Overviews and LLM chatbots.">
+
+	<link rel="canonical" href="what-to-feed-llms-e-e-a-t-in-generative-search.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="what-to-feed-llms-e-e-a-t-in-generative-search.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="What to Feed LLMs: E-E-A-T in Generative Search">
+<meta property="og:description" content="In AI-led search, visibility depends on being citable. Explore how E-E-A-T supports entity signals, trust, and selection across Google AI Overviews and LLM chatbots.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/what-to-feed-llms-e-e-a-t-in-generative-search">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/What-to-feed-LLMs-E-E-A-T-in-generative-search/E-E-A-T.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search#blogposting","url":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search","headline":"What to Feed LLMs: E-E-A-T in Generative Search","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/jack-bell#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png","datePublished":"2026-03-31T16:09:56+01:00","description":"In AI-led search, visibility depends on being citable. Explore how E-E-A-T supports entity signals, trust, and selection across Google AI Overviews and LLM chatbots."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search#webpage","url":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search","name":"What to Feed LLMs: E-E-A-T in Generative Search","description":"In AI-led search, visibility depends on being citable. Explore how E-E-A-T supports entity signals, trust, and selection across Google AI Overviews and LLM chatbots.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"What to feed LLMs: E-E-A-T in generative search","item":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png"},"datePublished":"2026-03-31T16:09:56+01:00","dateModified":"2026-05-13T22:59:27+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search#blogposting"}},{"@type":"FAQPage","@id":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search#faqpage","url":"https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search","mainEntity":[{"@type":"Question","name":"What is E-E-A-T?","acceptedAnswer":{"@type":"Answer","text":"<p>E-E-A-T stands for Experience, Expertise, Authoritativeness and Trustworthiness. It\u2019s Google\u2019s framework for judging whether content is reliable and worth surfacing, especially when accuracy matters.<\/p>"}},{"@type":"Question","name":"Is E-E-A-T a direct ranking factor?","acceptedAnswer":{"@type":"Answer","text":"<p>Not as a single, measurable \u201cscore\u201d. But lots of signals that affect rankings map to E-E-A-T (for example, strong authorship, reputable mentions, accurate sourcing, and site trust signals).<\/p>"}},{"@type":"Question","name":"How is generative search different from traditional SEO?","acceptedAnswer":{"@type":"Answer","text":"<p>Traditional SEO is mostly about earning a click from a list of results. Generative search is about being selected as a source that shapes an AI summary or answer, often before a user clicks anything.<\/p>"}},{"@type":"Question","name":"What content is most likely to get cited in AI answers?","acceptedAnswer":{"@type":"Answer","text":"<p>Original, well-sourced content with clear expertise, backed by real examples and kept bang up to date.<\/p>"}}]}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="what-to-feed-llms-e-e-a-t-in-generative-search.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;What to Feed LLMs: E-E-A-T in Generative Search&quot;,&quot;description&quot;:&quot;In AI-led search, visibility depends on being citable. Explore how E-E-A-T supports entity signals, trust, and selection across Google AI Overviews and LLM chatbots.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search&quot;,&quot;shareTitle&quot;:&quot;What to Feed LLMs: E-E-A-T in Generative Search&quot;,&quot;shareDescription&quot;:&quot;In AI-led search, visibility depends on being citable. Explore how E-E-A-T supports entity signals, trust, and selection across Google AI Overviews and LLM chatbots.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search\&quot;,\&quot;headline\&quot;:\&quot;What to Feed LLMs: E-E-A-T in Generative Search\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/jack-bell#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/What-to-feed-LLMs-E-E-A-T-in-generative-search\\\/E-E-A-T-1.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-03-31T16:09:56+01:00\&quot;,\&quot;description\&quot;:\&quot;In AI-led search, visibility depends on being citable. Explore how E-E-A-T supports entity signals, trust, and selection across Google AI Overviews and LLM chatbots.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search\&quot;,\&quot;name\&quot;:\&quot;What to Feed LLMs: E-E-A-T in Generative Search\&quot;,\&quot;description\&quot;:\&quot;In AI-led search, visibility depends on being citable. Explore how E-E-A-T supports entity signals, trust, and selection across Google AI Overviews and LLM chatbots.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;What to feed LLMs: E-E-A-T in generative search\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/What-to-feed-LLMs-E-E-A-T-in-generative-search\\\/E-E-A-T-1.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-03-31T16:09:56+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-05-13T22:59:27+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search#blogposting\&quot;}},{\&quot;@type\&quot;:\&quot;FAQPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search#faqpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/what-to-feed-llms-e-e-a-t-in-generative-search\&quot;,\&quot;mainEntity\&quot;:[{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;What is E-E-A-T?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;E-E-A-T stands for Experience, Expertise, Authoritativeness and Trustworthiness. It\\u2019s Google\\u2019s framework for judging whether content is reliable and worth surfacing, especially when accuracy matters.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Is E-E-A-T a direct ranking factor?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Not as a single, measurable \\u201cscore\\u201d. But lots of signals that affect rankings map to E-E-A-T (for example, strong authorship, reputable mentions, accurate sourcing, and site trust signals).&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;How is generative search different from traditional SEO?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Traditional SEO is mostly about earning a click from a list of results. Generative search is about being selected as a source that shapes an AI summary or answer, often before a user clicks anything.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;What content is most likely to get cited in AI answers?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Original, well-sourced content with clear expertise, backed by real examples and kept bang up to date.&lt;\\\/p&gt;\&quot;}}]}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;What to feed LLMs: E-E-A-T in generative search&quot;,&quot;date&quot;:&quot;20th March 2026&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Jack&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/jack-bell&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 6 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;E E A T 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;Ask a question in Google today, and chances are you won\u2019t even reach the search results. You\u2019ll get an AI-generated summary first, pulling information from a handful of sources it trusts.\u00a0&lt;a href=\&quot;https:\/\/ahrefs.com\/blog\/ai-overviews-reduce-clicks-update\/\&quot;&gt;&lt;u&gt;Often, that\u2019s the only answer a user needs, and results in no click.&lt;\/u&gt;&lt;\/a&gt;&lt;\/p&gt;&lt;p&gt;That\u2019s what search looks like these days. SEO isn\u2019t just about chasing the top 10 blue links, but being part of the conversation that helps shape the answer.&lt;\/p&gt;&lt;p&gt;And this doesn\u2019t happen by chance; if you want to be part of the answer, you need to feed the system the right signals.&lt;\/p&gt;&lt;h2&gt;AI selects voices, not just content&lt;\/h2&gt;&lt;p&gt;In traditional search, you could win by being\u00a0&lt;i&gt;discoverable&lt;\/i&gt;. In generative search, you win by being\u00a0&lt;i&gt;selectable&lt;\/i&gt;.&lt;\/p&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/static.googleusercontent.com\/media\/www.google.com\/en\/\/search\/howsearchworks\/google-about-AI-overviews.pdf\&quot;&gt;&lt;u&gt;Google is explicit that AI Overviews use a customised Gemini model working \u201cin tandem\u201d with its existing Search systems&lt;\/u&gt;&lt;\/a&gt;, including quality\/ranking systems and the Knowledge Graph. That matters because it means two things are happening at once:&lt;\/p&gt;&lt;ol&gt;&lt;li&gt;Your usual SEO signals still influence what gets pulled in (quality systems, rankings).&lt;\/li&gt;&lt;li&gt;Entity understanding is baked into selection (Knowledge Graph connections, brand\/entity confidence).&lt;\/li&gt;&lt;\/ol&gt;&lt;p&gt;LLM chatbots work differently depending on the product, but the outcome feels the same to users: the model curates a small set of sources and turns them into a single narrative.&lt;\/p&gt;&lt;h2&gt;How AI systems decide what to include&lt;\/h2&gt;&lt;p&gt;There isn\u2019t one AI selection method, but most systems lean on a combination of:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Established brand knowledge (what the model already \u201cknows\u201d from training data and long-term signals)&lt;\/li&gt;&lt;li&gt;Fresh web grounding (pulling in current pages to corroborate, update, or cite)&lt;\/li&gt;&lt;li&gt;Entity signals (is this brand\/person clearly identifiable and consistently represented?)&lt;\/li&gt;&lt;li&gt;Trust checks (accuracy, safety, reputation, consistency)&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;This is why newer brands often struggle with AI answers even when their content is good, as the model has less history to work with.&lt;\/p&gt;&lt;p&gt;So yes, content matters. But in AI search, reputation and recognition change the starting line.&lt;\/p&gt;&lt;h2&gt;What E-E-A-T changes in an AI answer world&lt;\/h2&gt;&lt;p&gt;E-E-A-T is often explained like a content quality framework. That\u2019s true, but in generative search,\u00a0&lt;a href=\&quot;https:\/\/www.searchenginejournal.com\/role-of-eeat-in-ai-narratives-building-brand-authority\/541927\/\&quot;&gt;&lt;u&gt;it behaves more like a trust filter&lt;\/u&gt;&lt;\/a&gt;.&lt;\/p&gt;&lt;h3&gt;1. Experience &amp;amp; Expertise: \u201cAnyone could have written this\u201d&lt;\/h3&gt;&lt;p&gt;AI systems already have thousands of generic explainers. What they need (and what they reward) is content that signals real-world knowledge:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;First-hand learnings&lt;\/li&gt;&lt;li&gt;Practitioner insight&lt;\/li&gt;&lt;li&gt;Case studies with specifics&lt;\/li&gt;&lt;li&gt;Original analysis and useful viewpoints&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;If you want to be cited, you need to publish content that\u2019s hard to fake and easy to verify.&lt;\/p&gt;&lt;h3&gt;2. Authoritativeness: visibility is now a data problem&lt;\/h3&gt;&lt;p&gt;If a model repeatedly sees your brand mentioned in credible places, alongside relevant topics, it becomes easier to \u201cselect\u201d you.\u00a0&lt;a href=\&quot;https:\/\/search.google\/pdf\/google-about-AI-overviews-AI-Mode.pdf\&quot;&gt;&lt;u&gt;This is one reason Knowledge Graph visibility matters so much in Google\u2019s AI experiences&lt;\/u&gt;&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;It\u2019s also why \u201cPR for the sake of it\u201d doesn\u2019t cut through. A random mention isn\u2019t a signal. Consistent, contextual recognition is.&lt;\/p&gt;&lt;h3&gt;3. Trustworthiness: weak signals won\u2019t cut through&lt;\/h3&gt;&lt;p&gt;If your content is outdated, inconsistent, anonymous, or unclear about who wrote it, it becomes riskier to cite. And if the model is trying to reduce risk, it will default to sources with clearer trust signals.&lt;\/p&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/developers.google.com\/search\/docs\/fundamentals\/creating-helpful-content\&quot;&gt;&lt;u&gt;Google\u2019s own guidance is aligned with this&lt;\/u&gt;&lt;\/a&gt;: be clear about who created your content, how it was created, and why it exists.&lt;\/p&gt;&lt;h2&gt;How to feed the machines\u00a0&lt;\/h2&gt;&lt;p&gt;Okay, so the title of this blog is slightly misleading\u2026 There isn\u2019t a prescribed diet for LLMs.\u00a0&lt;br \/&gt;&lt;br \/&gt;The truth is, this will be different from brand to brand. Nuances like the niche you\u2019re in, the subject matter, and how established your brand is will all factor into this. However as a starting point, you should look to:&lt;\/p&gt;&lt;h3&gt;1. Make authorship unmistakable&lt;\/h3&gt;&lt;ul&gt;&lt;li&gt;Real bylines&lt;\/li&gt;&lt;li&gt;Credible bios&lt;\/li&gt;&lt;li&gt;Links to profiles and work&lt;\/li&gt;&lt;li&gt;Clear editorial responsibility (who reviews what)&lt;\/li&gt;&lt;\/ul&gt;&lt;h3&gt;2. Publish content that can\u2019t be spun up in 10 minutes&lt;\/h3&gt;&lt;ul&gt;&lt;li&gt;Original research (even small-scale is useful)&lt;\/li&gt;&lt;li&gt;Real examples and outcomes&lt;\/li&gt;&lt;li&gt;Expert commentary with an authentic point of view&lt;\/li&gt;&lt;\/ul&gt;&lt;h3&gt;3. Build mention-worthy presence beyond your site&lt;\/h3&gt;&lt;ul&gt;&lt;li&gt;Industry publications&lt;\/li&gt;&lt;li&gt;Podcasts\/webinars&lt;\/li&gt;&lt;li&gt;Partnerships&lt;\/li&gt;&lt;li&gt;Relevant directories and communities&lt;\/li&gt;&lt;\/ul&gt;&lt;h3&gt;4. Use the \u201cWho \/ How \/ Why\u201d lens on every key page&lt;\/h3&gt;&lt;ul&gt;&lt;li&gt;Who wrote it?&lt;\/li&gt;&lt;li&gt;How was it produced?&lt;\/li&gt;&lt;li&gt;Why does it exist?\u00a0&lt;\/li&gt;&lt;li&gt;What does it help someone do?&lt;\/li&gt;&lt;\/ul&gt;&lt;h3&gt;5. Treat maintenance as an AI visibility strategy&lt;\/h3&gt;&lt;ul&gt;&lt;li&gt;Refresh high-performing pages&lt;\/li&gt;&lt;li&gt;Fix outdated claims&lt;\/li&gt;&lt;li&gt;Remove thin content that weakens the domain&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;An E-E-A-T success story: +43% increase in organic visibility for Lovett Care&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Lovett website visual 5&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-website-visual-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-website-visual-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-website-visual-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-website-visual-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-website-visual-5.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-website-visual-5.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;Following the acquisition of New Care, Lovett Care Group had grown to 28 homes and more than 1,800 beds across England and Wales.&lt;\/p&gt;&lt;p&gt;However, Lovett\u2019s digital presence was split across two domains, dividing authority and weakening trust signals. In a high-consideration sector, credibility cannot rely on brand claims alone. Expertise, authoritativeness and trustworthiness needed to be visible and consistent across search.&lt;\/p&gt;&lt;p&gt;We consolidated both domains into a single platform, carefully managing migration to protect and transfer authority. We embedded trust signals throughout, bringing together Google reviews, OpenScore ratings, carehome.co.uk feedback and CQC data into a visible review layer. Transparent team bios and content-rich guides demonstrated real expertise, which we strengthened with structured data to make entity relationships clear to search engines.&lt;\/p&gt;&lt;p&gt;This translated into a 43% increase in organic visibility, a 56% rise in local pack rankings and a 70% uplift in conversion rate. Read the full case study &lt;a href=\&quot;https:\/\/engage.agency\/work\/launching-lovett-care-on-craft-cms\&quot;&gt;here&lt;\/a&gt;.&lt;\/p&gt;&lt;h2&gt;Will you be skipped or selected?&lt;\/h2&gt;&lt;p&gt;If AI Overviews and chatbots are your new front page, then your job is to become an easy source to trust.&lt;\/p&gt;&lt;p&gt;Ask yourself, could an AI system confidently attribute this answer to you?&lt;\/p&gt;&lt;p&gt;If the author isn\u2019t clear, the expertise isn\u2019t provable, the claims aren\u2019t backed up, or your brand isn\u2019t recognised elsewhere, the safe choice is to cite someone else.&lt;\/p&gt;&lt;p&gt;So don\u2019t just publish more. Publish content that\u2019s attributable, verifiable, and connected to a real entity people already trust.&lt;\/p&gt;&quot;}}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Want to show up in AI results?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;FAQs&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;What is E-E-A-T?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;E-E-A-T stands for Experience, Expertise, Authoritativeness and Trustworthiness. It\u2019s Google\u2019s framework for judging whether content is reliable and worth surfacing, especially when accuracy matters.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Is E-E-A-T a direct ranking factor?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Not as a single, measurable \u201cscore\u201d. But lots of signals that affect rankings map to E-E-A-T (for example, strong authorship, reputable mentions, accurate sourcing, and site trust signals).&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How is generative search different from traditional SEO?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Traditional SEO is mostly about earning a click from a list of results. Generative search is about being selected as a source that shapes an AI summary or answer, often before a user clicks anything.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What content is most likely to get cited in AI answers?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Original, well-sourced content with clear expertise, backed by real examples and kept bang up to date.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/What-to-feed-LLMs-E-E-A-T-in-generative-search/E-E-A-T-1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/What-to-feed-LLMs-E-E-A-T-in-generative-search/E-E-A-T-1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/What-to-feed-LLMs-E-E-A-T-in-generative-search/E-E-A-T-1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/What-to-feed-LLMs-E-E-A-T-in-generative-search/E-E-A-T-1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/What-to-feed-LLMs-E-E-A-T-in-generative-search/E-E-A-T-1.png"
+		alt="E E A T 1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>What to feed LLMs: E-E-A-T in generative search</h1>
+	
+			<p>20th March 2026</p>
+	
+	
+			<p>Roughly a 6 minute read by</p>
+	
+						<p>
+									<a href="../team/jack-bell.html">
+						Jack
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>Ask a question in Google today, and chances are you won’t even reach the search results. You’ll get an AI-generated summary first, pulling information from a handful of sources it trusts. <a href="https://ahrefs.com/blog/ai-overviews-reduce-clicks-update/"><u>Often, that’s the only answer a user needs, and results in no click.</u></a></p><p>That’s what search looks like these days. SEO isn’t just about chasing the top 10 blue links, but being part of the conversation that helps shape the answer.</p><p>And this doesn’t happen by chance; if you want to be part of the answer, you need to feed the system the right signals.</p><h2>AI selects voices, not just content</h2><p>In traditional search, you could win by being <i>discoverable</i>. In generative search, you win by being <i>selectable</i>.</p><p><a href="https://static.googleusercontent.com/media/www.google.com/en//search/howsearchworks/google-about-AI-overviews.pdf"><u>Google is explicit that AI Overviews use a customised Gemini model working “in tandem” with its existing Search systems</u></a>, including quality/ranking systems and the Knowledge Graph. That matters because it means two things are happening at once:</p><ol><li>Your usual SEO signals still influence what gets pulled in (quality systems, rankings).</li><li>Entity understanding is baked into selection (Knowledge Graph connections, brand/entity confidence).</li></ol><p>LLM chatbots work differently depending on the product, but the outcome feels the same to users: the model curates a small set of sources and turns them into a single narrative.</p><h2>How AI systems decide what to include</h2><p>There isn’t one AI selection method, but most systems lean on a combination of:</p><ul><li>Established brand knowledge (what the model already “knows” from training data and long-term signals)</li><li>Fresh web grounding (pulling in current pages to corroborate, update, or cite)</li><li>Entity signals (is this brand/person clearly identifiable and consistently represented?)</li><li>Trust checks (accuracy, safety, reputation, consistency)</li></ul><p>This is why newer brands often struggle with AI answers even when their content is good, as the model has less history to work with.</p><p>So yes, content matters. But in AI search, reputation and recognition change the starting line.</p><h2>What E-E-A-T changes in an AI answer world</h2><p>E-E-A-T is often explained like a content quality framework. That’s true, but in generative search, <a href="https://www.searchenginejournal.com/role-of-eeat-in-ai-narratives-building-brand-authority/541927/"><u>it behaves more like a trust filter</u></a>.</p><h3>1. Experience &amp; Expertise: “Anyone could have written this”</h3><p>AI systems already have thousands of generic explainers. What they need (and what they reward) is content that signals real-world knowledge:</p><ul><li>First-hand learnings</li><li>Practitioner insight</li><li>Case studies with specifics</li><li>Original analysis and useful viewpoints</li></ul><p>If you want to be cited, you need to publish content that’s hard to fake and easy to verify.</p><h3>2. Authoritativeness: visibility is now a data problem</h3><p>If a model repeatedly sees your brand mentioned in credible places, alongside relevant topics, it becomes easier to “select” you. <a href="https://search.google/pdf/google-about-AI-overviews-AI-Mode.pdf"><u>This is one reason Knowledge Graph visibility matters so much in Google’s AI experiences</u></a>.</p><p>It’s also why “PR for the sake of it” doesn’t cut through. A random mention isn’t a signal. Consistent, contextual recognition is.</p><h3>3. Trustworthiness: weak signals won’t cut through</h3><p>If your content is outdated, inconsistent, anonymous, or unclear about who wrote it, it becomes riskier to cite. And if the model is trying to reduce risk, it will default to sources with clearer trust signals.</p><p><a href="https://developers.google.com/search/docs/fundamentals/creating-helpful-content"><u>Google’s own guidance is aligned with this</u></a>: be clear about who created your content, how it was created, and why it exists.</p><h2>How to feed the machines </h2><p>Okay, so the title of this blog is slightly misleading… There isn’t a prescribed diet for LLMs. <br /><br />The truth is, this will be different from brand to brand. Nuances like the niche you’re in, the subject matter, and how established your brand is will all factor into this. However as a starting point, you should look to:</p><h3>1. Make authorship unmistakable</h3><ul><li>Real bylines</li><li>Credible bios</li><li>Links to profiles and work</li><li>Clear editorial responsibility (who reviews what)</li></ul><h3>2. Publish content that can’t be spun up in 10 minutes</h3><ul><li>Original research (even small-scale is useful)</li><li>Real examples and outcomes</li><li>Expert commentary with an authentic point of view</li></ul><h3>3. Build mention-worthy presence beyond your site</h3><ul><li>Industry publications</li><li>Podcasts/webinars</li><li>Partnerships</li><li>Relevant directories and communities</li></ul><h3>4. Use the “Who / How / Why” lens on every key page</h3><ul><li>Who wrote it?</li><li>How was it produced?</li><li>Why does it exist? </li><li>What does it help someone do?</li></ul><h3>5. Treat maintenance as an AI visibility strategy</h3><ul><li>Refresh high-performing pages</li><li>Fix outdated claims</li><li>Remove thin content that weakens the domain</li></ul><h2>An E-E-A-T success story: +43% increase in organic visibility for Lovett Care</h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-website-visual-5.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-website-visual-5.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-website-visual-5.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-website-visual-5.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-website-visual-5.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-website-visual-5.png"
+		alt="Lovett website visual 5"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>Following the acquisition of New Care, Lovett Care Group had grown to 28 homes and more than 1,800 beds across England and Wales.</p><p>However, Lovett’s digital presence was split across two domains, dividing authority and weakening trust signals. In a high-consideration sector, credibility cannot rely on brand claims alone. Expertise, authoritativeness and trustworthiness needed to be visible and consistent across search.</p><p>We consolidated both domains into a single platform, carefully managing migration to protect and transfer authority. We embedded trust signals throughout, bringing together Google reviews, OpenScore ratings, carehome.co.uk feedback and CQC data into a visible review layer. Transparent team bios and content-rich guides demonstrated real expertise, which we strengthened with structured data to make entity relationships clear to search engines.</p><p>This translated into a 43% increase in organic visibility, a 56% rise in local pack rankings and a 70% uplift in conversion rate. Read the full case study <a href="../work/launching-lovett-care-on-craft-cms.html">here</a>.</p><h2>Will you be skipped or selected?</h2><p>If AI Overviews and chatbots are your new front page, then your job is to become an easy source to trust.</p><p>Ask yourself, could an AI system confidently attribute this answer to you?</p><p>If the author isn’t clear, the expertise isn’t provable, the claims aren’t backed up, or your brand isn’t recognised elsewhere, the safe choice is to cite someone else.</p><p>So don’t just publish more. Publish content that’s attributable, verifiable, and connected to a real entity people already trust.</p>
+	
+	
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Want to show up in AI results?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							FAQs
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							What is E-E-A-T?
+					</h3>
+	
+	
+			<p>E-E-A-T stands for Experience, Expertise, Authoritativeness and Trustworthiness. It’s Google’s framework for judging whether content is reliable and worth surfacing, especially when accuracy matters.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Is E-E-A-T a direct ranking factor?
+					</h3>
+	
+	
+			<p>Not as a single, measurable “score”. But lots of signals that affect rankings map to E-E-A-T (for example, strong authorship, reputable mentions, accurate sourcing, and site trust signals).</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							How is generative search different from traditional SEO?
+					</h3>
+	
+	
+			<p>Traditional SEO is mostly about earning a click from a list of results. Generative search is about being selected as a source that shapes an AI summary or answer, often before a user clicks anything.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							What content is most likely to get cited in AI answers?
+					</h3>
+	
+	
+			<p>Original, well-sourced content with clear expertise, backed by real examples and kept bang up to date.</p>
+	
+	
+	
+	
+		
+	</article>
+			</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403bf826a6bc479',t:'MTc5MDI3MzQ0OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

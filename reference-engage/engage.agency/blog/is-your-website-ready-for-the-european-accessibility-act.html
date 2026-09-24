@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Is your website ready for the European Accessibility Act?</title>
+<meta name="description" content="&quot;Is your website ready for the European Accessibility Act 2025? Discover what the EAA covers, who’s affected, and how to meet WCAG 2.1 AA compliance.&quot;">
+
+	<link rel="canonical" href="is-your-website-ready-for-the-european-accessibility-act.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="is-your-website-ready-for-the-european-accessibility-act.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Is your website ready for the European Accessibility Act?">
+<meta property="og:description" content="&quot;Is your website ready for the European Accessibility Act 2025? Discover what the EAA covers, who’s affected, and how to meet WCAG 2.1 AA compliance.&quot;">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/is-your-website-ready-for-the-european-accessibility-act">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_AM_V2.1.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act#blogposting","url":"https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act","headline":"Is your website ready for the European Accessibility Act?","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/dave-whitrick#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png","datePublished":"2025-07-09T21:37:01+01:00","description":"\"Is your website ready for the European Accessibility Act 2025? Discover what the EAA covers, who\u2019s affected, and how to meet WCAG 2.1 AA compliance.\""},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act#webpage","url":"https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act","name":"Is your website ready for the European Accessibility Act?","description":"\"Is your website ready for the European Accessibility Act 2025? Discover what the EAA covers, who\u2019s affected, and how to meet WCAG 2.1 AA compliance.\"","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Is your website ready for the European Accessibility Act?","item":"https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png"},"datePublished":"2025-07-09T21:37:01+01:00","dateModified":"2025-09-05T10:48:49+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="is-your-website-ready-for-the-european-accessibility-act.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Is your website ready for the European Accessibility Act?&quot;,&quot;description&quot;:&quot;\&quot;Is your website ready for the European Accessibility Act 2025? Discover what the EAA covers, who\u2019s affected, and how to meet WCAG 2.1 AA compliance.\&quot;&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_AM_V2.1.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/is-your-website-ready-for-the-european-accessibility-act&quot;,&quot;shareTitle&quot;:&quot;Is your website ready for the European Accessibility Act?&quot;,&quot;shareDescription&quot;:&quot;\&quot;Is your website ready for the European Accessibility Act 2025? Discover what the EAA covers, who\u2019s affected, and how to meet WCAG 2.1 AA compliance.\&quot;&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/is-your-website-ready-for-the-european-accessibility-act#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/is-your-website-ready-for-the-european-accessibility-act\&quot;,\&quot;headline\&quot;:\&quot;Is your website ready for the European Accessibility Act?\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/dave-whitrick#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/is-your-website-ready-for-the-european-accessibility-act#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Is-your-website-ready-for-the-European-Accessibility-Act\\\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png\&quot;,\&quot;datePublished\&quot;:\&quot;2025-07-09T21:37:01+01:00\&quot;,\&quot;description\&quot;:\&quot;\\\&quot;Is your website ready for the European Accessibility Act 2025? Discover what the EAA covers, who\\u2019s affected, and how to meet WCAG 2.1 AA compliance.\\\&quot;\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/is-your-website-ready-for-the-european-accessibility-act#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/is-your-website-ready-for-the-european-accessibility-act\&quot;,\&quot;name\&quot;:\&quot;Is your website ready for the European Accessibility Act?\&quot;,\&quot;description\&quot;:\&quot;\\\&quot;Is your website ready for the European Accessibility Act 2025? Discover what the EAA covers, who\\u2019s affected, and how to meet WCAG 2.1 AA compliance.\\\&quot;\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/is-your-website-ready-for-the-european-accessibility-act#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Is your website ready for the European Accessibility Act?\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/is-your-website-ready-for-the-european-accessibility-act\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Is-your-website-ready-for-the-European-Accessibility-Act\\\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png\&quot;},\&quot;datePublished\&quot;:\&quot;2025-07-09T21:37:01+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2025-09-05T10:48:49+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/is-your-website-ready-for-the-european-accessibility-act#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Is your website ready for the European Accessibility Act?&quot;,&quot;date&quot;:&quot;10th April 2025&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Dave&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/dave-whitrick&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 11 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog25 European accesability act AM V1 1 800x800 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;What do a missed alt tag, a clunky checkout, and a \u20ac500,000 fine have in\u00a0common?&lt;\/p&gt;&lt;p&gt;Answer: &lt;a href=\&quot;https:\/\/accessible-eu-centre.ec.europa.eu\/content-corner\/news\/eaa-comes-effect-june-2025-are-you-ready-2025-01-31_en\&quot;&gt;The European Accessibility Act (EAA)&lt;\/a&gt; update coming this\u00a0Summer.&lt;\/p&gt;&lt;p&gt;This is legislation that moves from &lt;i&gt;\u201cguidance\u201d&lt;\/i&gt; to &lt;i&gt;\u201cenforced law\u201d&lt;\/i&gt; on 28 June 2025. Enterprise, SME or start-up, if you\u2019re trading in the EU (even if you\u2019re based in the UK) you need to act now to avoid legal, reputational and financial\u00a0fallout.&lt;\/p&gt;&lt;p&gt;But this isn\u2019t just about ticking boxes. The EAA is about making the digital world better for everyone. More inclusive, more usable, more human. And while that might sound a bit idealistic, there\u2019s a very real business case for doing things right. So, let\u2019s talk about what\u2019s changing, who\u2019s affected, and what you can &lt;i&gt;actually&lt;\/i&gt; do about it.&lt;\/p&gt;&lt;h2&gt;What Is the European Accessibility\u00a0Act?&lt;\/h2&gt;&lt;p&gt;In short, it\u2019s a legal upgrade. The European Accessibility Act (or EAA if you\u2019re on a first-name basis) was introduced to create consistent accessibility standards across EU member states. Think of it as the EU saying: \u201cCome on now, let\u2019s all raise the\u00a0bar.\u201d&lt;\/p&gt;&lt;p&gt;What makes it a big deal is the scope. It goes beyond public sector sites (which are already bound by accessibility regulations) and now applies to private &lt;a href=\&quot;https:\/\/businessdisabilityforum.org.uk\/resource\/the-european-accessibility-act-eaa-what-businesses-need-to-know-and-do\/\&quot;&gt;businesses offering digital products and services in the\u00a0EU&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;That means your business website, e-commerce platform, mobile app, online checkout, booking system, e-book or even your self-service terminal needs to meet accessibility standards, or face the consequences. Importantly, it reinforces &lt;a href=\&quot;https:\/\/www.w3.org\/TR\/WCAG21\/\&quot;&gt;WCAG 2.1 Level AA&lt;\/a&gt; as the baseline for digital accessibility. Don\u2019t panic if you\u2019re hearing \u2018WCAG\u2019 for the first time, we\u2019ll break it down for you in this\u00a0article.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage blog25 European accesability act infographic AM V1 1 02&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=892\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=529\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=578\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/Is-your-website-ready-for-the-European-Accessibility-Act\/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:5134,&quot;height&quot;:3392},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;&lt;strong&gt;2025 EAA update at a\u00a0glance&lt;\/strong&gt;&lt;\/h2&gt;&lt;ul&gt;&lt;li&gt;Applies to all businesses selling goods\/services in the EU, including UK-based e-commerce and SaaS\u00a0providers&lt;\/li&gt;&lt;li&gt;Covers websites, apps, e-books, online checkouts, ticketing machines, and\u00a0more&lt;\/li&gt;&lt;li&gt;Requires conformance with WCAG 2.1 AA\u00a0standards&lt;\/li&gt;&lt;li&gt;Goes into full effect on 28 June\u00a02025&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;Who does this actually\u00a0affect?&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;It\u2019s not just developers and legal teams who need to care. The EAA touches nearly every part of your digital\u00a0operation.&lt;\/p&gt;&lt;p&gt;If you\u2019re running an online store, offering booking functionality, hosting an e-learning platform, or using a third-party booking or payment tool (yep, you too). And yes, even if you\u2019re using something like WordPress or Shopify, the responsibility is still yours to ensure\u00a0accessibility.&lt;\/p&gt;&lt;p&gt;And don\u2019t forget: if you\u2019re using embedded tools or plugins (cookie banners, calendar widgets, chatbots), you\u2019re still responsible for their accessibility under the\u00a0law.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;A few examples of what\u2019s\u00a0covered&lt;\/strong&gt;&lt;\/h2&gt;&lt;ul&gt;&lt;li&gt;E-commerce stores and\u00a0marketplaces&lt;\/li&gt;&lt;li&gt;Financial services and digital banking\u00a0platforms&lt;\/li&gt;&lt;li&gt;Booking engines for travel or\u00a0hospitality&lt;\/li&gt;&lt;li&gt;E-learning platforms and online education\u00a0tools&lt;\/li&gt;&lt;li&gt;Mobile apps tied to services\/products in the\u00a0EU&lt;\/li&gt;&lt;li&gt;Online forms, login areas, and digital customer\u00a0journeys&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;What\u2019s at stake with the EU\u00a0update?&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;If your site isn\u2019t accessible by 28 June 2025, it won\u2019t just be an awkward&lt;i&gt; oversight&lt;\/i&gt;. You could be looking at serious legal and financial consequences. Each &lt;a href=\&quot;https:\/\/cdpcom.com\/eaa-key-dates-requirements-and-impact\/\&quot;&gt;EU country sets its own penalties for non-compliance&lt;\/a&gt;, and some of them are\u00a0eye-watering.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Examples of fines across EU\u00a0countries&lt;\/strong&gt;&lt;\/h2&gt;&lt;ul&gt;&lt;li&gt;Germany: Up to\u00a0\u20ac100,000&lt;\/li&gt;&lt;li&gt;France: Up to\u00a0\u20ac250,000&lt;\/li&gt;&lt;li&gt;Ireland: Up to \u20ac60,000 + possible jail\u00a0time&lt;\/li&gt;&lt;li&gt;Sweden: Up to\u00a0\u20ac200,000&lt;\/li&gt;&lt;li&gt;Italy: \u20ac5,000 - \u20ac150,000 or up to 5% of an organisation\u2019s\u00a0turnover&lt;\/li&gt;&lt;li&gt;Ongoing daily penalties in some cases:\u00a0\u20ac1,000\/day&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;And then there\u2019s the damage you can\u2019t put a price on quite so easily. Non-compliance can mean your products or services are pulled from sale across the EU. You could find your business publicly named and shamed by regulators, your rankings taking a nosedive thanks to poor user experience, or your brand\u2019s hard-won trust taking a hit\u00a0overnight.&lt;\/p&gt;&lt;p&gt;Put plainly, this isn\u2019t SEO or UX jargon, it\u2019s a digital strategy issue that affects how you sell, how you\u2019re seen, and whether your customers will stick\u00a0around.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Why accessibility matters for both UX and\u00a0SEO&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Here\u2019s the good news: making your website accessible isn\u2019t just a legal win - it\u2019s a strategic power\u00a0move.&lt;\/p&gt;&lt;p&gt;Google has made it crystal clear: user experience isn\u2019t a nice-to-have anymore, it\u2019s central to how your site is ranked. &lt;a href=\&quot;https:\/\/backlinko.com\/core-web-vitals-study\&quot;&gt;Core Web Vitals - metrics that measure things like loading speed, visual stability, and interactivity - are official ranking signals&lt;\/a&gt;. And while they\u2019re technical under the hood, they all speak to the same thing: a smooth, frustration-free user\u00a0experience.&lt;\/p&gt;&lt;p&gt;Accessibility plays directly into this. Both Page Speed Insights and Lighthouse flag accessibility issues as standard, calling out poor colour contrast, missing aria labels or non-sequential heading tags. Are they ranking factors? No. Will they encourage dwell times and engagement rates for all users? Yes. &lt;a href=\&quot;https:\/\/searchengineland.com\/unpacking-googles-massive-search-documentation-leak-442716\&quot;&gt;And that definitely does impact how you\u00a0rank&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;And really, it makes total sense. Search engines and users are looking for the same things: clarity, structure, and ease of use. Accessibility best practices, like using proper heading structures, alt text for images, and meaningful link labels, make it easier for both humans and crawlers to navigate and understand your\u00a0content.&lt;\/p&gt;&lt;p&gt;Google loves accessible websites. So do your users. It\u2019s a no-brainer.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;How does improving accessibility benefit SEO and\u00a0UX?&lt;\/strong&gt;&lt;\/h2&gt;&lt;h3&gt;&lt;strong&gt;Improved crawlability, and\u00a0indexability&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Search engines rely on structured content to understand what your pages are about. Using semantic HTML (like sequential heading tags or accessibility landmarks) helps crawlers map content hierarchy accurately. ARIA labels add context for interactive elements like buttons or dropdowns, making your site easier for search engines to understand, but also for screen readers and assistive\u00a0tech.&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;Reduced bounce rates and stronger user\u00a0signals&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;When users land on a site that\u2019s confusing, cluttered or hard to navigate, they leave. But accessible websites tend to be clearer, easier to scan, and more usable for everyone, which naturally leads to longer dwell times, higher engagement and lower bounce rates. Google picks up on those positive user signals and factors them into your\u00a0rankings.&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;Better site speed and\u00a0performance&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Accessibility often encourages a clean, modular approach to development. Like avoiding bloated code, ensuring consistent behaviour across devices, and reducing reliance on JavaScript for basic functionality. This naturally leads to faster load times and better performance scores, particularly across Core Web Vitals. Faster sites don\u2019t just rank better, they convert better\u00a0too.&lt;\/p&gt;&lt;h3&gt;&lt;strong&gt;More inclusive design that supports real\u00a0users&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Features like screen reader support, keyboard navigation, and sufficient colour contrast aren\u2019t just for a small subset of users. Think of someone navigating with one hand on a mobile or browsing in bright sunlight, adhering to accessibility standards improves the experience for\u00a0everyone.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;FAQs&lt;\/strong&gt;&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Is my site accessible?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Possibly, but unless you\u2019ve audited it against WCAG 2.1 AA standards, you can\u2019t be sure. Approach accessibility from the ground up. Bake it into your design, development, continue to test and adapt over time. Your goal is ease of use for everyone, including people using assistive tech or navigating without a\u00a0mouse.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How do you optimise for screen readers?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Use semantic HTML, add clear alt text to images, label form fields properly, and avoid using visuals or icons as the only way of conveying meaning. Then test, and keep testing. Preferably with real users and screen reader tools like NVDA or\u00a0VoiceOver.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What is accessible colour contrast?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;It\u2019s about making sure there\u2019s enough contrast between text and background colours so content is easy to read, even for people with visual impairments or colour blindness. WCAG recommends a contrast ratio of at least 4.5:1 for body\u00a0text.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What is WCAG?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;WCAG stands for the Web Content Accessibility Guidelines - an internationally recognised set of standards for making digital content more accessible. The EAA uses WCAG 2.1 Level AA as the benchmark for\u00a0compliance.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;&lt;strong&gt;Are social media posts subject to the same accessibility\u00a0guidelines?&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Legally? No. At least, not &lt;i&gt;always&lt;\/i&gt; in the same way. Social platforms like TikTok and Instagram aren\u2019t currently held to the exact same WCAG 2.1 AA standards as websites under the European Accessibility\u00a0Act.&lt;\/p&gt;&lt;p&gt;That said, if you\u2019re embedding, linking to, or using social content as part of your digital product or service, it could fall under scrutiny. Especially in regulated sectors or if the content is part of a commercial offering (think product videos, tutorials and customer service\u00a0content).&lt;\/p&gt;&lt;p&gt;Responsibly? Absolutely. Even if not mandated by law (yet), accessibility should still be best practice for all your digital touchpoints, including your Reels, Stories, and TikToks. After all, a large and growing percentage of users rely\u00a0on:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Captions and subtitles (for users with hearing impairments or anyone watching with sound\u00a0off)&lt;\/li&gt;&lt;li&gt;Colour contrast (to make sure overlays or on-screen text are\u00a0readable)&lt;\/li&gt;&lt;li&gt;Alt text or descriptive captions (for screen reader users on platforms that support it, like\u00a0Instagram)&lt;\/li&gt;&lt;li&gt;Clear visual hierarchy (like avoiding flashing, overcrowded layouts, or unreadable\u00a0fonts)&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;It\u2019s also worth noting that platforms themselves are introducing more accessibility features. Instagram allows alt text for images. TikTok offers auto-captions and warnings for seizure-inducing content. If they\u2019re building it in, it\u2019s a &lt;a href=\&quot;https:\/\/sproutsocial.com\/insights\/social-media-accessibility\/\&quot;&gt;signal that accessibility on social is only going to get more important&lt;\/a&gt;, not less.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Prioritising accessibility across your\u00a0socials&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;You wouldn\u2019t launch a website without considering accessibility (or at least, you shouldn\u2019t). So why let your social media content fall\u00a0short?&lt;\/p&gt;&lt;p&gt;From video captions to colour contrast, accessibility on social is about making sure every scroll, swipe and story lands with the people it\u2019s meant for. The good news? Most of it comes down to a few small habits that add up to a much bigger\u00a0impact.&lt;\/p&gt;&lt;p&gt;The content businesses publish there should still follow accessibility best practices. That includes using alt text or image descriptions, adding subtitles to videos, ensuring accessible colour contrast, and avoiding motion or flashing visuals that could trigger\u00a0seizures.&lt;\/p&gt;&lt;p&gt;These principles support users who rely on screen readers, keyboard navigation or captions, and they\u2019re increasingly supported by tools like Instagram\u2019s alt text editor and TikTok\u2019s\u00a0auto-captioning.&lt;\/p&gt;&lt;p&gt;Accessible social content improves user experience across the board and strengthens your brand reputation. Simple changes, like writing hashtags in CamelCase, avoiding text-heavy graphics, and testing content with assistive tech, make your posts more usable and inclusive. It also aligns with SEO and UX best practices, reinforcing structure, readability and clarity in everything you publish. Whether you\u2019re embedding videos, linking out to stories, or simply building a presence across channels, &lt;a href=\&quot;https:\/\/www.rnib.org.uk\/living-with-sight-loss\/assistive-aids-and-technology\/tv-audio-and-gaming\/guide-to-accessible-social-media\/\&quot;&gt;accessibility on social media&lt;\/a&gt; is just as essential as it is on your\u00a0website.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;What should you be doing before\u00a0June?&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;You don\u2019t need to rip everything up and start again (unless you\u2019ve &lt;i&gt;really&lt;\/i&gt; ignored accessibility so far). But you do need to take a structured, proactive\u00a0approach.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Start with a WCAG accessibility\u00a0audit&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Start by running your site through accessibility testing tools like &lt;a href=\&quot;https:\/\/www.webpagetest.org\/\&quot;&gt;WebPageTest&lt;\/a&gt;, &lt;a href=\&quot;https:\/\/wave.webaim.org\/\&quot;&gt;WAVE&lt;\/a&gt;, Lighthouse or &lt;a href=\&quot;https:\/\/www.nvaccess.org\/download\/\&quot;&gt;NVDA&lt;\/a&gt;. They\u2019ll help flag common barriers like missing alt text, poor contrast, or broken keyboard\u00a0navigation.&lt;\/p&gt;&lt;p&gt;The benchmark you\u2019re aiming for is WCAG 2.1 AA conformance (AAA if you can!), which is where most of the European Accessibility Act\u2019s digital requirements land (though WCAG 2.2 is now live if you\u2019re keen to go the extra mile).&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Fix accessibility quick\u00a0wins&lt;\/strong&gt;&lt;\/h2&gt;&lt;ul&gt;&lt;li&gt;Add or fix alt text and image\u00a0labels&lt;\/li&gt;&lt;li&gt;Review colour contrast and adjust where\u00a0needed&lt;\/li&gt;&lt;li&gt;Structure pages using semantic headings (H1, H2,\u00a0etc.)&lt;\/li&gt;&lt;li&gt;Enable full keyboard navigation (no mouse\u00a0required)&lt;\/li&gt;&lt;li&gt;Add ARIA labels to complex elements for screen\u00a0readers&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;Make a Declaration of\u00a0Conformity&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Once you\u2019ve tackled your accessibility audit, the next step is to &lt;a href=\&quot;https:\/\/tetralogical.com\/blog\/2025\/03\/19\/understanding-the-eaa\/#:~:text=Article%2016%20(EU%20declaration%20of,have%20been%20met%20and%20demonstrated.\&quot;&gt;create a Declaration of Conformity&lt;\/a&gt;. This is a formal document that confirms you\u2019ve reviewed your site against WCAG standards and taken steps to fix any\u00a0issues.&lt;\/p&gt;&lt;p&gt;Essentially, this is your way of saying, we\u2019ve done the work. It\u2019s not just good practice; it\u2019s a requirement under the European Accessibility Act, and something regulators may ask to see as proof of\u00a0compliance.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Build an accessibility team (or use\u00a0ours)&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Accessibility shouldn\u2019t be an afterthought, it needs to be baked into how your team thinks, plans and builds from day one. That means equipping your designers, developers, SEO specialists and content creators with the knowledge and tools to make inclusive decisions at every\u00a0stage.&lt;\/p&gt;&lt;p&gt;Whether you build that capability in-house or lean on a partner like us, the goal is the same: creating a culture where accessibility isn\u2019t reactive, it\u2019s just how you\u00a0work.&lt;\/p&gt;&lt;p&gt;Here\u2019s how that looks in\u00a0practice:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Train design, content and SEO teams on accessibility basics like heading structure, colour contrast and alt\u00a0text&lt;\/li&gt;&lt;li&gt;Align dev and UX teams to include accessibility checks in every sprint or QA\u00a0process&lt;\/li&gt;&lt;li&gt;Include accessibility criteria in briefs, tickets and sign-off\u00a0stages&lt;\/li&gt;&lt;li&gt;Regularly audit and review third-party plugins, booking systems and embedded tools for\u00a0compliance&lt;\/li&gt;&lt;li&gt;Keep a shared accessibility checklist or framework visible to everyone, clarity beats assumptions every\u00a0time&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;We\u2019ve got a team for\u00a0that&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Yes, an actual team, not just a landing\u00a0page.&lt;\/p&gt;&lt;p&gt;Getting this right isn\u2019t about ticking a box. It\u2019s about building something better for your business &lt;i&gt;and&lt;\/i&gt; your\u00a0users.&lt;\/p&gt;&lt;p&gt;At Engage, our accessibility work lives at the point where UX, design, development and SEO teams meet. Our teams collaborate to create websites that are fast, beautiful, inclusive (and legally compliant) by\u00a0default.&lt;\/p&gt;&lt;p&gt;We don\u2019t just run audits.\u00a0We:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Design with accessibility in mind, from colour contrast to CTAs&lt;\/li&gt;&lt;li&gt;Develop WCAG-compliant code with accessibility baked in&lt;\/li&gt;&lt;li&gt;Optimise for search engines using structured data and accessible content&lt;\/li&gt;&lt;li&gt;Support screen reader navigation and complex keyboard flows&lt;\/li&gt;&lt;li&gt;Work with real users and tools to test, improve and\u00a0report&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Whether you\u2019re replatforming, tweaking an existing site, or building something brand new, we\u2019re here to make the process easy, effective, and honestly? A bit of a\u00a0game-changer.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;The best time to start was\u00a0yesterday&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;The EAA isn\u2019t just coming. It\u2019s nearly here. If you\u2019re still playing catch-up in 2025, the consequences won\u2019t just be legal, they could be\u00a0commercial.&lt;\/p&gt;&lt;p&gt;So don\u2019t wait for the\u00a0deadline.&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Audit\u00a0now&lt;\/li&gt;&lt;li&gt;Fix what you\u00a0can&lt;\/li&gt;&lt;li&gt;Get a roadmap in\u00a0place&lt;\/li&gt;&lt;li&gt;Train your\u00a0team&lt;\/li&gt;&lt;li&gt;Ask for\u00a0help&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;&lt;strong&gt;And if you\u2019re wondering who to ask? &lt;\/strong&gt;&lt;a href=\&quot;https:\/\/engage.agency\/contact\&quot;&gt;&lt;strong&gt;Drop us a line&lt;\/strong&gt;&lt;\/a&gt;&lt;strong&gt; and we\u2019ll set you up with a personalised accessibility plan. No jargon, no pressure, just clear steps forward.&lt;\/strong&gt;&lt;\/p&gt;&quot;}}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_AM_V1.1-800x800-1.png"
+		alt="Engage blog25 European accesability act AM V1 1 800x800 1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Is your website ready for the European Accessibility Act?</h1>
+	
+			<p>10th April 2025</p>
+	
+	
+			<p>Roughly a 11 minute read by</p>
+	
+						<p>
+									<a href="../team/dave-whitrick.html">
+						Dave
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>What do a missed alt tag, a clunky checkout, and a €500,000 fine have in common?</p><p>Answer: <a href="https://accessible-eu-centre.ec.europa.eu/content-corner/news/eaa-comes-effect-june-2025-are-you-ready-2025-01-31_en">The European Accessibility Act (EAA)</a> update coming this Summer.</p><p>This is legislation that moves from <i>“guidance”</i> to <i>“enforced law”</i> on 28 June 2025. Enterprise, SME or start-up, if you’re trading in the EU (even if you’re based in the UK) you need to act now to avoid legal, reputational and financial fallout.</p><p>But this isn’t just about ticking boxes. The EAA is about making the digital world better for everyone. More inclusive, more usable, more human. And while that might sound a bit idealistic, there’s a very real business case for doing things right. So, let’s talk about what’s changing, who’s affected, and what you can <i>actually</i> do about it.</p><h2>What Is the European Accessibility Act?</h2><p>In short, it’s a legal upgrade. The European Accessibility Act (or EAA if you’re on a first-name basis) was introduced to create consistent accessibility standards across EU member states. Think of it as the EU saying: “Come on now, let’s all raise the bar.”</p><p>What makes it a big deal is the scope. It goes beyond public sector sites (which are already bound by accessibility regulations) and now applies to private <a href="https://businessdisabilityforum.org.uk/resource/the-european-accessibility-act-eaa-what-businesses-need-to-know-and-do/">businesses offering digital products and services in the EU</a>.</p><p>That means your business website, e-commerce platform, mobile app, online checkout, booking system, e-book or even your self-service terminal needs to meet accessibility standards, or face the consequences. Importantly, it reinforces <a href="https://www.w3.org/TR/WCAG21/">WCAG 2.1 Level AA</a> as the baseline for digital accessibility. Don’t panic if you’re hearing ‘WCAG’ for the first time, we’ll break it down for you in this article.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=892/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=529/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=578/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/Is-your-website-ready-for-the-European-Accessibility-Act/Engage_blog25_European_accesability_act_infographic_AM_V1.1-02.png"
+		alt="Engage blog25 European accesability act infographic AM V1 1 02"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2><strong>2025 EAA update at a glance</strong></h2><ul><li>Applies to all businesses selling goods/services in the EU, including UK-based e-commerce and SaaS providers</li><li>Covers websites, apps, e-books, online checkouts, ticketing machines, and more</li><li>Requires conformance with WCAG 2.1 AA standards</li><li>Goes into full effect on 28 June 2025</li></ul><h2><strong>Who does this actually affect?</strong></h2><p>It’s not just developers and legal teams who need to care. The EAA touches nearly every part of your digital operation.</p><p>If you’re running an online store, offering booking functionality, hosting an e-learning platform, or using a third-party booking or payment tool (yep, you too). And yes, even if you’re using something like WordPress or Shopify, the responsibility is still yours to ensure accessibility.</p><p>And don’t forget: if you’re using embedded tools or plugins (cookie banners, calendar widgets, chatbots), you’re still responsible for their accessibility under the law.</p><h2><strong>A few examples of what’s covered</strong></h2><ul><li>E-commerce stores and marketplaces</li><li>Financial services and digital banking platforms</li><li>Booking engines for travel or hospitality</li><li>E-learning platforms and online education tools</li><li>Mobile apps tied to services/products in the EU</li><li>Online forms, login areas, and digital customer journeys</li></ul><h2><strong>What’s at stake with the EU update?</strong></h2><p>If your site isn’t accessible by 28 June 2025, it won’t just be an awkward<i> oversight</i>. You could be looking at serious legal and financial consequences. Each <a href="https://cdpcom.com/eaa-key-dates-requirements-and-impact/">EU country sets its own penalties for non-compliance</a>, and some of them are eye-watering.</p><h2><strong>Examples of fines across EU countries</strong></h2><ul><li>Germany: Up to €100,000</li><li>France: Up to €250,000</li><li>Ireland: Up to €60,000 + possible jail time</li><li>Sweden: Up to €200,000</li><li>Italy: €5,000 - €150,000 or up to 5% of an organisation’s turnover</li><li>Ongoing daily penalties in some cases: €1,000/day</li></ul><p>And then there’s the damage you can’t put a price on quite so easily. Non-compliance can mean your products or services are pulled from sale across the EU. You could find your business publicly named and shamed by regulators, your rankings taking a nosedive thanks to poor user experience, or your brand’s hard-won trust taking a hit overnight.</p><p>Put plainly, this isn’t SEO or UX jargon, it’s a digital strategy issue that affects how you sell, how you’re seen, and whether your customers will stick around.</p><h2><strong>Why accessibility matters for both UX and SEO</strong></h2><p>Here’s the good news: making your website accessible isn’t just a legal win - it’s a strategic power move.</p><p>Google has made it crystal clear: user experience isn’t a nice-to-have anymore, it’s central to how your site is ranked. <a href="https://backlinko.com/core-web-vitals-study">Core Web Vitals - metrics that measure things like loading speed, visual stability, and interactivity - are official ranking signals</a>. And while they’re technical under the hood, they all speak to the same thing: a smooth, frustration-free user experience.</p><p>Accessibility plays directly into this. Both Page Speed Insights and Lighthouse flag accessibility issues as standard, calling out poor colour contrast, missing aria labels or non-sequential heading tags. Are they ranking factors? No. Will they encourage dwell times and engagement rates for all users? Yes. <a href="https://searchengineland.com/unpacking-googles-massive-search-documentation-leak-442716">And that definitely does impact how you rank</a>.</p><p>And really, it makes total sense. Search engines and users are looking for the same things: clarity, structure, and ease of use. Accessibility best practices, like using proper heading structures, alt text for images, and meaningful link labels, make it easier for both humans and crawlers to navigate and understand your content.</p><p>Google loves accessible websites. So do your users. It’s a no-brainer.</p><h2><strong>How does improving accessibility benefit SEO and UX?</strong></h2><h3><strong>Improved crawlability, and indexability</strong></h3><p>Search engines rely on structured content to understand what your pages are about. Using semantic HTML (like sequential heading tags or accessibility landmarks) helps crawlers map content hierarchy accurately. ARIA labels add context for interactive elements like buttons or dropdowns, making your site easier for search engines to understand, but also for screen readers and assistive tech.</p><h3><strong>Reduced bounce rates and stronger user signals</strong></h3><p>When users land on a site that’s confusing, cluttered or hard to navigate, they leave. But accessible websites tend to be clearer, easier to scan, and more usable for everyone, which naturally leads to longer dwell times, higher engagement and lower bounce rates. Google picks up on those positive user signals and factors them into your rankings.</p><h3><strong>Better site speed and performance</strong></h3><p>Accessibility often encourages a clean, modular approach to development. Like avoiding bloated code, ensuring consistent behaviour across devices, and reducing reliance on JavaScript for basic functionality. This naturally leads to faster load times and better performance scores, particularly across Core Web Vitals. Faster sites don’t just rank better, they convert better too.</p><h3><strong>More inclusive design that supports real users</strong></h3><p>Features like screen reader support, keyboard navigation, and sufficient colour contrast aren’t just for a small subset of users. Think of someone navigating with one hand on a mobile or browsing in bright sunlight, adhering to accessibility standards improves the experience for everyone.</p><h2><strong>FAQs</strong></h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		accordion
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h2>
+							Is my site accessible?
+					</h2>
+	
+	
+			<p>Possibly, but unless you’ve audited it against WCAG 2.1 AA standards, you can’t be sure. Approach accessibility from the ground up. Bake it into your design, development, continue to test and adapt over time. Your goal is ease of use for everyone, including people using assistive tech or navigating without a mouse.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							How do you optimise for screen readers?
+					</h2>
+	
+	
+			<p>Use semantic HTML, add clear alt text to images, label form fields properly, and avoid using visuals or icons as the only way of conveying meaning. Then test, and keep testing. Preferably with real users and screen reader tools like NVDA or VoiceOver.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							What is accessible colour contrast?
+					</h2>
+	
+	
+			<p>It’s about making sure there’s enough contrast between text and background colours so content is easy to read, even for people with visual impairments or colour blindness. WCAG recommends a contrast ratio of at least 4.5:1 for body text.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							What is WCAG?
+					</h2>
+	
+	
+			<p>WCAG stands for the Web Content Accessibility Guidelines - an internationally recognised set of standards for making digital content more accessible. The EAA uses WCAG 2.1 Level AA as the benchmark for compliance.</p>
+	
+	
+	
+	
+		
+	</article>
+			</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2><strong>Are social media posts subject to the same accessibility guidelines?</strong></h2><p>Legally? No. At least, not <i>always</i> in the same way. Social platforms like TikTok and Instagram aren’t currently held to the exact same WCAG 2.1 AA standards as websites under the European Accessibility Act.</p><p>That said, if you’re embedding, linking to, or using social content as part of your digital product or service, it could fall under scrutiny. Especially in regulated sectors or if the content is part of a commercial offering (think product videos, tutorials and customer service content).</p><p>Responsibly? Absolutely. Even if not mandated by law (yet), accessibility should still be best practice for all your digital touchpoints, including your Reels, Stories, and TikToks. After all, a large and growing percentage of users rely on:</p><ul><li>Captions and subtitles (for users with hearing impairments or anyone watching with sound off)</li><li>Colour contrast (to make sure overlays or on-screen text are readable)</li><li>Alt text or descriptive captions (for screen reader users on platforms that support it, like Instagram)</li><li>Clear visual hierarchy (like avoiding flashing, overcrowded layouts, or unreadable fonts)</li></ul><p>It’s also worth noting that platforms themselves are introducing more accessibility features. Instagram allows alt text for images. TikTok offers auto-captions and warnings for seizure-inducing content. If they’re building it in, it’s a <a href="https://sproutsocial.com/insights/social-media-accessibility/">signal that accessibility on social is only going to get more important</a>, not less.</p><h2><strong>Prioritising accessibility across your socials</strong></h2><p>You wouldn’t launch a website without considering accessibility (or at least, you shouldn’t). So why let your social media content fall short?</p><p>From video captions to colour contrast, accessibility on social is about making sure every scroll, swipe and story lands with the people it’s meant for. The good news? Most of it comes down to a few small habits that add up to a much bigger impact.</p><p>The content businesses publish there should still follow accessibility best practices. That includes using alt text or image descriptions, adding subtitles to videos, ensuring accessible colour contrast, and avoiding motion or flashing visuals that could trigger seizures.</p><p>These principles support users who rely on screen readers, keyboard navigation or captions, and they’re increasingly supported by tools like Instagram’s alt text editor and TikTok’s auto-captioning.</p><p>Accessible social content improves user experience across the board and strengthens your brand reputation. Simple changes, like writing hashtags in CamelCase, avoiding text-heavy graphics, and testing content with assistive tech, make your posts more usable and inclusive. It also aligns with SEO and UX best practices, reinforcing structure, readability and clarity in everything you publish. Whether you’re embedding videos, linking out to stories, or simply building a presence across channels, <a href="https://www.rnib.org.uk/living-with-sight-loss/assistive-aids-and-technology/tv-audio-and-gaming/guide-to-accessible-social-media/">accessibility on social media</a> is just as essential as it is on your website.</p><h2><strong>What should you be doing before June?</strong></h2><p>You don’t need to rip everything up and start again (unless you’ve <i>really</i> ignored accessibility so far). But you do need to take a structured, proactive approach.</p><h2><strong>Start with a WCAG accessibility audit</strong></h2><p>Start by running your site through accessibility testing tools like <a href="https://www.webpagetest.org/">WebPageTest</a>, <a href="https://wave.webaim.org/">WAVE</a>, Lighthouse or <a href="https://www.nvaccess.org/download/">NVDA</a>. They’ll help flag common barriers like missing alt text, poor contrast, or broken keyboard navigation.</p><p>The benchmark you’re aiming for is WCAG 2.1 AA conformance (AAA if you can!), which is where most of the European Accessibility Act’s digital requirements land (though WCAG 2.2 is now live if you’re keen to go the extra mile).</p><h2><strong>Fix accessibility quick wins</strong></h2><ul><li>Add or fix alt text and image labels</li><li>Review colour contrast and adjust where needed</li><li>Structure pages using semantic headings (H1, H2, etc.)</li><li>Enable full keyboard navigation (no mouse required)</li><li>Add ARIA labels to complex elements for screen readers</li></ul><h2><strong>Make a Declaration of Conformity</strong></h2><p>Once you’ve tackled your accessibility audit, the next step is to <a href="https://tetralogical.com/blog/2025/03/19/understanding-the-eaa/#:~:text=Article%2016%20(EU%20declaration%20of,have%20been%20met%20and%20demonstrated.">create a Declaration of Conformity</a>. This is a formal document that confirms you’ve reviewed your site against WCAG standards and taken steps to fix any issues.</p><p>Essentially, this is your way of saying, we’ve done the work. It’s not just good practice; it’s a requirement under the European Accessibility Act, and something regulators may ask to see as proof of compliance.</p><h2><strong>Build an accessibility team (or use ours)</strong></h2><p>Accessibility shouldn’t be an afterthought, it needs to be baked into how your team thinks, plans and builds from day one. That means equipping your designers, developers, SEO specialists and content creators with the knowledge and tools to make inclusive decisions at every stage.</p><p>Whether you build that capability in-house or lean on a partner like us, the goal is the same: creating a culture where accessibility isn’t reactive, it’s just how you work.</p><p>Here’s how that looks in practice:</p><ul><li>Train design, content and SEO teams on accessibility basics like heading structure, colour contrast and alt text</li><li>Align dev and UX teams to include accessibility checks in every sprint or QA process</li><li>Include accessibility criteria in briefs, tickets and sign-off stages</li><li>Regularly audit and review third-party plugins, booking systems and embedded tools for compliance</li><li>Keep a shared accessibility checklist or framework visible to everyone, clarity beats assumptions every time</li></ul><h2><strong>We’ve got a team for that</strong></h2><p>Yes, an actual team, not just a landing page.</p><p>Getting this right isn’t about ticking a box. It’s about building something better for your business <i>and</i> your users.</p><p>At Engage, our accessibility work lives at the point where UX, design, development and SEO teams meet. Our teams collaborate to create websites that are fast, beautiful, inclusive (and legally compliant) by default.</p><p>We don’t just run audits. We:</p><ul><li>Design with accessibility in mind, from colour contrast to CTAs</li><li>Develop WCAG-compliant code with accessibility baked in</li><li>Optimise for search engines using structured data and accessible content</li><li>Support screen reader navigation and complex keyboard flows</li><li>Work with real users and tools to test, improve and report</li></ul><p>Whether you’re replatforming, tweaking an existing site, or building something brand new, we’re here to make the process easy, effective, and honestly? A bit of a game-changer.</p><h2><strong>The best time to start was yesterday</strong></h2><p>The EAA isn’t just coming. It’s nearly here. If you’re still playing catch-up in 2025, the consequences won’t just be legal, they could be commercial.</p><p>So don’t wait for the deadline.</p><ul><li>Audit now</li><li>Fix what you can</li><li>Get a roadmap in place</li><li>Train your team</li><li>Ask for help</li></ul><p><strong>And if you’re wondering who to ask? </strong><a href="../contact.html"><strong>Drop us a line</strong></a><strong> and we’ll set you up with a personalised accessibility plan. No jargon, no pressure, just clear steps forward.</strong></p>
+	
+	
+	
+	
+		
+	</div>
+		
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c0bf6c21c479',t:'MTc5MDI3MzUwMA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

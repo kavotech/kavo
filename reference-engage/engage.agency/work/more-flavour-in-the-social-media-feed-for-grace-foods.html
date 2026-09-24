@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>More flavour in the feed for Grace Foods: +11m social media engagements</title>
+<meta name="description" content="See how Engage helped Grace Foods drive +50m social impressions and 11.4m engagements through a smarter social media strategy.">
+
+	<link rel="canonical" href="more-flavour-in-the-social-media-feed-for-grace-foods.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="more-flavour-in-the-social-media-feed-for-grace-foods.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="More flavour in the feed for Grace Foods: +11m social media engagements">
+<meta property="og:description" content="See how Engage helped Grace Foods drive +50m social impressions and 11.4m engagements through a smarter social media strategy.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/work/more-flavour-in-the-social-media-feed-for-grace-foods">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image06-1.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"TechArticle","@id":"https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods#techarticle","url":"https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods#webpage"},"headline":"More flavour in the feed for Grace Foods: +11m social media engagements","description":"See how Engage helped Grace Foods drive +50m social impressions and 11.4m engagements through a smarter social media strategy.","image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png","datePublished":"2026-06-16T10:32:08+01:00","author":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"about":[{"@type":"Service","@id":"https:\/\/engage.agency\/services\/social-media-marketing#service"},{"@type":"Service","@id":"https:\/\/engage.agency\/services\/paid-social#service"},{"@type":"Service","@id":"https:\/\/engage.agency\/services\/influencer-marketing#service"},{"@type":"Service","@id":"https:\/\/engage.agency\/services\/motion-graphics#service"},{"@type":"Service","@id":"https:\/\/engage.agency\/services\/digital-branding#service"}]},{"@type":"WebPage","@id":"https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods#webpage","url":"https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods","name":"More flavour in the feed for Grace Foods: +11m social media engagements","description":"See how Engage helped Grace Foods drive +50m social impressions and 11.4m engagements through a smarter social media strategy.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Case studies index","item":"https:\/\/engage.agency\/work"},{"@type":"ListItem","position":3,"name":"Grace Foods - More flavour in the feed for Grace Foods: +11m social media engagements","item":"https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png"},"datePublished":"2026-06-16T10:32:08+01:00","dateModified":"2026-06-18T10:37:01+01:00","inLanguage":"en-GB","mainEntity":{"@type":"TechArticle","@id":"https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods#techarticle"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="more-flavour-in-the-social-media-feed-for-grace-foods.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;More flavour in the feed for Grace Foods: +11m social media engagements&quot;,&quot;description&quot;:&quot;See how Engage helped Grace Foods drive +50m social impressions and 11.4m engagements through a smarter social media strategy.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image06-1.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods&quot;,&quot;shareTitle&quot;:&quot;More flavour in the feed for Grace Foods: +11m social media engagements&quot;,&quot;shareDescription&quot;:&quot;See how Engage helped Grace Foods drive +50m social impressions and 11.4m engagements through a smarter social media strategy.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;TechArticle\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\\\/more-flavour-in-the-social-media-feed-for-grace-foods#techarticle\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\\\/more-flavour-in-the-social-media-feed-for-grace-foods\&quot;,\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\\\/more-flavour-in-the-social-media-feed-for-grace-foods#webpage\&quot;},\&quot;headline\&quot;:\&quot;More flavour in the feed for Grace Foods: +11m social media engagements\&quot;,\&quot;description\&quot;:\&quot;See how Engage helped Grace Foods drive +50m social impressions and 11.4m engagements through a smarter social media strategy.\&quot;,\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Case-study-images\\\/Grace-Foods\\\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-06-16T10:32:08+01:00\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;about\&quot;:[{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/social-media-marketing#service\&quot;},{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/paid-social#service\&quot;},{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/influencer-marketing#service\&quot;},{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/motion-graphics#service\&quot;},{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/digital-branding#service\&quot;}]},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\\\/more-flavour-in-the-social-media-feed-for-grace-foods#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\\\/more-flavour-in-the-social-media-feed-for-grace-foods\&quot;,\&quot;name\&quot;:\&quot;More flavour in the feed for Grace Foods: +11m social media engagements\&quot;,\&quot;description\&quot;:\&quot;See how Engage helped Grace Foods drive +50m social impressions and 11.4m engagements through a smarter social media strategy.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\\\/more-flavour-in-the-social-media-feed-for-grace-foods#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Case studies index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Grace Foods - More flavour in the feed for Grace Foods: +11m social media engagements\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\\\/more-flavour-in-the-social-media-feed-for-grace-foods\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Case-study-images\\\/Grace-Foods\\\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-06-16T10:32:08+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-06-18T10:37:01+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;TechArticle\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/work\\\/more-flavour-in-the-social-media-feed-for-grace-foods#techarticle\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;case-study&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;More flavour in the feed for Grace Foods&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Grace Engage Case Study26 Thumbnail Image 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1600,height=900\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_ThumbnailImage-1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;video&quot;:null,&quot;cta&quot;:null,&quot;theme&quot;:&quot;#2b1220&quot;,&quot;logo&quot;:{&quot;alt&quot;:&quot;Logo gracefood white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=97,height=60\/engage-website\/production\/Case-study-images\/Client-logos\/logo_gracefood_white.svg&quot;],&quot;sizes&quot;:null,&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:97,&quot;height&quot;:60},&quot;stats&quot;:[{&quot;title&quot;:&quot;+50m&quot;,&quot;copy&quot;:&quot;Impressions&quot;,&quot;icon&quot;:&quot;&quot;},{&quot;title&quot;:&quot;+11m&quot;,&quot;copy&quot;:&quot;Engagements&quot;,&quot;icon&quot;:&quot;&quot;},{&quot;title&quot;:&quot;+28m&quot;,&quot;copy&quot;:&quot;Reach&quot;,&quot;icon&quot;:&quot;&quot;}]}},&quot;content&quot;:{&quot;type&quot;:&quot;introduction&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;How a smarter social strategy helped Grace Foods maximise media impact&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Grace Foods is a global FMCG group with a broad portfolio of brands, each with its own audience, product range and role to play.&lt;\/p&gt;&lt;p&gt;In the UK, that includes Grace, known for authentic Caribbean products and recipe inspiration, Nurishment, a long-standing nutritional drink brand, and Encona, a household name in hot sauces celebrating 50 years in the market.&lt;\/p&gt;&lt;p&gt;Together, the portfolio spans everything from store cupboard staples to major cultural moments, including Notting Hill Carnival sponsorship.&lt;\/p&gt;&lt;p&gt;We\u2019ve partnered with Grace Foods for over four years, leading social strategy, paid and organic delivery across all three brands. Our objective is simple: drive awareness, engagement and footfall into supermarkets where purchase happens.&lt;\/p&gt;&quot;,&quot;meta&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Paid Social&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/paid-social&quot;},{&quot;title&quot;:&quot;Influencer Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/influencer-marketing&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;}]},&quot;team&quot;:{&quot;title&quot;:&quot;Project team&quot;,&quot;items&quot;:[{&quot;image&quot;:{&quot;alt&quot;:&quot;Danny Grogan 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=60,height=60\/engage-website\/production\/Teams\/Headshots\/Danny-Grogan-1.jpg&quot;],&quot;sizes&quot;:null},&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/danny-grogan&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Kim Horbury 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=60,height=60\/engage-website\/production\/Teams\/Headshots\/Kim-Horbury-1.jpg&quot;],&quot;sizes&quot;:null},&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/kim-horbury&quot;}]}}},&quot;blocks&quot;:[{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Grace Engage Case Study26 Image02 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image02-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image02-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image02-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image02-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image02-2.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;The challenge&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Grace Foods entered 2025 with a big ambition: maximise the impact of its media investment, and deliver stronger social performance across the board.&lt;\/p&gt;&lt;p&gt;There was also a wider strategic opportunity. Grace Foods operates in a category shaped by culture, community and flavour. Its brands needed to resonate with loyal audiences who already know and love the products, while also attracting people discovering new recipes and food cultures through social.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-video-embed&quot;,&quot;data&quot;:{&quot;video&quot;:{&quot;cta&quot;:&quot;Play video&quot;,&quot;poster&quot;:null,&quot;src&quot;:&quot;https:\/\/images.engagecdn.net\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image03-1.mp4&quot;,&quot;service&quot;:&quot;native&quot;,&quot;decorative&quot;:true,&quot;ratio&quot;:&quot;16\/9&quot;},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;What we did&quot;,&quot;copy&quot;:&quot;&lt;p&gt;With Grace Foods focused on making its media investment work harder, performance had to be driven through a smarter strategy, built around creativity, data and continuous optimisation.&lt;\/p&gt;&lt;p&gt;We shaped the content approach around how modern audiences discover and engage with food content on social. That meant leaning into platform-native creative, creator-led formats and influencer partnerships that felt natural in the feed, rather than polished to within an inch of their lives.\u00a0&lt;\/p&gt;&lt;p&gt;Alongside the creative, we continuously optimised paid media based on performance data, using engagement as a key signal of what was landing. Behind the scenes, that meant constant refinement: shifting budget between campaigns, adjusting formats and doubling down wherever we saw traction.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Grace Engage Case Study26 Image04 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image04-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image04-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image04-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image04-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image04-1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;p&gt;Across the year, we delivered a range of campaigns across the Grace Foods portfolio. Here are just a few of our favourites.&lt;\/p&gt;&lt;h3&gt;Great value with Grace&lt;\/h3&gt;&lt;p&gt;Grace\u2019s long-running \&quot;Great value with Grace\&quot; campaign needed to evolve. Historically, the campaign had leaned on longer-form, in-kitchen production. This time, we shifted the creative into short-form influencer content built social-first from the start.&lt;\/p&gt;&lt;p&gt;The brief centred on value: showing Grace products as affordable, family-friendly staples that could help feed a household for under \u00a310. By working with a mix of macro and micro influencers, we reached audiences in different ways, from broader awareness to smaller, more trusted communities.&lt;\/p&gt;&lt;p&gt;Dark ads then helped us push the strongest-performing content further, giving a practical value message more reach, more relevance and more staying power.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;\u2b50Standout stat:&lt;\/strong&gt; 1.1m video views\u00a0&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Grace Engage Case Study26 Image05 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image05-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image05-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image05-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image05-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image05-2.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;h3&gt;&lt;strong&gt;Grace: Chill &amp;amp; Grill&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;For summer, the focus shifted to seasonality and occasion-based content.&lt;\/p&gt;&lt;p&gt;Chill &amp;amp; Grill used influencer-led recipe content to showcase Grace\u2019s Jerk products and Tropical Rhythms in a way that felt right for barbecue season and creator culture.&lt;\/p&gt;&lt;p&gt;Rather than over-directing the output, we protected each creator\u2019s own style and built the campaign around food people would genuinely want to cook at home. That helped the content feel more like a recommendation than an ad, which is usually where the good stuff happens.&lt;\/p&gt;&lt;p&gt;We also combined engagement and link click campaigns to increase product visibility and drive awareness of in-store purchase, balancing reach with action.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;\u2b50Standout stat:&lt;\/strong&gt; 198k combined reach\u00a0&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Grace Engage Case Study26 Image06 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image06-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image06-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image06-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image06-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Grace-Foods\/Grace_Engage_CaseStudy26_Image06-1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;h3&gt;&lt;strong&gt;Nurishment: The 3pm slump&lt;\/strong&gt;&lt;\/h3&gt;&lt;p&gt;Recipe content had become familiar territory for Nurishment and the wider category, so we looked for a fresher way to show the product\u2019s role in people\u2019s lives.&lt;\/p&gt;&lt;p&gt;That led us to the 3pm slump, a relatable moment where Nurishment could show up naturally as an on-the-go pick-me-up.&lt;\/p&gt;&lt;p&gt;By partnering with two distinct influencer styles, a stay-at-home mum and an adventurer, we created \u201cday in the life\u201d content that felt relevant to different audiences, without forcing the product into the moment.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;\u2b50Standout stat:&lt;\/strong&gt; 97k engagements\u00a0&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;client-result-data&quot;,&quot;data&quot;:{&quot;quote&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;What we value most about working with Engage is that they really understand our brands, our audiences and the role social plays in helping us stay relevant. They bring ideas, energy and clear direction, but they\u2019re also collaborative and responsive, which makes them feel like a true extension of our team.&lt;\/p&gt;&quot;,&quot;author&quot;:&quot;Kimberley Lue Lim, Grace Foods UK&quot;,&quot;role&quot;:&quot;Head of Marketing&quot;},&quot;stats&quot;:[{&quot;title&quot;:&quot;+50m&quot;,&quot;copy&quot;:&quot;Impressions&quot;,&quot;icon&quot;:&quot;&quot;},{&quot;title&quot;:&quot;+11m&quot;,&quot;copy&quot;:&quot;Engagements&quot;,&quot;icon&quot;:&quot;&quot;},{&quot;title&quot;:&quot;+28m&quot;,&quot;copy&quot;:&quot;Reach&quot;,&quot;icon&quot;:&quot;&quot;}]}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;The results&quot;,&quot;copy&quot;:&quot;&lt;p&gt;With an unwavering focus on media efficiency, we helped Grace Foods exceed expectations across every key metric. Impressions, reach, engagement, cost-per-engagement, follower growth - you name it, we delivered it at 100% or more against target.&lt;\/p&gt;&lt;p&gt;More than that, our work modernised Grace Foods\u2019 social presence across its portfolio, with content that felt more relevant to the platform, the category and the audiences it wanted to reach.&lt;\/p&gt;&lt;p&gt;More flavour in the feed, and more impact where it counted.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Want stronger social performance?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let\u2019s talk &quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;There&#039;s more to explore&quot;,&quot;items&quot;:[{&quot;prefix&quot;:&quot;Cote&quot;,&quot;title&quot;:&quot;Fixing the fundamentals for C\u00f4te: +\u00a32m organic revenue&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/cote-fixing-the-fundamentals-for-cote-2m-organic-revenue&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Case study26 Cote Local Search 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Case-study-images\/Cote\/Engage_Case-study26_Cote_LocalSearch_1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Case-study-images\/Cote\/Engage_Case-study26_Cote_LocalSearch_1.jpg&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:&quot;Whitbread&quot;,&quot;title&quot;:&quot;Spring into action for Beefeater: +25,000 more diners through the door&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/whitbread-spring-into-action-for-beefeater-25-000-more-diners-through-the-door&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Case study26 BE Snapand Sizzle&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Case-study-images\/Whitbread-springing-into-action\/Engage_Case-study26_BE_SnapandSizzle.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Case-study-images\/Whitbread-springing-into-action\/Engage_Case-study26_BE_SnapandSizzle.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:&quot;Frubes&quot;,&quot;title&quot;:&quot;Squeezing out some serious results: +4.4m video views for Yoplait\u2019s Frubes&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/frubes-squeezing-out-some-serious-results-for-yoplaits-frubes&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Case study26 Frubes 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Case-study-images\/Frubes\/Engage_Case-study26_Frubes-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Case-study-images\/Frubes\/Engage_Case-study26_Frubes-2.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:&quot;Muji&quot;,&quot;title&quot;:&quot;Better sleep, bigger results: +350% organic revenue growth for MUJI&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/better-sleep-bigger-results-350-organic-revenue-growth-for-muji&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Frame 160&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Case-study-images\/Muji\/Frame-160.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Case-study-images\/Muji\/Frame-160.jpg&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_ThumbnailImage-1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_ThumbnailImage-1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1600,height=900/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_ThumbnailImage-1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_ThumbnailImage-1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_ThumbnailImage-1.png"
+		alt="Grace Engage Case Study26 Thumbnail Image 1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>More flavour in the feed for Grace Foods</h1>
+	
+	
+	
+	
+	
+	</header>
+
+			<section>
+	
+	
+
+			<h2>
+							How a smarter social strategy helped Grace Foods maximise media impact
+					</h2>
+	
+	
+			<p>Grace Foods is a global FMCG group with a broad portfolio of brands, each with its own audience, product range and role to play.</p><p>In the UK, that includes Grace, known for authentic Caribbean products and recipe inspiration, Nurishment, a long-standing nutritional drink brand, and Encona, a household name in hot sauces celebrating 50 years in the market.</p><p>Together, the portfolio spans everything from store cupboard staples to major cultural moments, including Notting Hill Carnival sponsorship.</p><p>We’ve partnered with Grace Foods for over four years, leading social strategy, paid and organic delivery across all three brands. Our objective is simple: drive awareness, engagement and footfall into supermarkets where purchase happens.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+	<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image02-2.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image02-2.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image02-2.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image02-2.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image02-2.png"
+		alt="Grace Engage Case Study26 Image02 2"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							The challenge
+					</h2>
+	
+	
+			<p>Grace Foods entered 2025 with a big ambition: maximise the impact of its media investment, and deliver stronger social performance across the board.</p><p>There was also a wider strategic opportunity. Grace Foods operates in a category shaped by culture, community and flavour. Its brands needed to resonate with loyal audiences who already know and love the products, while also attracting people discovering new recipes and food cultures through social.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+										
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							What we did
+					</h2>
+	
+	
+			<p>With Grace Foods focused on making its media investment work harder, performance had to be driven through a smarter strategy, built around creativity, data and continuous optimisation.</p><p>We shaped the content approach around how modern audiences discover and engage with food content on social. That meant leaning into platform-native creative, creator-led formats and influencer partnerships that felt natural in the feed, rather than polished to within an inch of their lives. </p><p>Alongside the creative, we continuously optimised paid media based on performance data, using engagement as a key signal of what was landing. Behind the scenes, that meant constant refinement: shifting budget between campaigns, adjusting formats and doubling down wherever we saw traction.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image04-1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image04-1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image04-1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image04-1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image04-1.png"
+		alt="Grace Engage Case Study26 Image04 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<div>
+	
+	
+
+	
+	
+			<p>Across the year, we delivered a range of campaigns across the Grace Foods portfolio. Here are just a few of our favourites.</p><h3>Great value with Grace</h3><p>Grace’s long-running "Great value with Grace" campaign needed to evolve. Historically, the campaign had leaned on longer-form, in-kitchen production. This time, we shifted the creative into short-form influencer content built social-first from the start.</p><p>The brief centred on value: showing Grace products as affordable, family-friendly staples that could help feed a household for under £10. By working with a mix of macro and micro influencers, we reached audiences in different ways, from broader awareness to smaller, more trusted communities.</p><p>Dark ads then helped us push the strongest-performing content further, giving a practical value message more reach, more relevance and more staying power.</p><p><strong>⭐Standout stat:</strong> 1.1m video views </p>
+	
+	
+	
+	
+		
+	</div>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image05-2.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image05-2.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image05-2.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image05-2.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image05-2.png"
+		alt="Grace Engage Case Study26 Image05 2"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<div>
+	
+	
+
+	
+	
+			<h3><strong>Grace: Chill &amp; Grill</strong></h3><p>For summer, the focus shifted to seasonality and occasion-based content.</p><p>Chill &amp; Grill used influencer-led recipe content to showcase Grace’s Jerk products and Tropical Rhythms in a way that felt right for barbecue season and creator culture.</p><p>Rather than over-directing the output, we protected each creator’s own style and built the campaign around food people would genuinely want to cook at home. That helped the content feel more like a recommendation than an ad, which is usually where the good stuff happens.</p><p>We also combined engagement and link click campaigns to increase product visibility and drive awareness of in-store purchase, balancing reach with action.</p><p><strong>⭐Standout stat:</strong> 198k combined reach </p>
+	
+	
+	
+	
+		
+	</div>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image06-1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image06-1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image06-1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image06-1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Grace-Foods/Grace_Engage_CaseStudy26_Image06-1.png"
+		alt="Grace Engage Case Study26 Image06 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<div>
+	
+	
+
+	
+	
+			<h3><strong>Nurishment: The 3pm slump</strong></h3><p>Recipe content had become familiar territory for Nurishment and the wider category, so we looked for a fresher way to show the product’s role in people’s lives.</p><p>That led us to the 3pm slump, a relatable moment where Nurishment could show up naturally as an on-the-go pick-me-up.</p><p>By partnering with two distinct influencer styles, a stay-at-home mum and an adventurer, we created “day in the life” content that felt relevant to different audiences, without forcing the product into the moment.</p><p><strong>⭐Standout stat:</strong> 97k engagements </p>
+	
+	
+	
+	
+		
+	</div>
+		
+			<div>
+	
+	
+
+	
+	
+	
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							The results
+					</h2>
+	
+	
+			<p>With an unwavering focus on media efficiency, we helped Grace Foods exceed expectations across every key metric. Impressions, reach, engagement, cost-per-engagement, follower growth - you name it, we delivered it at 100% or more against target.</p><p>More than that, our work modernised Grace Foods’ social presence across its portfolio, with content that felt more relevant to the platform, the category and the audiences it wanted to reach.</p><p>More flavour in the feed, and more impact where it counted.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Want stronger social performance?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let’s talk 
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							There's more to explore
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Fixing the fundamentals for Côte: +£2m organic revenue
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Case-study-images/Cote/Engage_Case-study26_Cote_LocalSearch_1.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Case-study-images/Cote/Engage_Case-study26_Cote_LocalSearch_1.jpg"
+		alt="Engage Case study26 Cote Local Search 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="cote-fixing-the-fundamentals-for-cote-2m-organic-revenue.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Spring into action for Beefeater: +25,000 more diners through the door
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Case-study-images/Whitbread-springing-into-action/Engage_Case-study26_BE_SnapandSizzle.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Case-study-images/Whitbread-springing-into-action/Engage_Case-study26_BE_SnapandSizzle.png"
+		alt="Engage Case study26 BE Snapand Sizzle"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="whitbread-spring-into-action-for-beefeater-25-000-more-diners-through-the-door.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Squeezing out some serious results: +4.4m video views for Yoplait’s Frubes
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Case-study-images/Frubes/Engage_Case-study26_Frubes-2.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Case-study-images/Frubes/Engage_Case-study26_Frubes-2.png"
+		alt="Engage Case study26 Frubes 2"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="frubes-squeezing-out-some-serious-results-for-yoplaits-frubes.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Better sleep, bigger results: +350% organic revenue growth for MUJI
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Case-study-images/Muji/Frame-160.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Case-study-images/Muji/Frame-160.jpg"
+		alt="Frame 160"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="better-sleep-bigger-results-350-organic-revenue-growth-for-muji.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403be5a0b5dc479',t:'MTc5MDI3MzQwMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

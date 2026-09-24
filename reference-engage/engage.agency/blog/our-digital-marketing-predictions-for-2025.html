@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Our digital marketing predictions for 2025</title>
+<meta name="description" content="Digital marketing in 2025: Explore key trends and predictions shaping the future of online marketing, from gamification to the evolving SEO space.">
+
+	<link rel="canonical" href="our-digital-marketing-predictions-for-2025.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="our-digital-marketing-predictions-for-2025.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Our digital marketing predictions for 2025">
+<meta property="og:description" content="Digital marketing in 2025: Explore key trends and predictions shaping the future of online marketing, from gamification to the evolving SEO space.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/our-digital-marketing-predictions-for-2025">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025#blogposting","url":"https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025","headline":"Our digital marketing predictions for 2025","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/lloyd-preston#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_2025predictions_1x1.png","datePublished":"2025-07-09T19:38:15+01:00","description":"Digital marketing in 2025: Explore key trends and predictions shaping the future of online marketing, from gamification to the evolving SEO space."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025#webpage","url":"https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025","name":"Our digital marketing predictions for 2025","description":"Digital marketing in 2025: Explore key trends and predictions shaping the future of online marketing, from gamification to the evolving SEO space.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Our digital marketing predictions for 2025","item":"https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_2025predictions_1x1.png"},"datePublished":"2025-07-09T19:38:15+01:00","dateModified":"2025-09-05T10:50:17+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="our-digital-marketing-predictions-for-2025.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Our digital marketing predictions for 2025&quot;,&quot;description&quot;:&quot;Digital marketing in 2025: Explore key trends and predictions shaping the future of online marketing, from gamification to the evolving SEO space.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/our-digital-marketing-predictions-for-2025&quot;,&quot;shareTitle&quot;:&quot;Our digital marketing predictions for 2025&quot;,&quot;shareDescription&quot;:&quot;Digital marketing in 2025: Explore key trends and predictions shaping the future of online marketing, from gamification to the evolving SEO space.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/our-digital-marketing-predictions-for-2025#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/our-digital-marketing-predictions-for-2025\&quot;,\&quot;headline\&quot;:\&quot;Our digital marketing predictions for 2025\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/lloyd-preston#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/our-digital-marketing-predictions-for-2025#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/How-to-boss-Black-Friday-and-boost-your-bottom-line\\\/blog_2025predictions_1x1.png\&quot;,\&quot;datePublished\&quot;:\&quot;2025-07-09T19:38:15+01:00\&quot;,\&quot;description\&quot;:\&quot;Digital marketing in 2025: Explore key trends and predictions shaping the future of online marketing, from gamification to the evolving SEO space.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/our-digital-marketing-predictions-for-2025#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/our-digital-marketing-predictions-for-2025\&quot;,\&quot;name\&quot;:\&quot;Our digital marketing predictions for 2025\&quot;,\&quot;description\&quot;:\&quot;Digital marketing in 2025: Explore key trends and predictions shaping the future of online marketing, from gamification to the evolving SEO space.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/our-digital-marketing-predictions-for-2025#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Our digital marketing predictions for 2025\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/our-digital-marketing-predictions-for-2025\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/How-to-boss-Black-Friday-and-boost-your-bottom-line\\\/blog_2025predictions_1x1.png\&quot;},\&quot;datePublished\&quot;:\&quot;2025-07-09T19:38:15+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2025-09-05T10:50:17+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/our-digital-marketing-predictions-for-2025#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Our digital marketing predictions for 2025&quot;,&quot;date&quot;:&quot;19th December 2024&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Lloyd&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/lloyd-preston&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 10 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Blog 2025predictions 1x1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_2025predictions_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_2025predictions_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_2025predictions_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_2025predictions_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_2025predictions_1x1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;With the average internet user now spending &lt;a href=\&quot;https:\/\/www.telegraph.co.uk\/business\/2024\/11\/28\/gen-z-spends-record-six-hours-a-day-online\/#:~:text=Young%20adults%20are%20spending%20a,study%20by%20media%20regulator%20Ofcom.\&quot;&gt;over six hours online every day&lt;\/a&gt;, the opportunities for brands to connect with audiences are unprecedented - but so are the complexities of doing it\u00a0right.&lt;\/p&gt;&lt;p&gt;From the seismic shift in search behaviour to the increasing adoption of AI, we asked our team to share the trends shaping the future of digital. Here\u2019s what you need to know to stay ahead in 2025.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;No time to spare? Here\u2019s our quick\u00a0take.&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;&lt;strong&gt;1.&lt;\/strong&gt; &lt;strong&gt;Trust and authenticity will become the ultimate consumer\u00a0currency.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Why it matters: Consumers and search engines trust brands that are transparent, credible, and\u00a0human.&lt;\/p&gt;&lt;p&gt;What to do: Name your experts in content and encourage community-driven\u00a0conversations.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;2. Adapting to shifting search behaviour will be key for\u00a0visibility.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Why it matters: Social media, zero-click searches, and voice commands are changing how people find info\u00a0online.&lt;\/p&gt;&lt;p&gt;What to do: Optimise for social discovery, adapt to zero-click search features, and use natural language in your content to satisfy voice\u00a0searches.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;3. Gamification will redefine brand\u00a0engagement.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Why it matters: Gamified experiences increase engagement, drive loyalty, and offer valuable consumer\u00a0insights.&lt;\/p&gt;&lt;p&gt;What to do: Build gamified elements into your campaigns, gather valuable first-party data, and use it to drive personalisation and\u00a0relevance.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;4. Experimentation will power social\u00a0success.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Why it matters: Social platforms reward boldness and real-time\u00a0adaptation.&lt;\/p&gt;&lt;p&gt;What to do: Create content that entertains, experiment with nano and micro influencers, and lean into social listening to stay\u00a0agile.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;5. Mobile-centric experiences will be key to\u00a0growth.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Why it matters: Mobile-friendly experiences will drive searchability and conversions, and keep users coming\u00a0back.&lt;\/p&gt;&lt;p&gt;What to do: Maximise page speed, explore Progressive Web Apps (PWAs) and mobile wallet vouchers, and prioritise seamless mobile\u00a0usability.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Looking for detail? Let\u2019s dive\u00a0in!&lt;\/strong&gt;&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Sub 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;&lt;strong&gt;Trust and authenticity will become the ultimate consumer\u00a0currency.&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;With &lt;a href=\&quot;https:\/\/www.forbes.com\/councils\/forbescommunicationscouncil\/2021\/06\/28\/marketing-with-consumer-trust-in-mind\/?utm_source=chatgpt.com\&quot;&gt;70% of consumers valuing trust more highly than ever&lt;\/a&gt;, authenticity and transparent communication will be essential to ranking and resonating in\u00a02025.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Google\u2019s N-E-E-A-T update puts notability in\u00a0focus&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Google\u2019s move to include \u201cNotability\u201d and \u201cTransparency\u201d in its E-E-A-T guidelines reflects this shift, emphasising expertise, authenticity, and credibility as key drivers of search success. In a space flooded with mass-produced, AI-generated fluff, prioritising transparent authorship and offering genuine value will help you stand\u00a0out.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Google surfaces more user-generated content\u00a0(UGC)&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;At the same time, UGC is becoming a key focus for search engines, driven by increasing user demand and the limitations of traditional marketing content. In fact, &lt;a href=\&quot;https:\/\/www.searchenginejournal.com\/googles-ugc-push-sullivan-explains-the-shift-in-search-results\/528684\/#:~:text=The%20Rise%20Of%20UGC%20In%20Search%20Results&amp;amp;text=%E2%80%9CPeople%20are%20trying%20to%20get,that%20it%20will%20be%20helpful.%E2%80%9D\&quot;&gt;Google is actively refining its algorithms to surface high-quality UGC&lt;\/a&gt;, recognising its value in providing authentic, first-hand perspectives that complement traditional web\u00a0pages.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;What actions can you take now?&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Own your expertise: Put your name to your knowledge with transparent authorship and first-hand expertise that proves you know your\u00a0stuff.&lt;\/li&gt;&lt;li&gt;Turn to your biggest fans: Actively encourage community-driven content - reviews, forums, and discussions - to stay relevant and show you\u2019re\u00a0listening.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;Adapting to shifting search behaviour will be key to\u00a0visibility.&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Search behaviour is evolving, with users turning to social platforms to search, skipping clicks on Google, and relying on voice assistants for answers. These trends are reshaping how you need to approach visibility, blending traditional SEO tactics with tailored, platform-specific\u00a0strategies.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Capitalising on the democratisation of\u00a0search&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Remember when it felt like Google was the only way to find info online? Times have changed - &lt;a href=\&quot;https:\/\/blog.hubspot.com\/marketing\/how-search-behaviors-are-changing\&quot;&gt;with nearly 31% of users now starting their searches on social media&lt;\/a&gt;. Platforms like TikTok, Instagram, and YouTube are now top destinations for younger audiences looking for quick, visually engaging\u00a0answers.&lt;\/p&gt;&lt;p&gt;You now need to meet users where they are, creating content designed specifically for these platforms, while still maintaining a solid SEO foundation. For instance, a detailed blog post could be optimised for search, while also repurposed as a series of bite-sized TikTok videos, each highlighting key\u00a0takeaways.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Zeroing in on zero-click\u00a0searches&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Zero-click searches - where answers appear directly on Google\u2019s results page - are reshaping visibility strategies. They account for &lt;a href=\&quot;https:\/\/www.semrush.com\/blog\/zero-click-searches\/\&quot;&gt;25.6% of desktop searches and 17.3% of mobile searches&lt;\/a&gt;, offering both challenges and\u00a0opportunities.&lt;\/p&gt;&lt;p&gt;On the upside, features like AI Overviews, snippets and knowledge panels boost visibility and introduce your brand to new audiences. However, they can reduce direct website traffic as users get answers without clicking through. This highlights the need for a balanced approach: optimising content to appear in zero-click spaces while ensuring it also encourages further\u00a0engagement.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Walking the talk with voice\u00a0search&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Voice search has become increasingly common in recent years, and is now transforming how users interact with search engines, &lt;a href=\&quot;https:\/\/bloggingwizard.com\/voice-search-statistics\/?utm_source=chatgpt.com\&quot;&gt;with 27% of the online population now using voice search on mobile devices&lt;\/a&gt;. This shift, driven by the convenience of virtual assistants like Alexa, Siri, and Google Assistant, will demand a new approach to content\u00a0creation.&lt;\/p&gt;&lt;p&gt;Voice queries are often conversational and natural, reflecting how people speak rather than type. Optimising for voice search means focusing on long-tail keywords and creating concise, direct content \u2013 the average voice search result is just 29 words\u00a0long.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;What actions can you take\u00a0now?&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Think like your audience: Align your content with user intent across both traditional search engines and social\u00a0platforms.&lt;\/li&gt;&lt;li&gt;Own the top spot: Use schema markup and structured content to optimise for zero-click searches, ensuring your content appears when and where it\u2019s\u00a0needed.&lt;\/li&gt;&lt;li&gt;Speak their language: Use natural language and long-tail keywords to better target voice search\u00a0queries.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Sub 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_2.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;&lt;strong&gt;Gamification will redefine brand\u00a0engagement.&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Gamification is fast becoming a cornerstone of customer engagement, allowing you to create immersive, interactive experiences that captivate audiences and build lasting loyalty. By weaving playful elements into digital and real-world touchpoints, industries like retail and travel are creating moments that are not just memorable but\u00a0impactful.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Playing the loyalty\u00a0game&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Loyalty programs are a natural fit for gamification, and brands like Lidl are leading the way. The Lidl Plus app features digital scratch cards that transform routine shopping into an interactive and rewarding experience. And it works; &lt;a href=\&quot;https:\/\/www.forbes.com\/sites\/blakemorgan\/2020\/02\/18\/50-stats-showing-the-power-of-personalization\/#:~:text=Senior%20Contributor,Futurist%2C%20Author%20and%20Keynote%20Speaker.&amp;amp;text=This%20article%20is%20more%20than%204%20years%20old.&amp;amp;text=From%20Spotify%20to%20Netflix%20and,power%20and%20potential%20of%20personalization.\&quot;&gt;80% of customers are more likely to engage with brands that offer\u00a0rewards&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Putting the \u201cooh\u201d in\u00a0OOH&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Gamification is also reshaping product launches and out-of-home (OOH) campaigns by blending physical and digital spaces for interactive experiences. Brands in sectors like fashion, tech, and automotive are increasingly using gamified elements to engage consumers in meaningful\u00a0ways.&lt;\/p&gt;&lt;p&gt;A great example is &lt;a href=\&quot;https:\/\/oceanoutdoor.com\/blog\/lacoste-launched-its-first-ever-ar-ooh-activation-with-superheroes-campaign\/\&quot;&gt;Lacoste\u2019s \u201cSuperheroes\u201d campaign&lt;\/a&gt;, which used augmented reality (AR) for a gamified treasure hunt to promote its Christmas fragrance. Participants used smartphones to find virtual prize boxes and unlock exclusive products. The AR experience was tied to OOH ads featuring QR codes across UK cities, blending digital and physical interactions to drive engagement and\u00a0participation.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Unlocking valuable first party-data&lt;\/strong&gt;&lt;br \/&gt;&lt;br \/&gt;Gamification goes beyond creating memorable experiences - it\u2019s a smart way to collect valuable first-party data. By integrating interactive elements like quizzes, games, and challenges, you can gain insights into consumer preferences while keeping users engaged. This data drives personalisation, allowing for more relevant recommendations and experiences. With data privacy rules tightening, gamification offers a transparent way to build trust and gather insights that benefit both your business and your\u00a0customers.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;What actions can you take\u00a0now?&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Bring loyalty to life: Use gamified rewards like digital scratch cards or challenges to make routine interactions exciting, driving engagement and repeat\u00a0business&lt;\/li&gt;&lt;li&gt;Build a buzz: Integrate gamification into product launches and OOH campaigns to create immersive experiences that build a buzz around your\u00a0brand.&lt;\/li&gt;&lt;li&gt;Unlock insights with play: Consider the key data points you want to capture, and design your gamified campaigns with these in mind. Then, use this data to personalise and enhance future\u00a0campaigns.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;Experimentation will power social\u00a0success&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;In 2025, the brands that stand out will be the ones embracing bold content, smarter influencer strategies, and real-time insights. By leaning into nano and micro influencers, experimenting with fresh ideas, and making the most of social listening, they\u2019ll build stronger communities and create more meaningful\u00a0connections.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Bold content is bringing better\u00a0results&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Social media has become a space for brands to push creative boundaries, prioritising engagement through bold, entertaining content. By experimenting with distinct voices and fresh formats, you can inject personality and reduce community\u00a0fatigue.&lt;\/p&gt;&lt;p&gt;Monzo exemplifies this, transforming banking into an engaging experience through humour, memes, playful TikToks, and witty replies. Their strategy has driven a &lt;a href=\&quot;https:\/\/www.marketingweek.com\/monzo-marketing-spend-profit\/\&quot;&gt;31% rise in customer numbers in 2023 to 9.7 million&lt;\/a&gt;, proving even the most unexciting products can thrive with the right\u00a0approach.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Nano and micro influencers take\u00a0centre-stage&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;The shift toward nano and micro influencers is transforming influencer marketing. &lt;a href=\&quot;https:\/\/influencermarketinghub.com\/july-influencer-marketing-report\/\&quot;&gt;With 43% of marketers reporting increased use of these smaller-scale creators&lt;\/a&gt;, it\u2019s clear that their authentic, highly engaged audiences are delivering results that broader campaigns often can\u2019t. Nano and micro influencers bring relatability and trust, making them ideal for building genuine connections with specific communities. As marketers begin to lean into this trend, the focus is shifting from reach to resonance \u2013 capitalising on smaller voices can drive big\u00a0results.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Social listening is shaping more intelligent\u00a0campaigns&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Understanding your audience and adapting in real time is critical to success, and social listening is making this possible. In fact, a recent survey revealed that &lt;a href=\&quot;https:\/\/blog.hubspot.com\/service\/social-listening\&quot;&gt;89% of marketeers rate social listening data as high or very high quality&lt;\/a&gt;, offering reliable insights to refine strategies and measure impact\u00a0effectively.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;What actions can you take\u00a0now?&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Rip up the rulebook: Create content that engages through entertainment, offering your audience something they can\u2019t help but interact\u00a0with.&lt;\/li&gt;&lt;li&gt;Mix and maximise: Combine nano and micro influencers to balance broad reach with authentic, targeted\u00a0engagement.&lt;\/li&gt;&lt;li&gt;Listen and learn: Use social listening to tap into audience sentiment, identify trends, and ensure your content lands exactly where it needs\u00a0to.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Sub 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Our-digital-marketing-predictions-for-2025\/Sub_3.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;&lt;strong&gt;Mobile-centric experiences will be key to\u00a0growth&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;With over &lt;a href=\&quot;https:\/\/www.statista.com\/statistics\/277125\/share-of-website-traffic-coming-from-mobile-devices\/\&quot;&gt;58% of global web traffic coming from mobile devices&lt;\/a&gt;, seamless mobile experiences are no longer a luxury - they\u2019re the baseline. As we move into 2025, mobile-centric strategies must be prioritised, to keep up with rising consumer\u00a0expectations.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Supercharging mobile page speed for visibility&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;In 2025, page speed will be more critical than ever. &lt;a href=\&quot;https:\/\/blog.hubspot.com\/marketing\/page-load-time-conversion-rates?hubs_content=blog.hubspot.com\/website\/web-development-trends&amp;amp;hubs_content-cta=Almost%2070%25%20of%20consumers\&quot;&gt;With nearly 70% of consumers saying it influences their buying decisions&lt;\/a&gt;, fast, seamless experiences will define success. With Google\u2019s algorithm focused on mobile-first indexing, optimising for speed is essential for both user experience and being competitive in\u00a0search.&lt;\/p&gt;&lt;p&gt;Consider using next-gen image formats like WebP, enable lazy loading, and leverage browser caching for faster returns. Trim excess code and use a CDN for lightning-fast delivery. Every millisecond counts in the digital space - keep up or fall\u00a0behind.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Driving footfall and repeat business with mobile\u00a0wallets&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/engage.agency\/blog\/mobile-wallet-vouchers-put-your-brand-in-your-customers-pocket\&quot;&gt;Mobile wallet vouchers&lt;\/a&gt; will be a game-changer in 2025. These digital vouchers slot straight into wallets like Apple Pay and Google Pay, giving you a direct line to your customers without needing additional apps. By using mobile wallet vouchers, brands can deliver tailored offers, boost footfall, and build loyalty with\u00a0ease.&lt;\/p&gt;&lt;p&gt;Beyond simplifying interactions, they keep your brand front and centre with timely push notifications and real-time updates. Savvy brands are jumping on this trend to create frictionless, mobile-first experiences that resonate with today\u2019s always-on\u00a0consumers.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;PWAs set the standard for mobile\u00a0engagement&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;Progressive Web Apps (PWAs) are the next big thing in mobile engagement, combining the best features of websites and native apps. They\u2019re fast, work offline, and offer app-like features such as push notifications and automatic updates - all without requiring downloads from an app\u00a0store.&lt;\/p&gt;&lt;p&gt;Brands like Starbucks, Spotify, and Uber are already using PWAs to deliver seamless, reliable mobile experiences while keeping development costs down and maintenance straightforward. As mobile-first strategies become essential, PWAs offer a smart, scalable way to connect with users wherever they\u00a0are.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;What actions can you take\u00a0now?&lt;\/strong&gt;&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Focus on speed: Prioritise fast load times to deliver better experiences and climb the search rankings.&lt;\/li&gt;&lt;li&gt;Put your brand in your customers\u2019 pocket: Use mobile wallet vouchers to engage customers, deliver personalised offers, and drive repeat visits.&lt;\/li&gt;&lt;li&gt;Explore PWAs: Offer app-like experiences without the barriers of traditional app stores.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;Ready to take on\u00a02025?&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;The year ahead will reward brands that think bigger and bolder, move faster, and embrace\u00a0change.&lt;\/p&gt;&lt;p&gt;Whether it\u2019s gamifying your campaigns, optimising your content for zero-click searches, or creating scroll-stopping social media content, we\u2019re here to help you stay ahead in 2025. &lt;a href=\&quot;https:\/\/engage.agency\/contact\&quot;&gt;Get in touch today&lt;\/a&gt;, and let\u2019s make 2025 your best year\u00a0yet!&lt;\/p&gt;&quot;}}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_2025predictions_1x1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_2025predictions_1x1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_2025predictions_1x1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_2025predictions_1x1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_2025predictions_1x1.png"
+		alt="Blog 2025predictions 1x1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Our digital marketing predictions for 2025</h1>
+	
+			<p>19th December 2024</p>
+	
+	
+			<p>Roughly a 10 minute read by</p>
+	
+						<p>
+									<a href="../team/lloyd-preston.html">
+						Lloyd
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>With the average internet user now spending <a href="https://www.telegraph.co.uk/business/2024/11/28/gen-z-spends-record-six-hours-a-day-online/#:~:text=Young%20adults%20are%20spending%20a,study%20by%20media%20regulator%20Ofcom.">over six hours online every day</a>, the opportunities for brands to connect with audiences are unprecedented - but so are the complexities of doing it right.</p><p>From the seismic shift in search behaviour to the increasing adoption of AI, we asked our team to share the trends shaping the future of digital. Here’s what you need to know to stay ahead in 2025.</p><h2><strong>No time to spare? Here’s our quick take.</strong></h2><p><strong>1.</strong> <strong>Trust and authenticity will become the ultimate consumer currency.</strong></p><p>Why it matters: Consumers and search engines trust brands that are transparent, credible, and human.</p><p>What to do: Name your experts in content and encourage community-driven conversations.</p><p><strong>2. Adapting to shifting search behaviour will be key for visibility.</strong></p><p>Why it matters: Social media, zero-click searches, and voice commands are changing how people find info online.</p><p>What to do: Optimise for social discovery, adapt to zero-click search features, and use natural language in your content to satisfy voice searches.</p><p><strong>3. Gamification will redefine brand engagement.</strong></p><p>Why it matters: Gamified experiences increase engagement, drive loyalty, and offer valuable consumer insights.</p><p>What to do: Build gamified elements into your campaigns, gather valuable first-party data, and use it to drive personalisation and relevance.</p><p><strong>4. Experimentation will power social success.</strong></p><p>Why it matters: Social platforms reward boldness and real-time adaptation.</p><p>What to do: Create content that entertains, experiment with nano and micro influencers, and lean into social listening to stay agile.</p><p><strong>5. Mobile-centric experiences will be key to growth.</strong></p><p>Why it matters: Mobile-friendly experiences will drive searchability and conversions, and keep users coming back.</p><p>What to do: Maximise page speed, explore Progressive Web Apps (PWAs) and mobile wallet vouchers, and prioritise seamless mobile usability.</p><h2><strong>Looking for detail? Let’s dive in!</strong></h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_1.png"
+		alt="Sub 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2><strong>Trust and authenticity will become the ultimate consumer currency.</strong></h2><p>With <a href="https://www.forbes.com/councils/forbescommunicationscouncil/2021/06/28/marketing-with-consumer-trust-in-mind/?utm_source=chatgpt.com">70% of consumers valuing trust more highly than ever</a>, authenticity and transparent communication will be essential to ranking and resonating in 2025.</p><p><strong>Google’s N-E-E-A-T update puts notability in focus</strong></p><p>Google’s move to include “Notability” and “Transparency” in its E-E-A-T guidelines reflects this shift, emphasising expertise, authenticity, and credibility as key drivers of search success. In a space flooded with mass-produced, AI-generated fluff, prioritising transparent authorship and offering genuine value will help you stand out.</p><p><strong>Google surfaces more user-generated content (UGC)</strong></p><p>At the same time, UGC is becoming a key focus for search engines, driven by increasing user demand and the limitations of traditional marketing content. In fact, <a href="https://www.searchenginejournal.com/googles-ugc-push-sullivan-explains-the-shift-in-search-results/528684/#:~:text=The%20Rise%20Of%20UGC%20In%20Search%20Results&amp;text=%E2%80%9CPeople%20are%20trying%20to%20get,that%20it%20will%20be%20helpful.%E2%80%9D">Google is actively refining its algorithms to surface high-quality UGC</a>, recognising its value in providing authentic, first-hand perspectives that complement traditional web pages.</p><p><strong>What actions can you take now?</strong></p><ul><li>Own your expertise: Put your name to your knowledge with transparent authorship and first-hand expertise that proves you know your stuff.</li><li>Turn to your biggest fans: Actively encourage community-driven content - reviews, forums, and discussions - to stay relevant and show you’re listening.</li></ul><h2><strong>Adapting to shifting search behaviour will be key to visibility.</strong></h2><p>Search behaviour is evolving, with users turning to social platforms to search, skipping clicks on Google, and relying on voice assistants for answers. These trends are reshaping how you need to approach visibility, blending traditional SEO tactics with tailored, platform-specific strategies.</p><p><strong>Capitalising on the democratisation of search</strong></p><p>Remember when it felt like Google was the only way to find info online? Times have changed - <a href="https://blog.hubspot.com/marketing/how-search-behaviors-are-changing">with nearly 31% of users now starting their searches on social media</a>. Platforms like TikTok, Instagram, and YouTube are now top destinations for younger audiences looking for quick, visually engaging answers.</p><p>You now need to meet users where they are, creating content designed specifically for these platforms, while still maintaining a solid SEO foundation. For instance, a detailed blog post could be optimised for search, while also repurposed as a series of bite-sized TikTok videos, each highlighting key takeaways.</p><p><strong>Zeroing in on zero-click searches</strong></p><p>Zero-click searches - where answers appear directly on Google’s results page - are reshaping visibility strategies. They account for <a href="https://www.semrush.com/blog/zero-click-searches/">25.6% of desktop searches and 17.3% of mobile searches</a>, offering both challenges and opportunities.</p><p>On the upside, features like AI Overviews, snippets and knowledge panels boost visibility and introduce your brand to new audiences. However, they can reduce direct website traffic as users get answers without clicking through. This highlights the need for a balanced approach: optimising content to appear in zero-click spaces while ensuring it also encourages further engagement.</p><p><strong>Walking the talk with voice search</strong></p><p>Voice search has become increasingly common in recent years, and is now transforming how users interact with search engines, <a href="https://bloggingwizard.com/voice-search-statistics/?utm_source=chatgpt.com">with 27% of the online population now using voice search on mobile devices</a>. This shift, driven by the convenience of virtual assistants like Alexa, Siri, and Google Assistant, will demand a new approach to content creation.</p><p>Voice queries are often conversational and natural, reflecting how people speak rather than type. Optimising for voice search means focusing on long-tail keywords and creating concise, direct content – the average voice search result is just 29 words long.</p><p><strong>What actions can you take now?</strong></p><ul><li>Think like your audience: Align your content with user intent across both traditional search engines and social platforms.</li><li>Own the top spot: Use schema markup and structured content to optimise for zero-click searches, ensuring your content appears when and where it’s needed.</li><li>Speak their language: Use natural language and long-tail keywords to better target voice search queries.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_2.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_2.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_2.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_2.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_2.png"
+		alt="Sub 2"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2><strong>Gamification will redefine brand engagement.</strong></h2><p>Gamification is fast becoming a cornerstone of customer engagement, allowing you to create immersive, interactive experiences that captivate audiences and build lasting loyalty. By weaving playful elements into digital and real-world touchpoints, industries like retail and travel are creating moments that are not just memorable but impactful.</p><p><strong>Playing the loyalty game</strong></p><p>Loyalty programs are a natural fit for gamification, and brands like Lidl are leading the way. The Lidl Plus app features digital scratch cards that transform routine shopping into an interactive and rewarding experience. And it works; <a href="https://www.forbes.com/sites/blakemorgan/2020/02/18/50-stats-showing-the-power-of-personalization/#:~:text=Senior%20Contributor,Futurist%2C%20Author%20and%20Keynote%20Speaker.&amp;text=This%20article%20is%20more%20than%204%20years%20old.&amp;text=From%20Spotify%20to%20Netflix%20and,power%20and%20potential%20of%20personalization.">80% of customers are more likely to engage with brands that offer rewards</a>.</p><p><strong>Putting the “ooh” in OOH</strong></p><p>Gamification is also reshaping product launches and out-of-home (OOH) campaigns by blending physical and digital spaces for interactive experiences. Brands in sectors like fashion, tech, and automotive are increasingly using gamified elements to engage consumers in meaningful ways.</p><p>A great example is <a href="https://oceanoutdoor.com/blog/lacoste-launched-its-first-ever-ar-ooh-activation-with-superheroes-campaign/">Lacoste’s “Superheroes” campaign</a>, which used augmented reality (AR) for a gamified treasure hunt to promote its Christmas fragrance. Participants used smartphones to find virtual prize boxes and unlock exclusive products. The AR experience was tied to OOH ads featuring QR codes across UK cities, blending digital and physical interactions to drive engagement and participation.</p><p><strong>Unlocking valuable first party-data</strong><br /><br />Gamification goes beyond creating memorable experiences - it’s a smart way to collect valuable first-party data. By integrating interactive elements like quizzes, games, and challenges, you can gain insights into consumer preferences while keeping users engaged. This data drives personalisation, allowing for more relevant recommendations and experiences. With data privacy rules tightening, gamification offers a transparent way to build trust and gather insights that benefit both your business and your customers.</p><p><strong>What actions can you take now?</strong></p><ul><li>Bring loyalty to life: Use gamified rewards like digital scratch cards or challenges to make routine interactions exciting, driving engagement and repeat business</li><li>Build a buzz: Integrate gamification into product launches and OOH campaigns to create immersive experiences that build a buzz around your brand.</li><li>Unlock insights with play: Consider the key data points you want to capture, and design your gamified campaigns with these in mind. Then, use this data to personalise and enhance future campaigns.</li></ul><h2><strong>Experimentation will power social success</strong></h2><p>In 2025, the brands that stand out will be the ones embracing bold content, smarter influencer strategies, and real-time insights. By leaning into nano and micro influencers, experimenting with fresh ideas, and making the most of social listening, they’ll build stronger communities and create more meaningful connections.</p><p><strong>Bold content is bringing better results</strong></p><p>Social media has become a space for brands to push creative boundaries, prioritising engagement through bold, entertaining content. By experimenting with distinct voices and fresh formats, you can inject personality and reduce community fatigue.</p><p>Monzo exemplifies this, transforming banking into an engaging experience through humour, memes, playful TikToks, and witty replies. Their strategy has driven a <a href="https://www.marketingweek.com/monzo-marketing-spend-profit/">31% rise in customer numbers in 2023 to 9.7 million</a>, proving even the most unexciting products can thrive with the right approach.</p><p><strong>Nano and micro influencers take centre-stage</strong></p><p>The shift toward nano and micro influencers is transforming influencer marketing. <a href="https://influencermarketinghub.com/july-influencer-marketing-report/">With 43% of marketers reporting increased use of these smaller-scale creators</a>, it’s clear that their authentic, highly engaged audiences are delivering results that broader campaigns often can’t. Nano and micro influencers bring relatability and trust, making them ideal for building genuine connections with specific communities. As marketers begin to lean into this trend, the focus is shifting from reach to resonance – capitalising on smaller voices can drive big results.</p><p><strong>Social listening is shaping more intelligent campaigns</strong></p><p>Understanding your audience and adapting in real time is critical to success, and social listening is making this possible. In fact, a recent survey revealed that <a href="https://blog.hubspot.com/service/social-listening">89% of marketeers rate social listening data as high or very high quality</a>, offering reliable insights to refine strategies and measure impact effectively.</p><p><strong>What actions can you take now?</strong></p><ul><li>Rip up the rulebook: Create content that engages through entertainment, offering your audience something they can’t help but interact with.</li><li>Mix and maximise: Combine nano and micro influencers to balance broad reach with authentic, targeted engagement.</li><li>Listen and learn: Use social listening to tap into audience sentiment, identify trends, and ensure your content lands exactly where it needs to.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_3.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=450/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_3.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_3.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=492/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_3.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Our-digital-marketing-predictions-for-2025/Sub_3.png"
+		alt="Sub 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2><strong>Mobile-centric experiences will be key to growth</strong></h2><p>With over <a href="https://www.statista.com/statistics/277125/share-of-website-traffic-coming-from-mobile-devices/">58% of global web traffic coming from mobile devices</a>, seamless mobile experiences are no longer a luxury - they’re the baseline. As we move into 2025, mobile-centric strategies must be prioritised, to keep up with rising consumer expectations.</p><p><strong>Supercharging mobile page speed for visibility</strong></p><p>In 2025, page speed will be more critical than ever. <a href="https://blog.hubspot.com/marketing/page-load-time-conversion-rates?hubs_content=blog.hubspot.com/website/web-development-trends&amp;hubs_content-cta=Almost%2070%25%20of%20consumers">With nearly 70% of consumers saying it influences their buying decisions</a>, fast, seamless experiences will define success. With Google’s algorithm focused on mobile-first indexing, optimising for speed is essential for both user experience and being competitive in search.</p><p>Consider using next-gen image formats like WebP, enable lazy loading, and leverage browser caching for faster returns. Trim excess code and use a CDN for lightning-fast delivery. Every millisecond counts in the digital space - keep up or fall behind.</p><p><strong>Driving footfall and repeat business with mobile wallets</strong></p><p><a href="mobile-wallet-vouchers-put-your-brand-in-your-customers-pocket.html">Mobile wallet vouchers</a> will be a game-changer in 2025. These digital vouchers slot straight into wallets like Apple Pay and Google Pay, giving you a direct line to your customers without needing additional apps. By using mobile wallet vouchers, brands can deliver tailored offers, boost footfall, and build loyalty with ease.</p><p>Beyond simplifying interactions, they keep your brand front and centre with timely push notifications and real-time updates. Savvy brands are jumping on this trend to create frictionless, mobile-first experiences that resonate with today’s always-on consumers.</p><p><strong>PWAs set the standard for mobile engagement</strong></p><p>Progressive Web Apps (PWAs) are the next big thing in mobile engagement, combining the best features of websites and native apps. They’re fast, work offline, and offer app-like features such as push notifications and automatic updates - all without requiring downloads from an app store.</p><p>Brands like Starbucks, Spotify, and Uber are already using PWAs to deliver seamless, reliable mobile experiences while keeping development costs down and maintenance straightforward. As mobile-first strategies become essential, PWAs offer a smart, scalable way to connect with users wherever they are.</p><p><strong>What actions can you take now?</strong></p><ul><li>Focus on speed: Prioritise fast load times to deliver better experiences and climb the search rankings.</li><li>Put your brand in your customers’ pocket: Use mobile wallet vouchers to engage customers, deliver personalised offers, and drive repeat visits.</li><li>Explore PWAs: Offer app-like experiences without the barriers of traditional app stores.</li></ul><h2><strong>Ready to take on 2025?</strong></h2><p>The year ahead will reward brands that think bigger and bolder, move faster, and embrace change.</p><p>Whether it’s gamifying your campaigns, optimising your content for zero-click searches, or creating scroll-stopping social media content, we’re here to help you stay ahead in 2025. <a href="../contact.html">Get in touch today</a>, and let’s make 2025 your best year yet!</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c0e0fce2c479',t:'MTc5MDI3MzUwNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

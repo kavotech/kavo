@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>AI SEO Agency | GEO Services | Engage</title>
+<meta name="description" content="Engage is a UK AI SEO agency offering generative engine optimisation (GEO) and AI search services to help your brand get found by AI-powered search tools.">
+
+	<link rel="canonical" href="ai-seo.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="ai-seo.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="AI SEO Agency | GEO Services | Engage">
+<meta property="og:description" content="Engage is a UK AI SEO agency offering generative engine optimisation (GEO) and AI search services to help your brand get found by AI-powered search tools.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/services/ai-seo">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"Service","@id":"https:\/\/engage.agency\/services\/ai-seo#service","url":"https:\/\/engage.agency\/services\/ai-seo","name":"AI SEO services","serviceType":"AI SEO","description":"Engage is a UK AI SEO agency offering generative engine optimisation (GEO) and AI search services to help your brand get found by AI-powered search tools.","provider":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"areaServed":{"@type":"Country","name":"GB"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/services\/ai-seo#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/services\/ai-seo#webpage","url":"https:\/\/engage.agency\/services\/ai-seo","name":"AI SEO Agency | GEO Services | Engage","description":"Engage is a UK AI SEO agency offering generative engine optimisation (GEO) and AI search services to help your brand get found by AI-powered search tools.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/services\/ai-seo#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Our services","item":"https:\/\/engage.agency\/services"},{"@type":"ListItem","position":3,"name":"AI SEO","item":"https:\/\/engage.agency\/services\/ai-seo"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/People-images\/Dave-and-Jack.jpg"},"datePublished":"2026-07-31T13:00:14+01:00","dateModified":"2026-08-05T10:59:39+01:00","inLanguage":"en-GB","mainEntity":{"@type":"Service","@id":"https:\/\/engage.agency\/services\/ai-seo#service"}},{"@type":"FAQPage","@id":"https:\/\/engage.agency\/services\/ai-seo#faqpage","url":"https:\/\/engage.agency\/services\/ai-seo","mainEntity":[{"@type":"Question","name":"What is AI SEO?","acceptedAnswer":{"@type":"Answer","text":"<p>AI SEO is the practice of improving your visibility across both traditional search engines and AI-powered search platforms. Alongside helping your website rank in Google, it focuses on increasing the chances of your brand being cited, recommended or referenced by tools like ChatGPT, Google AI Mode, Gemini and Claude.<\/p>"}},{"@type":"Question","name":"What is Generative Engine Optimisation (GEO)?","acceptedAnswer":{"@type":"Answer","text":"<p>Generative Engine Optimisation, or GEO, is the process of making your website easier for AI platforms to understand, trust and reference. That includes creating helpful content, strengthening technical SEO, improving structured data and building the authority signals that AI models rely on when generating answers.<\/p>"}},{"@type":"Question","name":"Is AI SEO replacing traditional SEO?","acceptedAnswer":{"@type":"Answer","text":"<p>Not at all. If anything, good SEO is more important than ever. AI platforms rely on many of the same signals that search engines have always valued, including high-quality content, technical performance and website authority. GEO builds on those foundations, helping your brand become more visible across AI-powered search as well as traditional search results.<\/p>"}},{"@type":"Question","name":"Which AI platforms do you optimise for?","acceptedAnswer":{"@type":"Answer","text":"<p>We optimise for the platforms that are shaping how people search today, including ChatGPT, Google AI Mode, Google AI Overviews, Gemini, Claude and Perplexity. Rather than chasing platform-specific tactics, we focus on strengthening the underlying signals that help your content perform consistently across AI search.<\/p>"}},{"@type":"Question","name":"How do you measure AI search performance?","acceptedAnswer":{"@type":"Answer","text":"<p>Traditional SEO focuses on rankings, traffic and conversions. AI SEO adds another layer, measuring how often your brand is seen, cited and recommended in AI-generated responses. Alongside your existing SEO reporting, we'll help you understand how visible your brand is across AI search and where there are opportunities to improve.<\/p>"}},{"@type":"Question","name":"How do I know if my brand appears in AI search?","acceptedAnswer":{"@type":"Answer","text":"<p>Most businesses simply don't know, and that's exactly where we start. We use our bespoke AI Discoverability Analyser to show how your brand appears across a range of AI search journeys - where you're visible, where competitors have the edge and the practical steps that can improve your presence.<\/p>"}},{"@type":"Question","name":"Do I need AI SEO if I already invest in traditional SEO?","acceptedAnswer":{"@type":"Answer","text":"<p>Probably. If you already have a strong SEO strategy, you're in a great position because many of the foundations are already in place. AI SEO builds on that investment, helping ensure your content is ready for the growing number of people who are turning to AI for recommendations, comparisons and advice.<\/p>"}}]}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="ai-seo.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;AI SEO Agency | GEO Services | Engage&quot;,&quot;description&quot;:&quot;Engage is a UK AI SEO agency offering generative engine optimisation (GEO) and AI search services to help your brand get found by AI-powered search tools.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/services\/ai-seo&quot;,&quot;shareTitle&quot;:&quot;AI SEO Agency | GEO Services | Engage&quot;,&quot;shareDescription&quot;:&quot;Engage is a UK AI SEO agency offering generative engine optimisation (GEO) and AI search services to help your brand get found by AI-powered search tools.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo#service\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo\&quot;,\&quot;name\&quot;:\&quot;AI SEO services\&quot;,\&quot;serviceType\&quot;:\&quot;AI SEO\&quot;,\&quot;description\&quot;:\&quot;Engage is a UK AI SEO agency offering generative engine optimisation (GEO) and AI search services to help your brand get found by AI-powered search tools.\&quot;,\&quot;provider\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;areaServed\&quot;:{\&quot;@type\&quot;:\&quot;Country\&quot;,\&quot;name\&quot;:\&quot;GB\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo\&quot;,\&quot;name\&quot;:\&quot;AI SEO Agency | GEO Services | Engage\&quot;,\&quot;description\&quot;:\&quot;Engage is a UK AI SEO agency offering generative engine optimisation (GEO) and AI search services to help your brand get found by AI-powered search tools.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Our services\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;AI SEO\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/People-images\\\/Dave-and-Jack.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2026-07-31T13:00:14+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-08-05T10:59:39+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo#service\&quot;}},{\&quot;@type\&quot;:\&quot;FAQPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo#faqpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/ai-seo\&quot;,\&quot;mainEntity\&quot;:[{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;What is AI SEO?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;AI SEO is the practice of improving your visibility across both traditional search engines and AI-powered search platforms. Alongside helping your website rank in Google, it focuses on increasing the chances of your brand being cited, recommended or referenced by tools like ChatGPT, Google AI Mode, Gemini and Claude.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;What is Generative Engine Optimisation (GEO)?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Generative Engine Optimisation, or GEO, is the process of making your website easier for AI platforms to understand, trust and reference. That includes creating helpful content, strengthening technical SEO, improving structured data and building the authority signals that AI models rely on when generating answers.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Is AI SEO replacing traditional SEO?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Not at all. If anything, good SEO is more important than ever. AI platforms rely on many of the same signals that search engines have always valued, including high-quality content, technical performance and website authority. GEO builds on those foundations, helping your brand become more visible across AI-powered search as well as traditional search results.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Which AI platforms do you optimise for?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;We optimise for the platforms that are shaping how people search today, including ChatGPT, Google AI Mode, Google AI Overviews, Gemini, Claude and Perplexity. Rather than chasing platform-specific tactics, we focus on strengthening the underlying signals that help your content perform consistently across AI search.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;How do you measure AI search performance?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Traditional SEO focuses on rankings, traffic and conversions. AI SEO adds another layer, measuring how often your brand is seen, cited and recommended in AI-generated responses. Alongside your existing SEO reporting, we&#039;ll help you understand how visible your brand is across AI search and where there are opportunities to improve.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;How do I know if my brand appears in AI search?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Most businesses simply don&#039;t know, and that&#039;s exactly where we start. We use our bespoke AI Discoverability Analyser to show how your brand appears across a range of AI search journeys - where you&#039;re visible, where competitors have the edge and the practical steps that can improve your presence.&lt;\\\/p&gt;\&quot;}},{\&quot;@type\&quot;:\&quot;Question\&quot;,\&quot;name\&quot;:\&quot;Do I need AI SEO if I already invest in traditional SEO?\&quot;,\&quot;acceptedAnswer\&quot;:{\&quot;@type\&quot;:\&quot;Answer\&quot;,\&quot;text\&quot;:\&quot;&lt;p&gt;Probably. If you already have a strong SEO strategy, you&#039;re in a great position because many of the foundations are already in place. AI SEO builds on that investment, helping ensure your content is ready for the growing number of people who are turning to AI for recommendations, comparisons and advice.&lt;\\\/p&gt;\&quot;}}]}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;basic&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Your AI SEO agency for the next generation of search&quot;,&quot;copy&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;Speak to an expert&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;video&quot;:null,&quot;image&quot;:{&quot;alt&quot;:&quot;Dave and Jack&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/Dave-and-Jack.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/Dave-and-Jack.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/Dave-and-Jack.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/People-images\/Dave-and-Jack.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/People-images\/Dave-and-Jack.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;stat&quot;:null}},&quot;content&quot;:{&quot;type&quot;:&quot;introduction&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Search is changing. Is your brand ready?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Google is still a huge part of how people search. But it&#039;s no longer the only place they go for answers.\u00a0&lt;a href=\&quot;https:\/\/www.mckinsey.com\/capabilities\/growth-marketing-and-sales\/our-insights\/new-front-door-to-the-internet-winning-in-the-age-of-ai-search\&quot;&gt;&lt;u&gt;More than half of consumers&lt;\/u&gt;&lt;\/a&gt; now use platforms like ChatGPT, Gemini, Claude and Google AI Mode to recommend products, compare brands and answer questions before deciding where to click next.&lt;\/p&gt;&lt;p&gt;As AI becomes an increasingly influential part of the customer journey, success is no longer measured solely by rankings. It&#039;s about whether your brand is visible, trusted and recommended when AI generates an answer.&lt;\/p&gt;&lt;p&gt;As a leading AI SEO agency, we help brands earn that attention. By combining proven\u00a0&lt;a href=\&quot;https:\/\/engage.agency\/services\/seo\&quot;&gt;&lt;u&gt;SEO services&lt;\/u&gt;&lt;\/a&gt; with Generative Engine Optimisation (GEO), we improve your presence across both traditional search engines and AI-powered search experiences, helping your business become part of the conversations your customers are already having with AI.&lt;\/p&gt;&lt;p&gt;While search is evolving, the principles of great search marketing haven&#039;t changed. The brands that consistently create value, demonstrate expertise and earn trust are still the ones that get found.&lt;\/p&gt;&lt;p&gt;AI search doesn&#039;t replace SEO. It builds on it. That&#039;s why we don&#039;t treat SEO and GEO as competing disciplines. We bring them together in one joined-up strategy, built around today&#039;s search behaviours to strengthen your digital authority and make your brand easier to discover wherever your customers search.&lt;\/p&gt;&quot;,&quot;meta&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;CRO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/cro&quot;},{&quot;title&quot;:&quot;CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/crm&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;AI SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ai-seo&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Programmatic Advertising&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/programmatic-advertising&quot;},{&quot;title&quot;:&quot;Content Creation&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/content-creation&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Influencer Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/influencer-marketing&quot;},{&quot;title&quot;:&quot;Paid Social&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/paid-social&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},&quot;team&quot;:null}},&quot;blocks&quot;:[{&quot;type&quot;:&quot;case-studies-signpost&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;View all work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;},&quot;items&quot;:[{&quot;title&quot;:&quot;Clarion\u2019s case for AI search: +255% AI Overview citations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Clarion hero visual&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440\/engage-website\/production\/Case-study-images\/Clarion\/Clarion-hero-visual.png&quot;],&quot;sizes&quot;:null},&quot;cta&quot;:{&quot;title&quot;:&quot;View case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/clarion-clarions-case-for-ai-search&quot;},&quot;theme&quot;:&quot;#171229&quot;,&quot;logo&quot;:{&quot;alt&quot;:&quot;Logo clarion white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=60\/engage-website\/production\/Case-study-images\/Client-logos\/logo_clarion_white.svg&quot;],&quot;sizes&quot;:null,&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:120,&quot;height&quot;:60},&quot;stats&quot;:[{&quot;title&quot;:&quot;+161%&quot;,&quot;copy&quot;:&quot;LLM citations&quot;},{&quot;title&quot;:&quot;+255%&quot;,&quot;copy&quot;:&quot;AI Overview citations&quot;}]},{&quot;title&quot;:&quot;Waking up growth for DUSK.com: +\u00a310.6m organic revenue&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;DUSK Hero&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440\/engage-website\/production\/Case-study-images\/DUSK\/DUSK_Hero.png&quot;],&quot;sizes&quot;:null},&quot;cta&quot;:{&quot;title&quot;:&quot;View case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/dusk-waking-up-growth-for-dusk-com&quot;},&quot;theme&quot;:&quot;#1c1412&quot;,&quot;logo&quot;:{&quot;alt&quot;:&quot;Shop Logo 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=249,height=60\/engage-website\/production\/Case-study-images\/Client-logos\/shopLogo-1.png&quot;],&quot;sizes&quot;:null,&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:353,&quot;height&quot;:85},&quot;stats&quot;:[{&quot;title&quot;:&quot;+449%&quot;,&quot;copy&quot;:&quot;Project ROI&quot;},{&quot;title&quot;:&quot;\u00a310.6m&quot;,&quot;copy&quot;:&quot;Organic revenue&quot;}]}]}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Why choose Engage?&quot;,&quot;copy&quot;:&quot;&lt;h3&gt;SEO expertise you can rely on&lt;\/h3&gt;&lt;p&gt;AI search may be evolving at breakneck pace, but great AI SEO still starts with solid SEO. We combine years of technical expertise with a practical, forward-thinking approach to help your brand perform across traditional search and the next generation of AI-powered search experiences.&lt;\/p&gt;&lt;h3&gt;Building brands AI can trust&lt;\/h3&gt;&lt;p&gt;Your customers don&#039;t think in channels, and neither do we. We bring together SEO,\u00a0&lt;a href=\&quot;https:\/\/engage.agency\/services\/social-media-marketing\&quot;&gt;&lt;u&gt;social media&lt;\/u&gt;&lt;\/a&gt;, content, technical optimisation and\u00a0&lt;a href=\&quot;https:\/\/engage.agency\/services\/digital-pr\&quot;&gt;&lt;u&gt;digital PR&lt;\/u&gt;&lt;\/a&gt; to build consistent signals that strengthen your brand&#039;s authority, making it easier for search engines and AI platforms to understand, trust and recommend you.&lt;\/p&gt;&lt;h3&gt;Helping you stay ahead of AI search&lt;\/h3&gt;&lt;p&gt;You&#039;ll find no shortage of AI experts on LinkedIn, but the reality is that nobody has AI search completely figured out yet. We keep one eye on what we know works today and the other on what&#039;s changing next, backed by bespoke dashboards that give you a real-time view of performance, the impact of every optimisation and where the next opportunities lie.&lt;\/p&gt;&lt;h3&gt;We practise what we preach&lt;\/h3&gt;&lt;p&gt;AI search isn&#039;t something we observe from the sidelines. It&#039;s built into how we work. We&#039;ve developed our own internal AI capabilities to accelerate research, analysis and optimisation, helping us move faster, uncover deeper insights and spend more time applying the strategic thinking that delivers better ROI for your business.&lt;\/p&gt;&lt;h3&gt;We\u2019re personally invested in your success&lt;\/h3&gt;&lt;p&gt;As a 100% employee-owned agency, we&#039;re invested in every project because we&#039;re invested in the business. In a world where AI is automating more than ever, you&#039;ll work directly with specialists who take ownership, challenge ideas and bring the judgement, curiosity and commercial thinking that technology can&#039;t replace.\u00a0&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;pull-quote&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;copy&quot;:&quot;&lt;p&gt;Your customers are already asking AI for advice. Is your brand is part of the answer?&lt;\/p&gt;&quot;,&quot;author&quot;:&quot;Dave Whitrick, Engage&quot;,&quot;role&quot;:&quot;Head of SEO&quot;,&quot;video&quot;:null}},{&quot;type&quot;:&quot;content-grid&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Our AI SEO and GEO services:&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;AI visibility audit&quot;,&quot;copy&quot;:&quot;We understand how your brand appears across ChatGPT, Gemini, Claude, Google AI Mode and other AI search experiences. We&#039;ll benchmark your presence, compare it with your competitors and uncover practical opportunities to strengthen your visibility where it counts.&quot;,&quot;href&quot;:null},{&quot;title&quot;:&quot;AI SEO strategy&quot;,&quot;copy&quot;:&quot;We connect SEO and GEO through one joined-up strategy built around your audience, commercial priorities and the way people search today. The result is a clear roadmap that strengthens your presence across both traditional search and AI-generated results.&quot;,&quot;href&quot;:null},{&quot;title&quot;:&quot;AI content optimisation&quot;,&quot;copy&quot;:&quot;We create content that&#039;s built for people and understood by AI. We optimise existing pages and develop new content around the topics, questions and search behaviours your audience cares about, strengthening topical authority while making your expertise easier for AI to interpret and reference.&quot;,&quot;href&quot;:null},{&quot;title&quot;:&quot;Technical SEO for AI visibility&quot;,&quot;copy&quot;:&quot;We improve the technical foundations that help search engines and AI platforms access, understand and interpret your content. From crawlability and site structure to structured data and performance, we make sure nothing important gets lost in translation.&quot;,&quot;href&quot;:null},{&quot;title&quot;:&quot;Digital PR and authority building&quot;,&quot;copy&quot;:&quot;AI platforms favour brands with strong authority and trusted digital footprints. Our digital PR and strategic link-building activity strengthens the signals surrounding your brand, helping to increase its credibility, visibility and likelihood of being referenced.&quot;,&quot;href&quot;:null},{&quot;title&quot;:&quot;AI visibility reporting&quot;,&quot;copy&quot;:&quot;We track how often your brand appears, where it\u2019s being cited and how visibility changes over time. Clear reporting and regular analysis show what\u2019s working, where competitors are gaining ground and what we should do next.&quot;,&quot;href&quot;:null}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;,&quot;readMore&quot;:&quot;Read more&quot;}}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Is your brand showing up in AI search?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;FAQs&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;What is AI SEO?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;AI SEO is the practice of improving your visibility across both traditional search engines and AI-powered search platforms. Alongside helping your website rank in Google, it focuses on increasing the chances of your brand being cited, recommended or referenced by tools like ChatGPT, Google AI Mode, Gemini and Claude.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What is Generative Engine Optimisation (GEO)?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Generative Engine Optimisation, or GEO, is the process of making your website easier for AI platforms to understand, trust and reference. That includes creating helpful content, strengthening technical SEO, improving structured data and building the authority signals that AI models rely on when generating answers.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Is AI SEO replacing traditional SEO?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Not at all. If anything, good SEO is more important than ever. AI platforms rely on many of the same signals that search engines have always valued, including high-quality content, technical performance and website authority. GEO builds on those foundations, helping your brand become more visible across AI-powered search as well as traditional search results.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Which AI platforms do you optimise for?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;We optimise for the platforms that are shaping how people search today, including ChatGPT, Google AI Mode, Google AI Overviews, Gemini, Claude and Perplexity. Rather than chasing platform-specific tactics, we focus on strengthening the underlying signals that help your content perform consistently across AI search.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How do you measure AI search performance?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Traditional SEO focuses on rankings, traffic and conversions. AI SEO adds another layer, measuring how often your brand is seen, cited and recommended in AI-generated responses. Alongside your existing SEO reporting, we&#039;ll help you understand how visible your brand is across AI search and where there are opportunities to improve.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How do I know if my brand appears in AI search?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Most businesses simply don&#039;t know, and that&#039;s exactly where we start. We use our bespoke AI Discoverability Analyser to show how your brand appears across a range of AI search journeys - where you&#039;re visible, where competitors have the edge and the practical steps that can improve your presence.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Do I need AI SEO if I already invest in traditional SEO?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Probably. If you already have a strong SEO strategy, you&#039;re in a great position because many of the foundations are already in place. AI SEO builds on that investment, helping ensure your content is ready for the growing number of people who are turning to AI for recommendations, comparisons and advice.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;There&#039;s more to explore:&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;20th March 2026&quot;,&quot;title&quot;:&quot;What to feed LLMs: E-E-A-T in generative search&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/what-to-feed-llms-e-e-a-t-in-generative-search&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;E E A T 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/What-to-feed-LLMs-E-E-A-T-in-generative-search\/E-E-A-T-1.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;26th March 2026&quot;,&quot;title&quot;:&quot;If you fake it, you won\u2019t make it: Entity building through E-E-A-T&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/if-you-fake-it-you-wont-make-it-entity-building-through-e-e-a-t&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Brand Entity 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Welcome-to-the-new-engage\/Brand-Entity-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Welcome-to-the-new-engage\/Brand-Entity-2.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:&quot;Cote&quot;,&quot;title&quot;:&quot;Fixing the fundamentals for C\u00f4te: +\u00a32m organic revenue&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/cote-fixing-the-fundamentals-for-cote-2m-organic-revenue&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Case study26 Cote Local Search 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Case-study-images\/Cote\/Engage_Case-study26_Cote_LocalSearch_1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Case-study-images\/Cote\/Engage_Case-study26_Cote_LocalSearch_1.jpg&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:&quot;Muji&quot;,&quot;title&quot;:&quot;Better sleep, bigger results: +350% organic revenue growth for MUJI&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/better-sleep-bigger-results-350-organic-revenue-growth-for-muji&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Frame 160&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Case-study-images\/Muji\/Frame-160.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Case-study-images\/Muji\/Frame-160.jpg&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/Dave-and-Jack.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/Dave-and-Jack.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/Dave-and-Jack.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/People-images/Dave-and-Jack.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/People-images/Dave-and-Jack.jpg"
+		alt="Dave and Jack"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Your AI SEO agency for the next generation of search</h1>
+	
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Speak to an expert
+</a>
+	</header>
+
+			<section>
+	
+	
+
+			<h2>
+							Search is changing. Is your brand ready?
+					</h2>
+	
+	
+			<p>Google is still a huge part of how people search. But it's no longer the only place they go for answers. <a href="https://www.mckinsey.com/capabilities/growth-marketing-and-sales/our-insights/new-front-door-to-the-internet-winning-in-the-age-of-ai-search"><u>More than half of consumers</u></a> now use platforms like ChatGPT, Gemini, Claude and Google AI Mode to recommend products, compare brands and answer questions before deciding where to click next.</p><p>As AI becomes an increasingly influential part of the customer journey, success is no longer measured solely by rankings. It's about whether your brand is visible, trusted and recommended when AI generates an answer.</p><p>As a leading AI SEO agency, we help brands earn that attention. By combining proven <a href="seo.html"><u>SEO services</u></a> with Generative Engine Optimisation (GEO), we improve your presence across both traditional search engines and AI-powered search experiences, helping your business become part of the conversations your customers are already having with AI.</p><p>While search is evolving, the principles of great search marketing haven't changed. The brands that consistently create value, demonstrate expertise and earn trust are still the ones that get found.</p><p>AI search doesn't replace SEO. It builds on it. That's why we don't treat SEO and GEO as competing disciplines. We bring them together in one joined-up strategy, built around today's search behaviours to strengthen your digital authority and make your brand easier to discover wherever your customers search.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+	<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="../work.html"
+	>
+	View all work
+</a>
+	
+	
+		
+						<article>
+	
+	
+
+			<h2>
+							Clarion’s case for AI search: +255% AI Overview citations
+					</h2>
+	
+	
+	
+			<figure>
+							<picture>
+	
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440/engage-website/production/Case-study-images/Clarion/Clarion-hero-visual.png"
+		alt="Clarion hero visual"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/clarion-clarions-case-for-ai-search.html"
+	>
+	View case study
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Waking up growth for DUSK.com: +£10.6m organic revenue
+					</h2>
+	
+	
+	
+			<figure>
+							<picture>
+	
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440/engage-website/production/Case-study-images/DUSK/DUSK_Hero.png"
+		alt="DUSK Hero"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/dusk-waking-up-growth-for-dusk-com.html"
+	>
+	View case study
+</a>
+	
+	
+		
+	</article>
+			</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							Why choose Engage?
+					</h2>
+	
+	
+			<h3>SEO expertise you can rely on</h3><p>AI search may be evolving at breakneck pace, but great AI SEO still starts with solid SEO. We combine years of technical expertise with a practical, forward-thinking approach to help your brand perform across traditional search and the next generation of AI-powered search experiences.</p><h3>Building brands AI can trust</h3><p>Your customers don't think in channels, and neither do we. We bring together SEO, <a href="social-media-marketing.html"><u>social media</u></a>, content, technical optimisation and <a href="digital-pr.html"><u>digital PR</u></a> to build consistent signals that strengthen your brand's authority, making it easier for search engines and AI platforms to understand, trust and recommend you.</p><h3>Helping you stay ahead of AI search</h3><p>You'll find no shortage of AI experts on LinkedIn, but the reality is that nobody has AI search completely figured out yet. We keep one eye on what we know works today and the other on what's changing next, backed by bespoke dashboards that give you a real-time view of performance, the impact of every optimisation and where the next opportunities lie.</p><h3>We practise what we preach</h3><p>AI search isn't something we observe from the sidelines. It's built into how we work. We've developed our own internal AI capabilities to accelerate research, analysis and optimisation, helping us move faster, uncover deeper insights and spend more time applying the strategic thinking that delivers better ROI for your business.</p><h3>We’re personally invested in your success</h3><p>As a 100% employee-owned agency, we're invested in every project because we're invested in the business. In a world where AI is automating more than ever, you'll work directly with specialists who take ownership, challenge ideas and bring the judgement, curiosity and commercial thinking that technology can't replace. </p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+			<p>Your customers are already asking AI for advice. Is your brand is part of the answer?</p>
+	
+	
+	
+	
+								<p>Dave Whitrick, Engage</p>
+
+	<p>Head of SEO</p>
+
+											
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							Our AI SEO and GEO services:
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							AI visibility audit
+					</h3>
+	
+	
+			We understand how your brand appears across ChatGPT, Gemini, Claude, Google AI Mode and other AI search experiences. We'll benchmark your presence, compare it with your competitors and uncover practical opportunities to strengthen your visibility where it counts.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							AI SEO strategy
+					</h3>
+	
+	
+			We connect SEO and GEO through one joined-up strategy built around your audience, commercial priorities and the way people search today. The result is a clear roadmap that strengthens your presence across both traditional search and AI-generated results.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							AI content optimisation
+					</h3>
+	
+	
+			We create content that's built for people and understood by AI. We optimise existing pages and develop new content around the topics, questions and search behaviours your audience cares about, strengthening topical authority while making your expertise easier for AI to interpret and reference.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Technical SEO for AI visibility
+					</h3>
+	
+	
+			We improve the technical foundations that help search engines and AI platforms access, understand and interpret your content. From crawlability and site structure to structured data and performance, we make sure nothing important gets lost in translation.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital PR and authority building
+					</h3>
+	
+	
+			AI platforms favour brands with strong authority and trusted digital footprints. Our digital PR and strategic link-building activity strengthens the signals surrounding your brand, helping to increase its credibility, visibility and likelihood of being referenced.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							AI visibility reporting
+					</h3>
+	
+	
+			We track how often your brand appears, where it’s being cited and how visibility changes over time. Clear reporting and regular analysis show what’s working, where competitors are gaining ground and what we should do next.
+	
+	
+	
+	
+		
+	</article>
+			</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Is your brand showing up in AI search?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							FAQs
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							What is AI SEO?
+					</h3>
+	
+	
+			<p>AI SEO is the practice of improving your visibility across both traditional search engines and AI-powered search platforms. Alongside helping your website rank in Google, it focuses on increasing the chances of your brand being cited, recommended or referenced by tools like ChatGPT, Google AI Mode, Gemini and Claude.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							What is Generative Engine Optimisation (GEO)?
+					</h3>
+	
+	
+			<p>Generative Engine Optimisation, or GEO, is the process of making your website easier for AI platforms to understand, trust and reference. That includes creating helpful content, strengthening technical SEO, improving structured data and building the authority signals that AI models rely on when generating answers.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Is AI SEO replacing traditional SEO?
+					</h3>
+	
+	
+			<p>Not at all. If anything, good SEO is more important than ever. AI platforms rely on many of the same signals that search engines have always valued, including high-quality content, technical performance and website authority. GEO builds on those foundations, helping your brand become more visible across AI-powered search as well as traditional search results.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Which AI platforms do you optimise for?
+					</h3>
+	
+	
+			<p>We optimise for the platforms that are shaping how people search today, including ChatGPT, Google AI Mode, Google AI Overviews, Gemini, Claude and Perplexity. Rather than chasing platform-specific tactics, we focus on strengthening the underlying signals that help your content perform consistently across AI search.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							How do you measure AI search performance?
+					</h3>
+	
+	
+			<p>Traditional SEO focuses on rankings, traffic and conversions. AI SEO adds another layer, measuring how often your brand is seen, cited and recommended in AI-generated responses. Alongside your existing SEO reporting, we'll help you understand how visible your brand is across AI search and where there are opportunities to improve.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							How do I know if my brand appears in AI search?
+					</h3>
+	
+	
+			<p>Most businesses simply don't know, and that's exactly where we start. We use our bespoke AI Discoverability Analyser to show how your brand appears across a range of AI search journeys - where you're visible, where competitors have the edge and the practical steps that can improve your presence.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Do I need AI SEO if I already invest in traditional SEO?
+					</h3>
+	
+	
+			<p>Probably. If you already have a strong SEO strategy, you're in a great position because many of the foundations are already in place. AI SEO builds on that investment, helping ensure your content is ready for the growing number of people who are turning to AI for recommendations, comparisons and advice.</p>
+	
+	
+	
+	
+		
+	</article>
+			</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							There's more to explore:
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							What to feed LLMs: E-E-A-T in generative search
+					</h3>
+	
+			<p>20th March 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/What-to-feed-LLMs-E-E-A-T-in-generative-search/E-E-A-T-1.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/What-to-feed-LLMs-E-E-A-T-in-generative-search/E-E-A-T-1.png"
+		alt="E E A T 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/what-to-feed-llms-e-e-a-t-in-generative-search.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							If you fake it, you won’t make it: Entity building through E-E-A-T
+					</h3>
+	
+			<p>26th March 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Welcome-to-the-new-engage/Brand-Entity-2.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Welcome-to-the-new-engage/Brand-Entity-2.png"
+		alt="Brand Entity 2"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../blog/if-you-fake-it-you-wont-make-it-entity-building-through-e-e-a-t.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Fixing the fundamentals for Côte: +£2m organic revenue
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Case-study-images/Cote/Engage_Case-study26_Cote_LocalSearch_1.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Case-study-images/Cote/Engage_Case-study26_Cote_LocalSearch_1.jpg"
+		alt="Engage Case study26 Cote Local Search 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/cote-fixing-the-fundamentals-for-cote-2m-organic-revenue.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Better sleep, bigger results: +350% organic revenue growth for MUJI
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Case-study-images/Muji/Frame-160.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Case-study-images/Muji/Frame-160.jpg"
+		alt="Frame 160"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/better-sleep-bigger-results-350-organic-revenue-growth-for-muji.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c07b3acdc479',t:'MTc5MDI3MzQ4OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

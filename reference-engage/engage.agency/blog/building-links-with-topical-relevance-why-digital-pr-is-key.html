@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Building links with topical relevance: why digital PR is key</title>
+<meta name="description" content="Learn how digital PR builds relevant, high-quality backlinks that boost authority, trust, and sustainable SEO growth through strategic, story-led campaigns.">
+
+	<link rel="canonical" href="building-links-with-topical-relevance-why-digital-pr-is-key.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="building-links-with-topical-relevance-why-digital-pr-is-key.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Building links with topical relevance: why digital PR is key">
+<meta property="og:description" content="Learn how digital PR builds relevant, high-quality backlinks that boost authority, trust, and sustainable SEO growth through strategic, story-led campaigns.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/building-links-with-topical-relevance-why-digital-pr-is-key">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_hero.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key#blogposting","url":"https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key","headline":"Building links with topical relevance: why digital PR is key","author":null,"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_hero.png","datePublished":"2026-02-17T14:22:40+00:00","description":"Learn how digital PR builds relevant, high-quality backlinks that boost authority, trust, and sustainable SEO growth through strategic, story-led campaigns."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key#webpage","url":"https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key","name":"Building links with topical relevance: why digital PR is key","description":"Learn how digital PR builds relevant, high-quality backlinks that boost authority, trust, and sustainable SEO growth through strategic, story-led campaigns.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Building links with topical relevance: Why digital PR is key","item":"https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_hero.png"},"datePublished":"2026-02-17T14:22:40+00:00","dateModified":"2026-09-10T09:14:43+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="building-links-with-topical-relevance-why-digital-pr-is-key.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Building links with topical relevance: why digital PR is key&quot;,&quot;description&quot;:&quot;Learn how digital PR builds relevant, high-quality backlinks that boost authority, trust, and sustainable SEO growth through strategic, story-led campaigns.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_hero.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/building-links-with-topical-relevance-why-digital-pr-is-key&quot;,&quot;shareTitle&quot;:&quot;Building links with topical relevance: why digital PR is key&quot;,&quot;shareDescription&quot;:&quot;Learn how digital PR builds relevant, high-quality backlinks that boost authority, trust, and sustainable SEO growth through strategic, story-led campaigns.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/building-links-with-topical-relevance-why-digital-pr-is-key#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/building-links-with-topical-relevance-why-digital-pr-is-key\&quot;,\&quot;headline\&quot;:\&quot;Building links with topical relevance: why digital PR is key\&quot;,\&quot;author\&quot;:null,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/building-links-with-topical-relevance-why-digital-pr-is-key#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Building-links-with-topical-relevance-why-digital-PR-is-key\\\/Engage_Blog25_links_hero.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-02-17T14:22:40+00:00\&quot;,\&quot;description\&quot;:\&quot;Learn how digital PR builds relevant, high-quality backlinks that boost authority, trust, and sustainable SEO growth through strategic, story-led campaigns.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/building-links-with-topical-relevance-why-digital-pr-is-key#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/building-links-with-topical-relevance-why-digital-pr-is-key\&quot;,\&quot;name\&quot;:\&quot;Building links with topical relevance: why digital PR is key\&quot;,\&quot;description\&quot;:\&quot;Learn how digital PR builds relevant, high-quality backlinks that boost authority, trust, and sustainable SEO growth through strategic, story-led campaigns.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/building-links-with-topical-relevance-why-digital-pr-is-key#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Building links with topical relevance: Why digital PR is key\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/building-links-with-topical-relevance-why-digital-pr-is-key\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Building-links-with-topical-relevance-why-digital-PR-is-key\\\/Engage_Blog25_links_hero.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-02-17T14:22:40+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-10T09:14:43+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/building-links-with-topical-relevance-why-digital-pr-is-key#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Building links with topical relevance: Why digital PR is key&quot;,&quot;date&quot;:&quot;3rd November 2025&quot;,&quot;author&quot;:null,&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 7 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog25 links hero&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_hero.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_hero.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;For years, brands have obsessed over chasing SEO backlinks in bulk, often asking: how many backlinks do you need to\u00a0rank?&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;The truth is, this outdated focus on volume over relevance no longer works - and in fact, it can harm your site\u2019s trust and\u00a0visibility.&lt;\/p&gt;&lt;p&gt;Today, the most effective link building strategy is one that prioritises topical relevance, link quality, and natural link building. The days of spray-and-pray link acquisition are over. To build topical authority, you need to adopt a long-term, intentional approach grounded in content alignment and authority building\u00a0SEO.&lt;\/p&gt;&lt;p&gt;This is where digital PR comes in. By aligning hygiene, hub, and hero content with a smart digital PR strategy, brands can shape a sustainable framework for earning high quality backlinks - and build trust with both users and search\u00a0engines.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;The problem with \u201clinks for links\u2019\u00a0sake\u201d&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;Buying backlinks, relying on outdated directories, or chasing link quantity over quality might have delivered short-term wins 10 years ago, but today, these tactics are\u00a0obsolete.&lt;\/p&gt;&lt;p&gt;Search engine algorithms have evolved to understand search intent, context, and the true relevance of a\u00a0link.&lt;\/p&gt;&lt;p&gt;Mismatched or irrelevant SEO backlinks no longer boost performance. In fact, they can actively harm it by diluting your site\u2019s trust signals and undermining topical\u00a0authority.&lt;\/p&gt;&lt;p&gt;This is especially critical in industries such as healthcare, finance, legal, education, and technology, where users (and search engines) demand accuracy and\u00a0credibility.&lt;\/p&gt;&lt;p&gt;To drive sustainable growth and long-term rankings, brands need to move beyond domain authority and prioritise niche-relevant backlinks that align with their content themes. That means earning links from credible, contextually relevant sources that strengthen topical authority and reinforce expertise in your\u00a0field.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;The hero, hub, and hygiene\u00a0framework&lt;\/strong&gt;&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog25 links secondary opt1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_secondary_opt1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_secondary_opt1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_secondary_opt1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_secondary_opt1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_secondary_opt1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/Building-links-with-topical-relevance-why-digital-PR-is-key\/Engage_Blog25_links_secondary_opt1.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;To shape a strong digital PR link building strategy, your &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/services\/marketing\/content-marketing\&quot;&gt;content strategy&lt;\/a&gt; needs to be structured with purpose. The hero, hub, hygiene model allows you to build content that naturally attracts high quality backlinks and supports topical\u00a0relevance.&lt;\/p&gt;&lt;h3&gt;Hygiene\u00a0content&lt;\/h3&gt;&lt;p&gt;This is your always-on content. Answering core user questions (e.g. \u2018what is a backlink\u2019 and \u2018what is topical authority\u2019) and solving common problems, hygiene pages form the bedrock of your authority building SEO. They\u2019re essential for natural link building because they attract organic links over\u00a0time.&lt;\/p&gt;&lt;h3&gt;Hub content&lt;\/h3&gt;&lt;p&gt;These are in-depth articles, guides, and regularly updated content clusters that demonstrate deep topical expertise. Hub content should be part of your always-on SEO strategy, helping to earn niche relevant backlinks while supporting topical authority\u00a0growth.&lt;\/p&gt;&lt;h3&gt;Hero content&lt;\/h3&gt;&lt;p&gt;This is where digital PR drives the biggest impact. Hero assets (such as data-led stories, interactive tools or thought leadership campaigns) are built to generate attention and high quality backlinks from more mainstream publications. But critically, they must align with your site\u2019s niche and themes to support your overall link building\u00a0strategy.&lt;\/p&gt;&lt;p&gt;Each layer of this framework works together to earn relevant, trusted links that search engines understand and\u00a0reward.&lt;\/p&gt;&lt;h2&gt;Why topical relevance is\u00a0everything&lt;\/h2&gt;&lt;p&gt;What is topical authority, and why does it matter? In &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/services\/marketing\/seo\&quot;&gt;SEO&lt;\/a&gt;, it means becoming a known, trusted source on a specific subject or niche. A key part of building that trust is through acquiring niche, relevant backlinks that support your content themes, reinforce your subject expertise, and signal credibility to search\u00a0engines.&lt;\/p&gt;&lt;p&gt;Topical relevance in link building ensures that the websites linking to you are contextually aligned with your industry or subject matter. Google uses this to determine if you\u2019re truly an authority - or just trying to play the\u00a0system.&lt;\/p&gt;&lt;p&gt;Relevant\u00a0links:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Come from industry-aligned\u00a0publishers&lt;\/li&gt;&lt;li&gt;Feature anchor text and content themes that mirror your\u00a0site&lt;\/li&gt;&lt;li&gt;Strengthen your brand\u2019s authority within your\u00a0niche&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Irrelevant\u00a0links:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Come from unrelated\u00a0websites&lt;\/li&gt;&lt;li&gt;Provide little to no value to your core\u00a0audience&lt;\/li&gt;&lt;li&gt;Undermine your link building\u00a0strategy&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;By prioritising link relevance, you can shape a natural backlink profile that supports topical authority\u00a0SEO.&lt;\/p&gt;&lt;h2&gt;Digital PR: the modern link building\u00a0engine&lt;\/h2&gt;&lt;p&gt;A smart digital PR strategy does more than boost brand awareness - it\u2019s one of the most scalable ways to earn backlinks that support SEO. This approach focuses on building editorial links that are both high quality and topically\u00a0relevant.&lt;\/p&gt;&lt;p&gt;Effective digital PR link building tactics\u00a0include:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Data storytelling:&lt;\/strong&gt; Original research, industry surveys, and visualised insights that journalists love to cite and link back\u00a0to&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Newsjacking:&lt;\/strong&gt; Timely, expert-driven reactions to trending\u00a0topics&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Expert commentary: &lt;\/strong&gt;Positioning brand spokespeople as trusted authorities on subject\u00a0matters&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;These tactics don\u2019t just deliver SEO backlinks, they elevate your brand and establish authority building SEO signals that are hard to\u00a0fake.&lt;\/p&gt;&lt;p&gt;The result is a link building strategy that feels earned, trustworthy, and long-term.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Better sleep, bigger results: driving 350% increase in online revenue for\u00a0Muji&lt;\/strong&gt;&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Muji meta share 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Case-study-images\/Muji\/Muji_meta_share-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Case-study-images\/Muji\/Muji_meta_share-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Case-study-images\/Muji\/Muji_meta_share-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Case-study-images\/Muji\/Muji_meta_share-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Muji\/Muji_meta_share-1.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Muji\/Muji_meta_share-1.jpg&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;The strongest evidence of digital PR\u2019s link-building power comes from real-world campaigns, such as our work with lifestyle brand\u00a0&lt;a href=\&quot;https:\/\/uk.muji.eu\/\&quot;&gt;MUJI&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;To support their travel and sleep product ranges, we launched the \u201c&lt;a href=\&quot;https:\/\/uk.muji.eu\/pages\/muji-stories\/journey-to-better-sleep.html\&quot;&gt;Journey to Better Sleep&lt;\/a&gt;\u201d campaign, centred on a public survey exploring how well people sleep on\u00a0holiday.&lt;\/p&gt;&lt;p&gt;The data sparked timely lifestyle conversations and aligned perfectly with MUJI\u2019s brand themes of rest and\u00a0wellbeing.&lt;\/p&gt;&lt;p&gt;We turned the insights into a compelling, data-led story, supported by a dedicated landing page. Targeted media outreach then delivered widespread coverage across national, lifestyle, and travel media including Yahoo, MSN, Daily Mirror, and Daily\u00a0Mail.&lt;\/p&gt;&lt;p&gt;The results were transformative, leading\u00a0to&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;350% increase in online\u00a0revenue&lt;\/li&gt;&lt;li&gt;154% increase in UK referring\u00a0domains&lt;\/li&gt;&lt;li&gt;100+ pieces of editorial coverage across the UK and\u00a0France&lt;\/li&gt;&lt;li&gt;561 million online\u00a0reach&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Take a look at the full &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/work\/better-sleep-bigger-results-350-organic-revenue-growth-for-muji\&quot;&gt;MUJI case study&lt;\/a&gt; for more details.&lt;\/p&gt;&lt;h2&gt;&lt;strong&gt;Keeping an eye on\u00a0competitors&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;A strong SEO strategy doesn\u2019t happen in isolation. Understanding the competitive landscape is essential. Here\u2019s how to check competitors\u2019 backlinks\u00a0effectively:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Use tools such as Ahrefs, SEMrush, or Moz to identify backlink\u00a0sources&lt;\/li&gt;&lt;li&gt;Group links by domain relevance and content\u00a0alignment&lt;\/li&gt;&lt;li&gt;Look for topical gaps in your backlink profile compared to\u00a0theirs&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;But don\u2019t just copy their links. The goal isn\u2019t to mimic - it\u2019s to find gaps where your digital PR efforts can earn niche relevant backlinks they\u2019ve\u00a0missed.&lt;\/p&gt;&lt;p&gt;And stop asking, \u201cHow many backlinks do you need?\u201d The real question is: \u201cHow relevant and valuable are the backlinks you\u00a0have?\u201d&lt;\/p&gt;&lt;p&gt;Success could (and should) be measured\u00a0by:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Relevance of referring\u00a0domains&lt;\/li&gt;&lt;li&gt;Link context and\u00a0placement&lt;\/li&gt;&lt;li&gt;Growth in topical authority SEO signals over\u00a0time&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;The\u00a0TL;DR&lt;\/h2&gt;&lt;p&gt;SEO today isn\u2019t about gaming the algorithm - it\u2019s about earning trust naturally. When it comes to backlinks, that\u00a0means:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Quality over\u00a0quantity&lt;\/li&gt;&lt;li&gt;Relevance over raw\u00a0reach&lt;\/li&gt;&lt;li&gt;Authority over artificial link\u00a0volume&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;A thoughtful link building strategy, supported by carefully structured content and a strong digital PR strategy, allows brands to build lasting\u00a0visibility.&lt;\/p&gt;&lt;p&gt;If you\u2019re serious about sustainable SEO growth and building online authority, it\u2019s time\u00a0to:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Rethink your approach to link\u00a0acquisition&lt;\/li&gt;&lt;li&gt;Embrace digital PR link\u00a0building&lt;\/li&gt;&lt;li&gt;Audit your backlinks through a topical relevance\u00a0lens&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Want to know how to gain backlinks that matter? Start by becoming the most trusted source in your niche - and let your links reflect that.&lt;\/p&gt;&quot;}}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Looking to put your brand in the spotlight?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_hero.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_hero.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_hero.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_hero.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_hero.png"
+		alt="Engage Blog25 links hero"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Building links with topical relevance: Why digital PR is key</h1>
+	
+			<p>3rd November 2025</p>
+	
+	
+			<p>Roughly a 7 minute read by</p>
+	
+	
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>For years, brands have obsessed over chasing SEO backlinks in bulk, often asking: how many backlinks do you need to rank?</strong></p><p>The truth is, this outdated focus on volume over relevance no longer works - and in fact, it can harm your site’s trust and visibility.</p><p>Today, the most effective link building strategy is one that prioritises topical relevance, link quality, and natural link building. The days of spray-and-pray link acquisition are over. To build topical authority, you need to adopt a long-term, intentional approach grounded in content alignment and authority building SEO.</p><p>This is where digital PR comes in. By aligning hygiene, hub, and hero content with a smart digital PR strategy, brands can shape a sustainable framework for earning high quality backlinks - and build trust with both users and search engines.</p><h2><strong>The problem with “links for links’ sake”</strong></h2><p>Buying backlinks, relying on outdated directories, or chasing link quantity over quality might have delivered short-term wins 10 years ago, but today, these tactics are obsolete.</p><p>Search engine algorithms have evolved to understand search intent, context, and the true relevance of a link.</p><p>Mismatched or irrelevant SEO backlinks no longer boost performance. In fact, they can actively harm it by diluting your site’s trust signals and undermining topical authority.</p><p>This is especially critical in industries such as healthcare, finance, legal, education, and technology, where users (and search engines) demand accuracy and credibility.</p><p>To drive sustainable growth and long-term rankings, brands need to move beyond domain authority and prioritise niche-relevant backlinks that align with their content themes. That means earning links from credible, contextually relevant sources that strengthen topical authority and reinforce expertise in your field.</p><h2><strong>The hero, hub, and hygiene framework</strong></h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_secondary_opt1.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_secondary_opt1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_secondary_opt1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_secondary_opt1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_secondary_opt1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/Building-links-with-topical-relevance-why-digital-PR-is-key/Engage_Blog25_links_secondary_opt1.png"
+		alt="Engage Blog25 links secondary opt1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>To shape a strong digital PR link building strategy, your <a href="https://engageinteractive.co.uk/services/marketing/content-marketing">content strategy</a> needs to be structured with purpose. The hero, hub, hygiene model allows you to build content that naturally attracts high quality backlinks and supports topical relevance.</p><h3>Hygiene content</h3><p>This is your always-on content. Answering core user questions (e.g. ‘what is a backlink’ and ‘what is topical authority’) and solving common problems, hygiene pages form the bedrock of your authority building SEO. They’re essential for natural link building because they attract organic links over time.</p><h3>Hub content</h3><p>These are in-depth articles, guides, and regularly updated content clusters that demonstrate deep topical expertise. Hub content should be part of your always-on SEO strategy, helping to earn niche relevant backlinks while supporting topical authority growth.</p><h3>Hero content</h3><p>This is where digital PR drives the biggest impact. Hero assets (such as data-led stories, interactive tools or thought leadership campaigns) are built to generate attention and high quality backlinks from more mainstream publications. But critically, they must align with your site’s niche and themes to support your overall link building strategy.</p><p>Each layer of this framework works together to earn relevant, trusted links that search engines understand and reward.</p><h2>Why topical relevance is everything</h2><p>What is topical authority, and why does it matter? In <a href="https://engageinteractive.co.uk/services/marketing/seo">SEO</a>, it means becoming a known, trusted source on a specific subject or niche. A key part of building that trust is through acquiring niche, relevant backlinks that support your content themes, reinforce your subject expertise, and signal credibility to search engines.</p><p>Topical relevance in link building ensures that the websites linking to you are contextually aligned with your industry or subject matter. Google uses this to determine if you’re truly an authority - or just trying to play the system.</p><p>Relevant links:</p><ul><li>Come from industry-aligned publishers</li><li>Feature anchor text and content themes that mirror your site</li><li>Strengthen your brand’s authority within your niche</li></ul><p>Irrelevant links:</p><ul><li>Come from unrelated websites</li><li>Provide little to no value to your core audience</li><li>Undermine your link building strategy</li></ul><p>By prioritising link relevance, you can shape a natural backlink profile that supports topical authority SEO.</p><h2>Digital PR: the modern link building engine</h2><p>A smart digital PR strategy does more than boost brand awareness - it’s one of the most scalable ways to earn backlinks that support SEO. This approach focuses on building editorial links that are both high quality and topically relevant.</p><p>Effective digital PR link building tactics include:</p><ul><li><strong>Data storytelling:</strong> Original research, industry surveys, and visualised insights that journalists love to cite and link back to</li><li><strong>Newsjacking:</strong> Timely, expert-driven reactions to trending topics</li><li><strong>Expert commentary: </strong>Positioning brand spokespeople as trusted authorities on subject matters</li></ul><p>These tactics don’t just deliver SEO backlinks, they elevate your brand and establish authority building SEO signals that are hard to fake.</p><p>The result is a link building strategy that feels earned, trustworthy, and long-term.</p><h2><strong>Better sleep, bigger results: driving 350% increase in online revenue for Muji</strong></h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Case-study-images/Muji/Muji_meta_share-1.jpg"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Case-study-images/Muji/Muji_meta_share-1.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Case-study-images/Muji/Muji_meta_share-1.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Case-study-images/Muji/Muji_meta_share-1.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Muji/Muji_meta_share-1.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Muji/Muji_meta_share-1.jpg"
+		alt="Muji meta share 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>The strongest evidence of digital PR’s link-building power comes from real-world campaigns, such as our work with lifestyle brand <a href="https://uk.muji.eu/">MUJI</a>.</p><p>To support their travel and sleep product ranges, we launched the “<a href="https://uk.muji.eu/pages/muji-stories/journey-to-better-sleep.html">Journey to Better Sleep</a>” campaign, centred on a public survey exploring how well people sleep on holiday.</p><p>The data sparked timely lifestyle conversations and aligned perfectly with MUJI’s brand themes of rest and wellbeing.</p><p>We turned the insights into a compelling, data-led story, supported by a dedicated landing page. Targeted media outreach then delivered widespread coverage across national, lifestyle, and travel media including Yahoo, MSN, Daily Mirror, and Daily Mail.</p><p>The results were transformative, leading to</p><ul><li>350% increase in online revenue</li><li>154% increase in UK referring domains</li><li>100+ pieces of editorial coverage across the UK and France</li><li>561 million online reach</li></ul><p>Take a look at the full <a href="https://engageinteractive.co.uk/work/better-sleep-bigger-results-350-organic-revenue-growth-for-muji">MUJI case study</a> for more details.</p><h2><strong>Keeping an eye on competitors</strong></h2><p>A strong SEO strategy doesn’t happen in isolation. Understanding the competitive landscape is essential. Here’s how to check competitors’ backlinks effectively:</p><ul><li>Use tools such as Ahrefs, SEMrush, or Moz to identify backlink sources</li><li>Group links by domain relevance and content alignment</li><li>Look for topical gaps in your backlink profile compared to theirs</li></ul><p>But don’t just copy their links. The goal isn’t to mimic - it’s to find gaps where your digital PR efforts can earn niche relevant backlinks they’ve missed.</p><p>And stop asking, “How many backlinks do you need?” The real question is: “How relevant and valuable are the backlinks you have?”</p><p>Success could (and should) be measured by:</p><ul><li>Relevance of referring domains</li><li>Link context and placement</li><li>Growth in topical authority SEO signals over time</li></ul><h2>The TL;DR</h2><p>SEO today isn’t about gaming the algorithm - it’s about earning trust naturally. When it comes to backlinks, that means:</p><ul><li>Quality over quantity</li><li>Relevance over raw reach</li><li>Authority over artificial link volume</li></ul><p>A thoughtful link building strategy, supported by carefully structured content and a strong digital PR strategy, allows brands to build lasting visibility.</p><p>If you’re serious about sustainable SEO growth and building online authority, it’s time to:</p><ul><li>Rethink your approach to link acquisition</li><li>Embrace digital PR link building</li><li>Audit your backlinks through a topical relevance lens</li></ul><p>Want to know how to gain backlinks that matter? Start by becoming the most trusted source in your niche - and let your links reflect that.</p>
+	
+	
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Looking to put your brand in the spotlight?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403bfa98decc479',t:'MTc5MDI3MzQ1NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

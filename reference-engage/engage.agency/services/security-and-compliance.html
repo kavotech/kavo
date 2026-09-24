@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Website Security &amp; Compliance Specialists | Engage</title>
+<meta name="description" content="We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems.">
+
+	<link rel="canonical" href="security-and-compliance.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="security-and-compliance.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Website Security &amp; Compliance Specialists | Engage">
+<meta property="og:description" content="We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/services/security-and-compliance">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"Service","@id":"https:\/\/engage.agency\/services\/security-and-compliance#service","url":"https:\/\/engage.agency\/services\/security-and-compliance","name":"Security & Compliance services","serviceType":"Security & Compliance","description":"We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems.","provider":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"areaServed":{"@type":"Country","name":"GB"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/services\/security-and-compliance#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/services\/security-and-compliance#webpage","url":"https:\/\/engage.agency\/services\/security-and-compliance","name":"Website Security & Compliance Specialists | Engage","description":"We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/services\/security-and-compliance#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Our services","item":"https:\/\/engage.agency\/services"},{"@type":"ListItem","position":3,"name":"Security & Compliance","item":"https:\/\/engage.agency\/services\/security-and-compliance"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/People-images\/Devs-002.jpg"},"datePublished":"2025-06-30T13:55:47+01:00","dateModified":"2025-07-16T17:04:26+01:00","inLanguage":"en-GB","mainEntity":{"@type":"Service","@id":"https:\/\/engage.agency\/services\/security-and-compliance#service"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="security-and-compliance.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Website Security &amp; Compliance Specialists | Engage&quot;,&quot;description&quot;:&quot;We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/services\/security-and-compliance&quot;,&quot;shareTitle&quot;:&quot;Website Security &amp; Compliance Specialists | Engage&quot;,&quot;shareDescription&quot;:&quot;We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/security-and-compliance#service\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/security-and-compliance\&quot;,\&quot;name\&quot;:\&quot;Security &amp; Compliance services\&quot;,\&quot;serviceType\&quot;:\&quot;Security &amp; Compliance\&quot;,\&quot;description\&quot;:\&quot;We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems.\&quot;,\&quot;provider\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;areaServed\&quot;:{\&quot;@type\&quot;:\&quot;Country\&quot;,\&quot;name\&quot;:\&quot;GB\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/security-and-compliance#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/security-and-compliance#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/security-and-compliance\&quot;,\&quot;name\&quot;:\&quot;Website Security &amp; Compliance Specialists | Engage\&quot;,\&quot;description\&quot;:\&quot;We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/security-and-compliance#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Our services\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Security &amp; Compliance\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/security-and-compliance\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/People-images\\\/Devs-002.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2025-06-30T13:55:47+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2025-07-16T17:04:26+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/security-and-compliance#service\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;basic&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Website security: turning threats into thrust&quot;,&quot;copy&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;Speak to an expert&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;},&quot;video&quot;:null,&quot;image&quot;:{&quot;alt&quot;:&quot;Devs 002&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/Devs-002.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/Devs-002.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/Devs-002.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/People-images\/Devs-002.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/People-images\/Devs-002.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;stat&quot;:null}},&quot;content&quot;:{&quot;type&quot;:&quot;introduction&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;When it comes to cyber security, our services don\u2019t sleep&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Cyber threats don\u2019t snooze \u2013 neither do we. Well, our website security services don\u2019t. Safety isn\u2019t an afterthought online, it\u2019s an absolute essential. Whether it\u2019s safeguarding customer data, ensuring compliance or protecting your platform from evolving risks in real time, we take a proactive, security-first approach.&lt;\/p&gt;&lt;p&gt;We go beyond surface-level fixes. We embed\u00a0OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems. From\u00a0PEN tests and compliance audits to real-time monitoring and optional\u00a0vulnerability scanning, we help keep your site safe from harm against ever-changing threats.&lt;\/p&gt;&lt;p&gt;That\u2019s why we\u2019re Cyber Essentials Plus certified \u2013 a government-backed accreditation that proves we meet key standards for defending against common cyber threats. Independently audited, it\u2019s extra reassurance that your platform\u2019s in safe hands.&lt;\/p&gt;&lt;p&gt;Additionally, we ensure your platform stays fast, resilient and fully compliant with regulations like\u00a0GDPR. That means encrypted data, regular security patches and a defence strategy tailored to your business.&lt;\/p&gt;&lt;p&gt;Security is about more than just protection \u2013 it\u2019s about trust. And in a world where cyber threats are only getting smarter and more invasive, we make sure your defences are even smarter, so your customers can trust you and you can rest easy.&lt;\/p&gt;&quot;,&quot;meta&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Web Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Security &amp; Compliance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/security-and-compliance&quot;},{&quot;title&quot;:&quot;Cloud Solutions&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/cloud-solutions&quot;}]},&quot;team&quot;:null}},&quot;blocks&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Why choose Engage?&quot;,&quot;copy&quot;:&quot;&lt;h3&gt;Comprehensive and compliant&lt;\/h3&gt;&lt;p&gt;We don\u2019t just tick boxes. We meet Cyber Essentials Plus standards and take proactive steps to defend against emerging cyber threats. With penetration testing, we simulate real-world attacks to uncover vulnerabilities and ensure your platform stays ahead of the curve, safeguarding sensitive data and ensuring compliance.&lt;\/p&gt;&lt;h3&gt;Security from the start&lt;\/h3&gt;&lt;p&gt;From initial concept to final deployment, we weave cyber security in at every step, using OWASP guidelines, major industry frameworks and proactive threat monitoring to ensure your platform is tough and secure while staying user-friendly.&lt;\/p&gt;&lt;h3&gt;We&#039;ve got your back(up)&lt;\/h3&gt;&lt;p&gt;For businesses managing large datasets, security isn\u2019t optional. We encrypt data with AES-256, apply website compliance best practices and build for disaster recovery, ensuring your data stays protected and accessible. With cloud environments following AWS Well-Architected and NCSC security guidelines, your business is safe and ready for anything.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;content-grid&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Our security &amp; compliance services&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Cybersecurity frameworks &amp; compliance&quot;,&quot;copy&quot;:&quot;We ensure your platform stays compliant with Cyber Essentials Plus, GDPR and OWASP standards, safeguarding your data with best practices and industry regulations.&quot;,&quot;href&quot;:null},{&quot;title&quot;:&quot;Proactive threat detection &amp; risk mitigation&quot;,&quot;copy&quot;:&quot;We conduct ongoing security testing, automated vulnerability scans and real-time threat monitoring to stay ahead of emerging risks and ensure your platform is always protected.&quot;,&quot;href&quot;:null},{&quot;title&quot;:&quot;Cloud security &amp; infrastructure hardening&quot;,&quot;copy&quot;:&quot;With AES-256 encryption, we safeguard your sensitive data, ensuring compliance with privacy regulations while keeping your business and customer data secure.&quot;,&quot;href&quot;:null}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;,&quot;readMore&quot;:&quot;Read more&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;featured-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Show me something&quot;,&quot;items&quot;:[{&quot;prefix&quot;:&quot;Muji&quot;,&quot;title&quot;:&quot;Better sleep, bigger results: +350% organic revenue growth for MUJI&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/better-sleep-bigger-results-350-organic-revenue-growth-for-muji&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Frame 160&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800\/engage-website\/production\/Case-study-images\/Muji\/Frame-160.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=450,height=450\/engage-website\/production\/Case-study-images\/Muji\/Frame-160.jpg&quot;],&quot;sizes&quot;:[1024]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;CRO&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/cro&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;CRO&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}}],&quot;elympics&quot;:{&quot;title&quot;:&quot;Engage Elympics&quot;,&quot;action&quot;:&quot;https:\/\/engage.agency\/api\/elympics\/stats&quot;},&quot;awards&quot;:[{&quot;image&quot;:{&quot;alt&quot;:&quot;PNCA 25 WINNER footer WHITE&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=160\/engage-website\/production\/Awards\/PNCA-25-WINNER-footer-WHITE.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=107\/engage-website\/production\/Awards\/PNCA-25-WINNER-footer-WHITE.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:625,&quot;height&quot;:334},&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;UK Company culture awards&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=229\/engage-website\/production\/Awards\/UK-Company-culture-awards.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=153\/engage-website\/production\/Awards\/UK-Company-culture-awards.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:768,&quot;height&quot;:587},&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Drum recommended&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=106\/engage-website\/production\/Awards\/Drum-recommended.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=71\/engage-website\/production\/Awards\/Drum-recommended.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:144,&quot;height&quot;:51},&quot;href&quot;:null,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Certified b corp white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=498\/engage-website\/production\/Awards\/certified-b-corp-white.svg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=332\/engage-website\/production\/Awards\/certified-b-corp-white.svg&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:386,&quot;height&quot;:641},&quot;href&quot;:null,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Proudly employee owned round holo&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=300\/engage-website\/production\/Awards\/proudly-employee-owned-round-holo.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=200\/engage-website\/production\/Awards\/proudly-employee-owned-round-holo.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:1518,&quot;height&quot;:1518},&quot;href&quot;:null,&quot;shape&quot;:&quot;circle&quot;}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/Devs-002.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/Devs-002.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/Devs-002.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/People-images/Devs-002.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/People-images/Devs-002.jpg"
+		alt="Devs 002"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Website security: turning threats into thrust</h1>
+	
+	
+	
+	
+	
+			<a
+	href="../about-us.html"
+	>
+	Speak to an expert
+</a>
+	</header>
+
+			<section>
+	
+	
+
+			<h2>
+							When it comes to cyber security, our services don’t sleep
+					</h2>
+	
+	
+			<p>Cyber threats don’t snooze – neither do we. Well, our website security services don’t. Safety isn’t an afterthought online, it’s an absolute essential. Whether it’s safeguarding customer data, ensuring compliance or protecting your platform from evolving risks in real time, we take a proactive, security-first approach.</p><p>We go beyond surface-level fixes. We embed OWASP Top 10 principles into development, identifying vulnerabilities well before they become problems. From PEN tests and compliance audits to real-time monitoring and optional vulnerability scanning, we help keep your site safe from harm against ever-changing threats.</p><p>That’s why we’re Cyber Essentials Plus certified – a government-backed accreditation that proves we meet key standards for defending against common cyber threats. Independently audited, it’s extra reassurance that your platform’s in safe hands.</p><p>Additionally, we ensure your platform stays fast, resilient and fully compliant with regulations like GDPR. That means encrypted data, regular security patches and a defence strategy tailored to your business.</p><p>Security is about more than just protection – it’s about trust. And in a world where cyber threats are only getting smarter and more invasive, we make sure your defences are even smarter, so your customers can trust you and you can rest easy.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+	<section>
+	
+	
+
+			<h2>
+							Why choose Engage?
+					</h2>
+	
+	
+			<h3>Comprehensive and compliant</h3><p>We don’t just tick boxes. We meet Cyber Essentials Plus standards and take proactive steps to defend against emerging cyber threats. With penetration testing, we simulate real-world attacks to uncover vulnerabilities and ensure your platform stays ahead of the curve, safeguarding sensitive data and ensuring compliance.</p><h3>Security from the start</h3><p>From initial concept to final deployment, we weave cyber security in at every step, using OWASP guidelines, major industry frameworks and proactive threat monitoring to ensure your platform is tough and secure while staying user-friendly.</p><h3>We've got your back(up)</h3><p>For businesses managing large datasets, security isn’t optional. We encrypt data with AES-256, apply website compliance best practices and build for disaster recovery, ensuring your data stays protected and accessible. With cloud environments following AWS Well-Architected and NCSC security guidelines, your business is safe and ready for anything.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Our security & compliance services
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Cybersecurity frameworks & compliance
+					</h3>
+	
+	
+			We ensure your platform stays compliant with Cyber Essentials Plus, GDPR and OWASP standards, safeguarding your data with best practices and industry regulations.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Proactive threat detection & risk mitigation
+					</h3>
+	
+	
+			We conduct ongoing security testing, automated vulnerability scans and real-time threat monitoring to stay ahead of emerging risks and ensure your platform is always protected.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Cloud security & infrastructure hardening
+					</h3>
+	
+	
+			With AES-256 encryption, we safeguard your sensitive data, ensuring compliance with privacy regulations while keeping your business and customer data secure.
+	
+	
+	
+	
+		
+	</article>
+			</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Show me something
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Better sleep, bigger results: +350% organic revenue growth for MUJI
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=800/engage-website/production/Case-study-images/Muji/Frame-160.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=450,height=450/engage-website/production/Case-study-images/Muji/Frame-160.jpg"
+		alt="Frame 160"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/better-sleep-bigger-results-350-organic-revenue-growth-for-muji.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							CRO
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="CRO"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="cro.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403becd9808c479',t:'MTc5MDI3MzQyMA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

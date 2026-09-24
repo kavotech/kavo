@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Scalable Websites Built for Performance &amp; UX | Engage</title>
+<meta name="description" content="We craft seamless user experiences, standout design, and scalable Craft CMS sites—websites your customers bookmark and competitors envy.">
+
+	<link rel="canonical" href="websites.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="../build/assets/search-DcQYJQPU.avif" fetchpriority="high" />
+			<link rel="preload" as="image" href="../build/assets/code-o6otcnNc.avif" fetchpriority="high" />
+			<link rel="preload" as="image" href="../build/assets/arrow-pointer-CRJ-KtaR.svg" fetchpriority="high" />
+			<link rel="preload" as="image" href="../build/assets/touch-pointer-BiKxYxrq.svg" fetchpriority="high" />
+			<link rel="preload" as="image" href="../build/assets/cube-bubble-C2uaBf7N.avif" fetchpriority="high" />
+	
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Scalable Websites Built for Performance &amp; UX | Engage">
+<meta property="og:description" content="We craft seamless user experiences, standout design, and scalable Craft CMS sites—websites your customers bookmark and competitors envy.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/services/websites">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"Service","@id":"https:\/\/engage.agency\/services\/websites#service","url":"https:\/\/engage.agency\/services\/websites","name":"Websites services","serviceType":"Websites","description":"We craft seamless user experiences, standout design, and scalable Craft CMS sites\u2014websites your customers bookmark and competitors envy.","provider":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"areaServed":{"@type":"Country","name":"GB"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/services\/websites#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/services\/websites#webpage","url":"https:\/\/engage.agency\/services\/websites","name":"Scalable Websites Built for Performance & UX | Engage","description":"We craft seamless user experiences, standout design, and scalable Craft CMS sites\u2014websites your customers bookmark and competitors envy.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/services\/websites#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Our services","item":"https:\/\/engage.agency\/services"},{"@type":"ListItem","position":3,"name":"Websites","item":"https:\/\/engage.agency\/services\/websites"}]},"datePublished":"2025-03-19T15:03:05+00:00","dateModified":"2026-04-24T16:39:05+01:00","inLanguage":"en-GB","mainEntity":{"@type":"Service","@id":"https:\/\/engage.agency\/services\/websites#service"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="websites.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Scalable Websites Built for Performance &amp; UX | Engage&quot;,&quot;description&quot;:&quot;We craft seamless user experiences, standout design, and scalable Craft CMS sites\u2014websites your customers bookmark and competitors envy.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;shareTitle&quot;:&quot;Scalable Websites Built for Performance &amp; UX | Engage&quot;,&quot;shareDescription&quot;:&quot;We craft seamless user experiences, standout design, and scalable Craft CMS sites\u2014websites your customers bookmark and competitors envy.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/websites#service\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/websites\&quot;,\&quot;name\&quot;:\&quot;Websites services\&quot;,\&quot;serviceType\&quot;:\&quot;Websites\&quot;,\&quot;description\&quot;:\&quot;We craft seamless user experiences, standout design, and scalable Craft CMS sites\\u2014websites your customers bookmark and competitors envy.\&quot;,\&quot;provider\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;areaServed\&quot;:{\&quot;@type\&quot;:\&quot;Country\&quot;,\&quot;name\&quot;:\&quot;GB\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/websites#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/websites#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/websites\&quot;,\&quot;name\&quot;:\&quot;Scalable Websites Built for Performance &amp; UX | Engage\&quot;,\&quot;description\&quot;:\&quot;We craft seamless user experiences, standout design, and scalable Craft CMS sites\\u2014websites your customers bookmark and competitors envy.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/websites#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Our services\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Websites\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/websites\&quot;}]},\&quot;datePublished\&quot;:\&quot;2025-03-19T15:03:05+00:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-04-24T16:39:05+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;Service\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/services\\\/websites#service\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;proposition&quot;,&quot;data&quot;:{&quot;prefix&quot;:&quot;Our solutions&quot;,&quot;type&quot;:&quot;websites&quot;,&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;From strategy and UX through to build and optimisation, we craft websites that look beautiful, and work hard for the brands behind them.&quot;}},&quot;content&quot;:{&quot;type&quot;:&quot;introduction&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Websites that work wonders&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Your website is more than a digital shop window. It is the foundation of your brand, marketing, and growth. Our web services cover everything needed to build high-performing, future-ready platforms that look exceptional and deliver real results. From seamless user experiences and striking web design to scalable development, Craft CMS builds, and AI-powered personalisation - we build websites that power your business forward.&lt;\/p&gt;&quot;,&quot;meta&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Web Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Security &amp; Compliance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/security-and-compliance&quot;},{&quot;title&quot;:&quot;Cloud Solutions&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/cloud-solutions&quot;}]},&quot;team&quot;:null}},&quot;blocks&quot;:[{&quot;type&quot;:&quot;case-studies-signpost&quot;,&quot;data&quot;:{&quot;title&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;View all work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;},&quot;items&quot;:[{&quot;title&quot;:&quot;Launching Lovett Care: +70% conversion rate&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Lovett website brand image&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=800\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-website-brand-image.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440\/engage-website\/production\/Case-study-images\/Lovett-Care\/Website\/Lovett-website-brand-image.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;View case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/launching-lovett-care-on-craft-cms&quot;},&quot;theme&quot;:&quot;#272a60&quot;,&quot;logo&quot;:{&quot;alt&quot;:&quot;Logo Lovett white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=274,height=60\/engage-website\/production\/Case-study-images\/Client-logos\/logo_Lovett_white.svg&quot;],&quot;sizes&quot;:null,&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:274,&quot;height&quot;:60},&quot;stats&quot;:[{&quot;title&quot;:&quot;+90%&quot;,&quot;copy&quot;:&quot;Sessions&quot;},{&quot;title&quot;:&quot;+70%&quot;,&quot;copy&quot;:&quot;Conversion rate&quot;},{&quot;title&quot;:&quot;+828%&quot;,&quot;copy&quot;:&quot;AI audience&quot;}]},{&quot;title&quot;:&quot;Taking fans straight to the goal: +\u00a38 spend per head for Sport London&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Case study26 Sport London&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=800\/engage-website\/production\/Case-study-images\/ETM-Group\/Engage_Case-study26_SportLondon.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440\/engage-website\/production\/Case-study-images\/ETM-Group\/Engage_Case-study26_SportLondon.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;View case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/engage-launches-sport-london-website&quot;},&quot;theme&quot;:&quot;#26455c&quot;,&quot;logo&quot;:{&quot;alt&quot;:&quot;Logo etm black&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=60,height=60\/engage-website\/production\/Case-study-images\/Client-logos\/logo_etm_black.svg&quot;],&quot;sizes&quot;:null,&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:60,&quot;height&quot;:60},&quot;stats&quot;:[{&quot;title&quot;:&quot;+500%&quot;,&quot;copy&quot;:&quot;Page speed&quot;},{&quot;title&quot;:&quot;+\u00a38&quot;,&quot;copy&quot;:&quot;Spend per head&quot;},{&quot;title&quot;:&quot;+73%&quot;,&quot;copy&quot;:&quot;Domain ranking&quot;}]},{&quot;title&quot;:&quot;A digital health check: +223% web enquiries for EMIS&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Case study26 EMIS 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=800\/engage-website\/production\/Case-study-images\/EMIS\/Engage_Case-study26_EMIS-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440\/engage-website\/production\/Case-study-images\/EMIS\/Engage_Case-study26_EMIS-1.png&quot;],&quot;sizes&quot;:[1024]},&quot;cta&quot;:{&quot;title&quot;:&quot;View case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/a-digital-health-check-for-emis&quot;},&quot;theme&quot;:&quot;#14385d&quot;,&quot;logo&quot;:{&quot;alt&quot;:&quot;Logo emis black&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=137,height=60\/engage-website\/production\/Case-study-images\/Client-logos\/logo_emis_black.svg&quot;],&quot;sizes&quot;:null,&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:137,&quot;height&quot;:60},&quot;stats&quot;:[{&quot;title&quot;:&quot;+1,724%&quot;,&quot;copy&quot;:&quot;Increase in email marketing opt-ins&quot;},{&quot;title&quot;:&quot;+193%&quot;,&quot;copy&quot;:&quot;Increase in conversion rate&quot;},{&quot;title&quot;:&quot;+220%&quot;,&quot;copy&quot;:&quot;Increase in website enquiries&quot;}]}]}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Why choose Engage?&quot;,&quot;copy&quot;:&quot;&lt;h3&gt;Built to last&lt;\/h3&gt;&lt;p&gt;We build solid digital foundations that don\u2019t creak under pressure. Scalable, SEO-friendly and lightning fast. With 20 years\u2019 experience and a tight-knit in-house team, we keep things clean, simple and future-proof, so you can grow without the faff, the tech debt, or the expensive rebuild five years on.&lt;\/p&gt;&lt;h3&gt;Secure and seamless, front to back&lt;\/h3&gt;&lt;p&gt;Security\u2019s baked in from the get-go. OWASP, GDPR and encryption are standard, not an upgrade. But we don\u2019t lose sight of your users either. Every site we build is intuitive, accessible and easy to use. No clunky journeys or security trade-offs; just smart, solid digital that works.&lt;\/p&gt;&lt;h3&gt;Made to move with you&lt;\/h3&gt;&lt;p&gt;Today\u2019s tech stack. Tomorrow\u2019s ambitions. Our API-first, headless builds plug neatly into your tools, CRMs and platforms, ready to flex as your business does. Whether it\u2019s automation, personalisation or real-time adaptability, we keep you one step ahead, with a website that grows smarter, not just bigger.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;What could a better website unlock for your brand?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}},{&quot;type&quot;:&quot;content-grid&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Our web services:&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;copy&quot;:&quot;Scalable, secure, and intuitive Craft CMS builds that blend frontend power with editor-friendly simplicity.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Web development&quot;,&quot;copy&quot;:&quot;From backend builds to API integration, we develop high-performance platforms that are robust, secure, and built around business goals.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;UX\/UI design&quot;,&quot;copy&quot;:&quot;We craft seamless user journeys by blending research, accessibility, and interaction design to drive real action.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Web design&quot;,&quot;copy&quot;:&quot;Component-led, brand-perfect sites that balance stunning visuals with performance and usability.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-design&quot;},{&quot;title&quot;:&quot;Motion graphics&quot;,&quot;copy&quot;:&quot;From animated explainers to scroll-triggered web visuals, we bring brands to life with motion-led storytelling.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;},{&quot;title&quot;:&quot;Digital branding&quot;,&quot;copy&quot;:&quot;Dynamic brand systems designed to work across every screen, format, and platform.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;Security &amp; compliance&quot;,&quot;copy&quot;:&quot;We protect platforms with enterprise-grade encryption, compliance audits and best-in-class risk management.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/security-and-compliance&quot;},{&quot;title&quot;:&quot;Cloud solutions&quot;,&quot;copy&quot;:&quot;AWS-optimised environments that run fast, stay safe, and adapt to your growth.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/cloud-solutions&quot;},{&quot;title&quot;:&quot;Technical SEO&quot;,&quot;copy&quot;:&quot;Performance-driven SEO baked into the core architecture to ensure long-term visibility, high crawlability, and ranking success.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;,&quot;readMore&quot;:&quot;Read more&quot;}}},{&quot;type&quot;:&quot;client-result-cta&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Big brands. Big results.&quot;,&quot;copy&quot;:&quot;We&#039;re trusted by leading brands to build beautifully effective websites that your customers love to use.&quot;,&quot;logos&quot;:[{&quot;title&quot;:&quot;Task complete: Helping GOSH Charity reach 281% of its fundraising target&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/helping-gosh-childrens-charity-reach-its-fundraising-target&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo gosh white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=60\/engage-website\/production\/Case-study-images\/Client-logos\/logo_gosh_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:120,&quot;height&quot;:60},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;Sport London wins the World Cup: +327% organic revenue&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/sport-london-wins-the-world-cup&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo etm white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=120\/engage-website\/production\/Case-study-images\/Client-logos\/logo_etm_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:60,&quot;height&quot;:60},&quot;shape&quot;:&quot;circle&quot;},{&quot;title&quot;:&quot;Clarion\u2019s case for AI search: +255% AI Overview citations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/clarion-clarions-case-for-ai-search&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo clarion white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=60\/engage-website\/production\/Case-study-images\/Client-logos\/logo_clarion_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:120,&quot;height&quot;:60},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;Waking up organic growth for DUSK.com&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/dusk-waking-up-growth-for-dusk-com&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Shop Logo 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=29\/engage-website\/production\/Case-study-images\/Client-logos\/shopLogo-1.png&quot;],&quot;sizes&quot;:null,&quot;width&quot;:353,&quot;height&quot;:85},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;More flavour in the feed for Grace Foods&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/more-flavour-in-the-social-media-feed-for-grace-foods&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo gracefood white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=74\/engage-website\/production\/Case-study-images\/Client-logos\/logo_gracefood_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:97,&quot;height&quot;:60},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;Accelerating digital transformation for Motorsport UK&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/motorsport-uk-accelerating-digital-transformation-for-motorsport-uk&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo MSUK black&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=21\/engage-website\/production\/Case-study-images\/Client-logos\/logo_MSUK_black.png&quot;],&quot;sizes&quot;:null,&quot;width&quot;:351,&quot;height&quot;:61},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;Launching Lovett Care&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/launching-lovett-care-on-craft-cms&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo Lovett white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=26\/engage-website\/production\/Case-study-images\/Client-logos\/logo_Lovett_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:274,&quot;height&quot;:60},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;Fixing the fundamentals for C\u00f4te&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/cote-fixing-the-fundamentals-for-cote-2m-organic-revenue&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo cote white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=36\/engage-website\/production\/Case-study-images\/Client-logos\/logo_cote_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:202,&quot;height&quot;:60},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;Springing into action for Beefeater&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/whitbread-spring-into-action-for-beefeater-25-000-more-diners-through-the-door&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=26\/engage-website\/production\/Case-study-images\/Client-logos\/logo_whitbread_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:273,&quot;height&quot;:60},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;Giving Lovett Care a new lease of life: Bringing 28 care homes under one brand&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/a-new-lease-of-life-for-lovett-care&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo Lovett white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=26\/engage-website\/production\/Case-study-images\/Client-logos\/logo_Lovett_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:274,&quot;height&quot;:60},&quot;shape&quot;:&quot;square&quot;},{&quot;title&quot;:&quot;Squeezing out some serious results for Yoplait\u2019s Frubes&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/frubes-squeezing-out-some-serious-results-for-yoplaits-frubes&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Logo Yoplait white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=120,height=68\/engage-website\/production\/Case-study-images\/Client-logos\/logo_Yoplait_white.svg&quot;],&quot;sizes&quot;:null,&quot;width&quot;:106,&quot;height&quot;:60},&quot;shape&quot;:&quot;square&quot;}],&quot;stat&quot;:{&quot;title&quot;:&quot;The UK&#039;s #1&quot;,&quot;copy&quot;:&quot;We\u2019re proud to be the UK&#039;s largest and highest-rated Craft CMS agency - as recommended by The Drum.&quot;,&quot;icon&quot;:&quot;star&quot;},&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Curious how your site stacks up?&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;proposition-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;&lt;b&gt;Websites&lt;\/b&gt; not your jam?&quot;,&quot;copy&quot;:&quot;We\u2019ve got other tricks up our sleeve&quot;,&quot;items&quot;:[{&quot;type&quot;:&quot;marketing&quot;,&quot;title&quot;:&quot;Marketing&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Learn more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;}},{&quot;type&quot;:&quot;activations&quot;,&quot;title&quot;:&quot;Activations&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Learn more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;}}]}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+	
+			<h1>Websites</h1>
+	
+	
+			<p>From strategy and UX through to build and optimisation, we craft websites that look beautiful, and work hard for the brands behind them.</p>
+	
+	
+	
+	</header>
+
+			<section>
+	
+	
+
+			<h2>
+							Websites that work wonders
+					</h2>
+	
+	
+			<p>Your website is more than a digital shop window. It is the foundation of your brand, marketing, and growth. Our web services cover everything needed to build high-performing, future-ready platforms that look exceptional and deliver real results. From seamless user experiences and striking web design to scalable development, Craft CMS builds, and AI-powered personalisation - we build websites that power your business forward.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+	<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="../work.html"
+	>
+	View all work
+</a>
+	
+	
+		
+						<article>
+	
+	
+
+			<h2>
+							Launching Lovett Care: +70% conversion rate
+					</h2>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=800/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-website-brand-image.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440/engage-website/production/Case-study-images/Lovett-Care/Website/Lovett-website-brand-image.png"
+		alt="Lovett website brand image"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/launching-lovett-care-on-craft-cms.html"
+	>
+	View case study
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Taking fans straight to the goal: +£8 spend per head for Sport London
+					</h2>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=800/engage-website/production/Case-study-images/ETM-Group/Engage_Case-study26_SportLondon.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440/engage-website/production/Case-study-images/ETM-Group/Engage_Case-study26_SportLondon.png"
+		alt="Engage Case study26 Sport London"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/engage-launches-sport-london-website.html"
+	>
+	View case study
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							A digital health check: +223% web enquiries for EMIS
+					</h2>
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=800/engage-website/production/Case-study-images/EMIS/Engage_Case-study26_EMIS-1.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=550,height=440/engage-website/production/Case-study-images/EMIS/Engage_Case-study26_EMIS-1.png"
+		alt="Engage Case study26 EMIS 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../work/a-digital-health-check-for-emis.html"
+	>
+	View case study
+</a>
+	
+	
+		
+	</article>
+			</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							Why choose Engage?
+					</h2>
+	
+	
+			<h3>Built to last</h3><p>We build solid digital foundations that don’t creak under pressure. Scalable, SEO-friendly and lightning fast. With 20 years’ experience and a tight-knit in-house team, we keep things clean, simple and future-proof, so you can grow without the faff, the tech debt, or the expensive rebuild five years on.</p><h3>Secure and seamless, front to back</h3><p>Security’s baked in from the get-go. OWASP, GDPR and encryption are standard, not an upgrade. But we don’t lose sight of your users either. Every site we build is intuitive, accessible and easy to use. No clunky journeys or security trade-offs; just smart, solid digital that works.</p><h3>Made to move with you</h3><p>Today’s tech stack. Tomorrow’s ambitions. Our API-first, headless builds plug neatly into your tools, CRMs and platforms, ready to flex as your business does. Whether it’s automation, personalisation or real-time adaptability, we keep you one step ahead, with a website that grows smarter, not just bigger.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							What could a better website unlock for your brand?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk
+</a>
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Our web services:
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							<a href="craft-cms.html">Craft CMS</a>
+					</h3>
+	
+	
+			Scalable, secure, and intuitive Craft CMS builds that blend frontend power with editor-friendly simplicity.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							<a href="website-development.html">Web development</a>
+					</h3>
+	
+	
+			From backend builds to API integration, we develop high-performance platforms that are robust, secure, and built around business goals.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							<a href="ux-ui-design.html">UX/UI design</a>
+					</h3>
+	
+	
+			We craft seamless user journeys by blending research, accessibility, and interaction design to drive real action.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							<a href="website-design.html">Web design</a>
+					</h3>
+	
+	
+			Component-led, brand-perfect sites that balance stunning visuals with performance and usability.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							<a href="motion-graphics.html">Motion graphics</a>
+					</h3>
+	
+	
+			From animated explainers to scroll-triggered web visuals, we bring brands to life with motion-led storytelling.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							<a href="digital-branding.html">Digital branding</a>
+					</h3>
+	
+	
+			Dynamic brand systems designed to work across every screen, format, and platform.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							<a href="security-and-compliance.html">Security & compliance</a>
+					</h3>
+	
+	
+			We protect platforms with enterprise-grade encryption, compliance audits and best-in-class risk management.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							<a href="cloud-solutions.html">Cloud solutions</a>
+					</h3>
+	
+	
+			AWS-optimised environments that run fast, stay safe, and adapt to your growth.
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							<a href="seo.html">Technical SEO</a>
+					</h3>
+	
+	
+			Performance-driven SEO baked into the core architecture to ensure long-term visibility, high crawlability, and ranking success.
+	
+	
+	
+	
+		
+	</article>
+			</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Big brands. Big results.
+					</h2>
+	
+	
+			We're trusted by leading brands to build beautifully effective websites that your customers love to use.
+	
+	
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							<b>Websites</b> not your jam?
+					</h2>
+	
+	
+			We’ve got other tricks up our sleeve
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Marketing
+					</h3>
+	
+	
+	
+	
+			<a
+	href="digital-marketing.html"
+	>
+	Learn more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Activations
+					</h3>
+	
+	
+	
+	
+			<a
+	href="digital-activations.html"
+	>
+	Learn more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403bda78ba6c479',t:'MTc5MDI3MzM3Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

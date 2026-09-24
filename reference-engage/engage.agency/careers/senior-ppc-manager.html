@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Career Vacancies: Senior PPC Manager</title>
+<meta name="description" content="Join Engage as a Senior Paid Manager, leading multi-channel paid media strategies across Google Ads, Meta, Microsoft Ads, YouTube, TikTok and more.">
+
+	<link rel="canonical" href="senior-ppc-manager.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="senior-ppc-manager.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Career Vacancies: Senior PPC Manager">
+<meta property="og:description" content="Join Engage as a Senior Paid Manager, leading multi-channel paid media strategies across Google Ads, Meta, Microsoft Ads, YouTube, TikTok and more.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/careers/senior-ppc-manager">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/People-images/Ste-Livsey.JPG">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/senior-ppc-manager#jobposting","url":"https:\/\/engage.agency\/careers\/senior-ppc-manager","title":"Senior Paid Manager","directApply":true,"datePosted":"2026-03-09T12:43:00+00:00","validThrough":null,"hiringOrganization":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"jobLocation":{"@type":"Place","address":{"@type":"PostalAddress","streetAddress":"1st Floor, Munro House, Duke Street","addressLocality":"Leeds","addressRegion":"West Yorkshire","postalCode":"LS9 8AG","addressCountry":"GB"}},"description":"Join Engage as a Senior Paid Manager, leading multi-channel paid media strategies across Google Ads, Meta, Microsoft Ads, YouTube, TikTok and more.","employmentType":"FULL_TIME","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/senior-ppc-manager#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/senior-ppc-manager#webpage","url":"https:\/\/engage.agency\/careers\/senior-ppc-manager","name":"Career Vacancies: Senior PPC Manager","description":"Join Engage as a Senior Paid Manager, leading multi-channel paid media strategies across Google Ads, Meta, Microsoft Ads, YouTube, TikTok and more.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/careers\/senior-ppc-manager#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Join the team","item":"https:\/\/engage.agency\/careers"},{"@type":"ListItem","position":3,"name":"Senior Paid Manager","item":"https:\/\/engage.agency\/careers\/senior-ppc-manager"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/People-images\/ATD-Office.jpg"},"datePublished":"2026-08-07T16:03:01+01:00","dateModified":"2026-09-17T12:04:43+01:00","inLanguage":"en-GB","mainEntity":{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/senior-ppc-manager#jobposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="senior-ppc-manager.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Career Vacancies: Senior PPC Manager&quot;,&quot;description&quot;:&quot;Join Engage as a Senior Paid Manager, leading multi-channel paid media strategies across Google Ads, Meta, Microsoft Ads, YouTube, TikTok and more.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/careers\/senior-ppc-manager&quot;,&quot;shareTitle&quot;:&quot;Career Vacancies: Senior PPC Manager&quot;,&quot;shareDescription&quot;:&quot;Join Engage as a Senior Paid Manager, leading multi-channel paid media strategies across Google Ads, Meta, Microsoft Ads, YouTube, TikTok and more.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/senior-ppc-manager#jobposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/senior-ppc-manager\&quot;,\&quot;title\&quot;:\&quot;Senior Paid Manager\&quot;,\&quot;directApply\&quot;:true,\&quot;datePosted\&quot;:\&quot;2026-03-09T12:43:00+00:00\&quot;,\&quot;validThrough\&quot;:null,\&quot;hiringOrganization\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;jobLocation\&quot;:{\&quot;@type\&quot;:\&quot;Place\&quot;,\&quot;address\&quot;:{\&quot;@type\&quot;:\&quot;PostalAddress\&quot;,\&quot;streetAddress\&quot;:\&quot;1st Floor, Munro House, Duke Street\&quot;,\&quot;addressLocality\&quot;:\&quot;Leeds\&quot;,\&quot;addressRegion\&quot;:\&quot;West Yorkshire\&quot;,\&quot;postalCode\&quot;:\&quot;LS9 8AG\&quot;,\&quot;addressCountry\&quot;:\&quot;GB\&quot;}},\&quot;description\&quot;:\&quot;Join Engage as a Senior Paid Manager, leading multi-channel paid media strategies across Google Ads, Meta, Microsoft Ads, YouTube, TikTok and more.\&quot;,\&quot;employmentType\&quot;:\&quot;FULL_TIME\&quot;,\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/senior-ppc-manager#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/senior-ppc-manager#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/senior-ppc-manager\&quot;,\&quot;name\&quot;:\&quot;Career Vacancies: Senior PPC Manager\&quot;,\&quot;description\&quot;:\&quot;Join Engage as a Senior Paid Manager, leading multi-channel paid media strategies across Google Ads, Meta, Microsoft Ads, YouTube, TikTok and more.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/senior-ppc-manager#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Join the team\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Senior Paid Manager\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/senior-ppc-manager\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/People-images\\\/ATD-Office.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2026-08-07T16:03:01+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-17T12:04:43+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/senior-ppc-manager#jobposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;basic&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Senior Paid Manager&quot;,&quot;copy&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes&quot;},&quot;video&quot;:null,&quot;image&quot;:{&quot;alt&quot;:&quot;ATD Office&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;stat&quot;:null}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Salary&lt;\/h2&gt;&lt;p&gt;\u00a350,000- \u00a360,000&lt;\/p&gt;&lt;h2&gt;Hours and\u00a0location&lt;\/h2&gt;&lt;p&gt;This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a\u00a0week.&lt;\/p&gt;&lt;h2&gt;Benefits\u00a0package&lt;\/h2&gt;&lt;p&gt;As part of our commitment to making Engage a great place to work, we\u2019ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks\u00a0are:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e2c85787a6eb254a40738d5aae4e9801c\&quot;&gt;We&#039;re &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;employee owned&lt;\/a&gt;&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e94355a390a84110b75432867ffc81d7c\&quot;&gt;25 days holiday + bank holidays (rising after 5\u00a0years)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e81aa54596a3bff11884f77848974a0e9\&quot;&gt;Company performance linked bonus scheme (this is depending on the business\u2019 performance and is not a contractual\u00a0benefit)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea4a969d8b35dfeea5ef9df513411f5c4\&quot;&gt;Comprehensive private health\u00a0insurance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee1586c630a56c8c666a55195540c59ce\&quot;&gt;5% company pension\u00a0scheme&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e073bc33919c1b32b2e2952b0ee937248\&quot;&gt;Access to financial\u00a0coaching&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e514664c1313a733bfd99c25ba77a69bc\&quot;&gt;A company culture that promotes work-life\u00a0balance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec5cb06ee8cf7e5ee9081aa670f586045\&quot;&gt;Access to mental health\u00a0support&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4b0694e9012319f15e85abf77bc25d75\&quot;&gt;Free on-site\u00a0gym&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e211317672aed3b4a936f574a93f0f0a4\&quot;&gt;Hybrid working&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e440a3153a494bd3a049877981f016231\&quot;&gt;An award-winning office&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ece3aa84dd4e9d1e65f055fc9430ed7cb\&quot;&gt;Your birthday\u00a0off&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e018f1a070bf80517a9ed37e0507488d2\&quot;&gt;Regular socials, epic Summer parties and\u00a0more\u2026&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}}]}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Yas Phoebe&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;What we&#039;re looking for&lt;\/h2&gt;&lt;p&gt;As a Senior Paid Manager you\u2019ll be integral in the successful planning and execution of digital strategies across our wide range of clients and sectors, leading on some of our largest and most complex accounts.&lt;\/p&gt;&lt;p&gt;You will be a key part of the leadership on both individual projects and ongoing campaigns as well as playing a part in defining our solutions and approach for our Paid offering.&lt;\/p&gt;&lt;p&gt;You will work closely with the rest of the Paid team, delegating tasks, ensuring that Paid accounts and projects deliver work that meets Engage\u2019s (and our clients\u2019) expected levels of Attention to digital\u2122.&lt;\/p&gt;&lt;p&gt;Your time will be split between leading on some of our key accounts, the day to day campaign management and associated client and internal communication, but also providing insight and direction on how our accounts and campaigns should be run across the Paid team and assisting the Head Of Paid to grow our client base and services.&lt;\/p&gt;&lt;h4&gt;Reporting to&lt;\/h4&gt;&lt;p&gt;Head of Paid&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now &quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Ste Livsey&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Duties &amp;amp; responsibilities&lt;\/h2&gt;&lt;h4&gt;Campaign planning&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e2d2d9f91060fa6c2110f7f12c8431552\&quot;&gt;To plan and execute campaigns across the below primary channels:&lt;ul&gt;&lt;li data-list-item-id=\&quot;e45526abf6f24ab86bdaa672505c5cf4e\&quot;&gt;Meta&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef2296e47398c06763b0eb29f4de1e591\&quot;&gt;Google Ads&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5fbcf821830a4b6df8fe77a649951d78\&quot;&gt;Microsoft Ads&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e328e44b29219e0fe4f2648b55d5a9c30\&quot;&gt;Display\/ Programmatic&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e34afbd744b2b7bdb4856a176a99997ff\&quot;&gt;YouTube&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e04637e0c7de7b843e32bc140f5cf5480\&quot;&gt;TikTok&lt;\/li&gt;&lt;\/ul&gt;&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1b5cd466d73f1c93ef6af22439f351cc\&quot;&gt;You\u2019ll be expected to set the long term strategy for your clients\u2019 accounts in relation to hitting key client goals, producing forecasts to support these goals.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1c1a8d89fb8ad546fe3d22f150a2b5bc\&quot;&gt;Paid Search, Shopping and feed management are key skills for this role.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Day to day account optimisations&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e2d0f9c51c0877a0043d41b2d76a449fb\&quot;&gt;You\u2019ll be expected to be proficient in handling all aspects of day to day Paid campaign management as well as delegating key optimisation tasks to the wider team, ensuring that all aspects of Paid campaign management, including (but not limited to) the below are kept on top of.&lt;ul&gt;&lt;li data-list-item-id=\&quot;e6811d5d91b6ded1c215395710e605748\&quot;&gt;Keywords&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6104a5498119f66b54da9f58115155d1\&quot;&gt;Ad copy&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3ef2950786cfa9b400ba35b4c3e6a78d\&quot;&gt;Bids&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee3df4c8dfc8544bb357f978174e77b24\&quot;&gt;Bid strategies&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e91e50fdb21c5b64fd5d37b2ede4cb9b2\&quot;&gt;Placements&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e87e96459684aa5eee9c62dfcbdcd12ab\&quot;&gt;Audiences&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee3039f7a597a7e1e74a1dea7badf9241\&quot;&gt;Shopping feeds&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea86caa1b906f716ca1407bdd98963a81\&quot;&gt;Shopping campaigns&lt;\/li&gt;&lt;\/ul&gt;&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Strategic Direction&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e4d020d18802e9b6f44ea0a8c4e526a45\&quot;&gt;Own the strategic development and direction of Paid accounts, ensuring innovative and effective campaign strategies.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eae58ecc69a56f60203c05120bde175e2\&quot;&gt;Collaborate with the Head of Paid to work on new business opportunities with the new business team and identify potential opportunities, contributing to pitches and client onboarding.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e690cca9577ce978797801f3d7d400748\&quot;&gt;Develop and execute multi-channel Paid strategies aligned with overall performance marketing goals.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0410780a9dcdf41c5e0b9b832bba9410\&quot;&gt;Lead strategic reviews of client performance, delivering actionable insights and recommendations for improvement.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Innovation and development&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e5613a0406e4b218a10c4557fe2ec05f2\&quot;&gt;Identify and test new Paid channels and techniques, evaluating their potential to enhance client performance.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eee657d07eccc0d5981a16343105dfd4b\&quot;&gt;Help the team set up and optimise new channels, ensuring these are implemented correctly and efficiently.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef01b8c183cbab28cb17120e22926a1cc\&quot;&gt;Refine and improve internal processes for campaign planning, execution, and reporting to maximise efficiency.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eaad42bc77ba73938a2276848ff926251\&quot;&gt;Stay ahead of industry trends, bringing forward new ideas and innovations to maintain a competitive edge.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Client and team support&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ecaaff3770f9a7532b29e81af36feb74e\&quot;&gt;Serve as the main strategic contact for dedicated clients, offering insight and guidance to maximise campaign performance.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ecb80259442aee3bde0819d63531db0a0\&quot;&gt;Help support the Head of Paid by developing Paid Managers and Executives through mentoring and skills enhancement.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e2caea4e71526ee2e95f8b46e4d32757e\&quot;&gt;Provide training on advanced Paid strategies and tools to support both clients and internal teams.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Collaboration&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e62378da6215b0b9fa9689670a7f5454d\&quot;&gt;Work with other Performance Marketing departments to ensure a cohesive approach that integrates Paid strategies with SEO, CRO, and CRM efforts.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea2656e7cc3cfbf85c120b786bc81d5ec\&quot;&gt;Partner with the Head of Paid to define strategic priorities for the team, addressing gaps and enhancing overall performance.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Tracking and implementation&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ef2f8d8d28bbe73030372b1d426ff3138\&quot;&gt;Produce comprehensive reports that provide a clear narrative on campaign performance and future opportunities.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e07406f04253287f86d9fe4e058ca0989\&quot;&gt;Use insights from GA4 and other relevant aid platforms to refine Paid strategies and inform client recommendations.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7ab18b876f350ba5346c7e66e8d63727\&quot;&gt;Have a good understanding of tracking requirements through Google Tag Manager and support the team configuring if required.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eb230cecf7016b50c5328b334f25527de\&quot;&gt;Help create dataLayer specifications for technical teams to implement, ensuring advanced custom tracking can be implemented.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ebb22aba9181a355c4855ab4ae83545cb\&quot;&gt;Work with cross-functional teams to ensure tracking and reporting align with client objectives and KPIs.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Charlie Matt Charlotte&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Client Retention&lt;\/h2&gt;&lt;p&gt;As part of client retention, you will be responsible for:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e6502dbeb3396e9b4931d2c121af966ae\&quot;&gt;Creating strong client relationships.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed2c309a71c430681ec1d774446cdda46\&quot;&gt;Become a senior figure on the Paid accounts.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4d6e21dfc9bb308bb153d1f7a5970b26\&quot;&gt;Implement strategies for clients working towards KPIs and objectives, ensuring the team is delivering against these.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef7735dfb6d7077c2bf3ba8e4e762a5b8\&quot;&gt;Support the team to resolve any client issues.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;Authority&lt;\/h2&gt;&lt;p&gt;Within this role you will be responsible for key decisions on clients and strategies, advising around targets, forecasts and budget.&lt;\/p&gt;&lt;p&gt;You will be responsible for the decisions the team makes on your accounts and handle any issues the client may have along with the Account Directors. In more extreme cases the Head of Paid \/ Performance Marketing Director should be consulted to help swiftly resolve the issue.&lt;\/p&gt;&lt;p&gt;Due to the seniority of the role, you need to be good at problem solving and communicating the solution clearly, confidently and concisely.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}}]}},{&quot;type&quot;:&quot;fifty-fifty&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;A bit about us&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Founded in 2007, we\u2019re the digital agency for brands that demand attention. &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;100% employee owned&lt;\/a&gt;, we\u2019re a tight-knit team, motivated to achieve more - for our people, partners, and the planet. That&#039;s what led us to become Leeds&#039; first &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/b-corp\&quot;&gt;B Corp&lt;\/a&gt;.\u00a0&lt;\/p&gt;&lt;p&gt;Find out more &lt;a href=\&quot;https:\/\/engage.agency\/about-us\&quot;&gt;about us&lt;\/a&gt;, &lt;a href=\&quot;https:\/\/engage.agency\/team\&quot;&gt;meet the team&lt;\/a&gt; and be sure to check out our &lt;a href=\&quot;https:\/\/engage.agency\/work\&quot;&gt;latest work&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;Thinking we might be a good fit?\u00a0&lt;\/p&gt;&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1280,1024],&quot;ratio&quot;:&quot;3\/2&quot;},&quot;video&quot;:null,&quot;reverse&quot;:false}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;featured-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;There&#039;s more to explore&quot;,&quot;items&quot;:[{&quot;prefix&quot;:null,&quot;title&quot;:&quot;We\u2019re proudly employee owned&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;We\u2019re proudly employee owned&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Meet the team&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Meet the team&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}}],&quot;elympics&quot;:{&quot;title&quot;:&quot;Engage Elympics&quot;,&quot;action&quot;:&quot;https:\/\/engage.agency\/api\/elympics\/stats&quot;},&quot;awards&quot;:[{&quot;image&quot;:{&quot;alt&quot;:&quot;PNCA 25 WINNER footer WHITE&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=160\/engage-website\/production\/Awards\/PNCA-25-WINNER-footer-WHITE.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=107\/engage-website\/production\/Awards\/PNCA-25-WINNER-footer-WHITE.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:625,&quot;height&quot;:334},&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;UK Company culture awards&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=229\/engage-website\/production\/Awards\/UK-Company-culture-awards.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=153\/engage-website\/production\/Awards\/UK-Company-culture-awards.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:768,&quot;height&quot;:587},&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Drum recommended&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=106\/engage-website\/production\/Awards\/Drum-recommended.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=71\/engage-website\/production\/Awards\/Drum-recommended.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:144,&quot;height&quot;:51},&quot;href&quot;:null,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Certified b corp white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=498\/engage-website\/production\/Awards\/certified-b-corp-white.svg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=332\/engage-website\/production\/Awards\/certified-b-corp-white.svg&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:386,&quot;height&quot;:641},&quot;href&quot;:null,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Proudly employee owned round holo&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=300\/engage-website\/production\/Awards\/proudly-employee-owned-round-holo.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=200\/engage-website\/production\/Awards\/proudly-employee-owned-round-holo.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:1518,&quot;height&quot;:1518},&quot;href&quot;:null,&quot;shape&quot;:&quot;circle&quot;}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/People-images/ATD-Office.jpg"
+		alt="ATD Office"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Senior Paid Manager</h1>
+	
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes"
+	>
+	Apply now
+</a>
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Salary</h2><p>£50,000- £60,000</p><h2>Hours and location</h2><p>This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a week.</p><h2>Benefits package</h2><p>As part of our commitment to making Engage a great place to work, we’ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks are:</p><ul><li data-list-item-id="e2c85787a6eb254a40738d5aae4e9801c">We're <a href="../about-us/proudly-employee-owned.html">employee owned</a></li><li data-list-item-id="e94355a390a84110b75432867ffc81d7c">25 days holiday + bank holidays (rising after 5 years)</li><li data-list-item-id="e81aa54596a3bff11884f77848974a0e9">Company performance linked bonus scheme (this is depending on the business’ performance and is not a contractual benefit)</li><li data-list-item-id="ea4a969d8b35dfeea5ef9df513411f5c4">Comprehensive private health insurance</li><li data-list-item-id="ee1586c630a56c8c666a55195540c59ce">5% company pension scheme</li><li data-list-item-id="e073bc33919c1b32b2e2952b0ee937248">Access to financial coaching</li><li data-list-item-id="e514664c1313a733bfd99c25ba77a69bc">A company culture that promotes work-life balance</li><li data-list-item-id="ec5cb06ee8cf7e5ee9081aa670f586045">Access to mental health support</li><li data-list-item-id="e4b0694e9012319f15e85abf77bc25d75">Free on-site gym</li><li data-list-item-id="e211317672aed3b4a936f574a93f0f0a4">Hybrid working</li><li data-list-item-id="e440a3153a494bd3a049877981f016231">An award-winning office</li><li data-list-item-id="ece3aa84dd4e9d1e65f055fc9430ed7cb">Your birthday off</li><li data-list-item-id="e018f1a070bf80517a9ed37e0507488d2">Regular socials, epic Summer parties and more…</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+			
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Yas-Phoebe.JPG"
+		alt="Yas Phoebe"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>What we're looking for</h2><p>As a Senior Paid Manager you’ll be integral in the successful planning and execution of digital strategies across our wide range of clients and sectors, leading on some of our largest and most complex accounts.</p><p>You will be a key part of the leadership on both individual projects and ongoing campaigns as well as playing a part in defining our solutions and approach for our Paid offering.</p><p>You will work closely with the rest of the Paid team, delegating tasks, ensuring that Paid accounts and projects deliver work that meets Engage’s (and our clients’) expected levels of Attention to digital™.</p><p>Your time will be split between leading on some of our key accounts, the day to day campaign management and associated client and internal communication, but also providing insight and direction on how our accounts and campaigns should be run across the Paid team and assisting the Head Of Paid to grow our client base and services.</p><h4>Reporting to</h4><p>Head of Paid</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes"
+	>
+	Apply now 
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Ste-Livsey.JPG"
+		alt="Ste Livsey"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Duties &amp; responsibilities</h2><h4>Campaign planning</h4><ul><li data-list-item-id="e2d2d9f91060fa6c2110f7f12c8431552">To plan and execute campaigns across the below primary channels:<ul><li data-list-item-id="e45526abf6f24ab86bdaa672505c5cf4e">Meta</li><li data-list-item-id="ef2296e47398c06763b0eb29f4de1e591">Google Ads</li><li data-list-item-id="e5fbcf821830a4b6df8fe77a649951d78">Microsoft Ads</li><li data-list-item-id="e328e44b29219e0fe4f2648b55d5a9c30">Display/ Programmatic</li><li data-list-item-id="e34afbd744b2b7bdb4856a176a99997ff">YouTube</li><li data-list-item-id="e04637e0c7de7b843e32bc140f5cf5480">TikTok</li></ul></li><li data-list-item-id="e1b5cd466d73f1c93ef6af22439f351cc">You’ll be expected to set the long term strategy for your clients’ accounts in relation to hitting key client goals, producing forecasts to support these goals.</li><li data-list-item-id="e1c1a8d89fb8ad546fe3d22f150a2b5bc">Paid Search, Shopping and feed management are key skills for this role.</li></ul><h4>Day to day account optimisations</h4><ul><li data-list-item-id="e2d0f9c51c0877a0043d41b2d76a449fb">You’ll be expected to be proficient in handling all aspects of day to day Paid campaign management as well as delegating key optimisation tasks to the wider team, ensuring that all aspects of Paid campaign management, including (but not limited to) the below are kept on top of.<ul><li data-list-item-id="e6811d5d91b6ded1c215395710e605748">Keywords</li><li data-list-item-id="e6104a5498119f66b54da9f58115155d1">Ad copy</li><li data-list-item-id="e3ef2950786cfa9b400ba35b4c3e6a78d">Bids</li><li data-list-item-id="ee3df4c8dfc8544bb357f978174e77b24">Bid strategies</li><li data-list-item-id="e91e50fdb21c5b64fd5d37b2ede4cb9b2">Placements</li><li data-list-item-id="e87e96459684aa5eee9c62dfcbdcd12ab">Audiences</li><li data-list-item-id="ee3039f7a597a7e1e74a1dea7badf9241">Shopping feeds</li><li data-list-item-id="ea86caa1b906f716ca1407bdd98963a81">Shopping campaigns</li></ul></li></ul><h4>Strategic Direction</h4><ul><li data-list-item-id="e4d020d18802e9b6f44ea0a8c4e526a45">Own the strategic development and direction of Paid accounts, ensuring innovative and effective campaign strategies.</li><li data-list-item-id="eae58ecc69a56f60203c05120bde175e2">Collaborate with the Head of Paid to work on new business opportunities with the new business team and identify potential opportunities, contributing to pitches and client onboarding.</li><li data-list-item-id="e690cca9577ce978797801f3d7d400748">Develop and execute multi-channel Paid strategies aligned with overall performance marketing goals.</li><li data-list-item-id="e0410780a9dcdf41c5e0b9b832bba9410">Lead strategic reviews of client performance, delivering actionable insights and recommendations for improvement.</li></ul><h4>Innovation and development</h4><ul><li data-list-item-id="e5613a0406e4b218a10c4557fe2ec05f2">Identify and test new Paid channels and techniques, evaluating their potential to enhance client performance.</li><li data-list-item-id="eee657d07eccc0d5981a16343105dfd4b">Help the team set up and optimise new channels, ensuring these are implemented correctly and efficiently.</li><li data-list-item-id="ef01b8c183cbab28cb17120e22926a1cc">Refine and improve internal processes for campaign planning, execution, and reporting to maximise efficiency.</li><li data-list-item-id="eaad42bc77ba73938a2276848ff926251">Stay ahead of industry trends, bringing forward new ideas and innovations to maintain a competitive edge.</li></ul><h4>Client and team support</h4><ul><li data-list-item-id="ecaaff3770f9a7532b29e81af36feb74e">Serve as the main strategic contact for dedicated clients, offering insight and guidance to maximise campaign performance.</li><li data-list-item-id="ecb80259442aee3bde0819d63531db0a0">Help support the Head of Paid by developing Paid Managers and Executives through mentoring and skills enhancement.</li><li data-list-item-id="e2caea4e71526ee2e95f8b46e4d32757e">Provide training on advanced Paid strategies and tools to support both clients and internal teams.</li></ul><h4>Collaboration</h4><ul><li data-list-item-id="e62378da6215b0b9fa9689670a7f5454d">Work with other Performance Marketing departments to ensure a cohesive approach that integrates Paid strategies with SEO, CRO, and CRM efforts.</li><li data-list-item-id="ea2656e7cc3cfbf85c120b786bc81d5ec">Partner with the Head of Paid to define strategic priorities for the team, addressing gaps and enhancing overall performance.</li></ul><h4>Tracking and implementation</h4><ul><li data-list-item-id="ef2f8d8d28bbe73030372b1d426ff3138">Produce comprehensive reports that provide a clear narrative on campaign performance and future opportunities.</li><li data-list-item-id="e07406f04253287f86d9fe4e058ca0989">Use insights from GA4 and other relevant aid platforms to refine Paid strategies and inform client recommendations.</li><li data-list-item-id="e7ab18b876f350ba5346c7e66e8d63727">Have a good understanding of tracking requirements through Google Tag Manager and support the team configuring if required.</li><li data-list-item-id="eb230cecf7016b50c5328b334f25527de">Help create dataLayer specifications for technical teams to implement, ensuring advanced custom tracking can be implemented.</li><li data-list-item-id="ebb22aba9181a355c4855ab4ae83545cb">Work with cross-functional teams to ensure tracking and reporting align with client objectives and KPIs.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+		alt="Charlie Matt Charlotte"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Client Retention</h2><p>As part of client retention, you will be responsible for:</p><ul><li data-list-item-id="e6502dbeb3396e9b4931d2c121af966ae">Creating strong client relationships.</li><li data-list-item-id="ed2c309a71c430681ec1d774446cdda46">Become a senior figure on the Paid accounts.</li><li data-list-item-id="e4d6e21dfc9bb308bb153d1f7a5970b26">Implement strategies for clients working towards KPIs and objectives, ensuring the team is delivering against these.</li><li data-list-item-id="ef7735dfb6d7077c2bf3ba8e4e762a5b8">Support the team to resolve any client issues.</li></ul><h2>Authority</h2><p>Within this role you will be responsible for key decisions on clients and strategies, advising around targets, forecasts and budget.</p><p>You will be responsible for the decisions the team makes on your accounts and handle any issues the client may have along with the Account Directors. In more extreme cases the Head of Paid / Performance Marketing Director should be consulted to help swiftly resolve the issue.</p><p>Due to the seniority of the role, you need to be good at problem solving and communicating the solution clearly, confidently and concisely.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							A bit about us
+					</h2>
+	
+	
+			<p>Founded in 2007, we’re the digital agency for brands that demand attention. <a href="../about-us/proudly-employee-owned.html">100% employee owned</a>, we’re a tight-knit team, motivated to achieve more - for our people, partners, and the planet. That's what led us to become Leeds' first <a href="../about-us/b-corp.html">B Corp</a>. </p><p>Find out more <a href="../about-us.html">about us</a>, <a href="../team.html">meet the team</a> and be sure to check out our <a href="../work.html">latest work</a>.</p><p>Thinking we might be a good fit? </p>
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333/engage-website/production/People-images/Team-photo-March-26.jpg"
+		alt="Team photo March 26"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=Senior+Paid+Manager&amp;team=Paid&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							There's more to explore
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							We’re proudly employee owned
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="We’re proudly employee owned"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../about-us/proudly-employee-owned.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Meet the team
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Meet the team"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../team.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c00c59ecc479',t:'MTc5MDI3MzQ3MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

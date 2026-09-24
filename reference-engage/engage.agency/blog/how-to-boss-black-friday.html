@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Boss Black Friday and boost your bottom-line</title>
+<meta name="description" content="Unlock the sales potential of Black Friday with expert tips on SEO, PPC, email, social media, and CRO. Read now.">
+
+	<link rel="canonical" href="how-to-boss-black-friday.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="how-to-boss-black-friday.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="How to boss Black Friday and boost your bottom line">
+<meta property="og:description" content="Unlock the sales potential of Black Friday with expert tips on SEO, PPC, email, social media, and CRO. Read now.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/how-to-boss-black-friday">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/how-to-boss-black-friday#blogposting","url":"https:\/\/engage.agency\/blog\/how-to-boss-black-friday","headline":"Boss Black Friday and boost your bottom-line","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/lloyd-preston#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/how-to-boss-black-friday#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_blackfriday24_1x1.png","datePublished":"2025-07-09T21:14:18+01:00","description":"Unlock the sales potential of Black Friday with expert tips on SEO, PPC, email, social media, and CRO. Read now."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/how-to-boss-black-friday#webpage","url":"https:\/\/engage.agency\/blog\/how-to-boss-black-friday","name":"Boss Black Friday and boost your bottom-line","description":"Unlock the sales potential of Black Friday with expert tips on SEO, PPC, email, social media, and CRO. Read now.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/how-to-boss-black-friday#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"How to boss Black Friday and boost your bottom line","item":"https:\/\/engage.agency\/blog\/how-to-boss-black-friday"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_blackfriday24_1x1.png"},"datePublished":"2025-07-09T21:14:18+01:00","dateModified":"2025-07-22T14:42:34+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/how-to-boss-black-friday#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="how-to-boss-black-friday.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Boss Black Friday and boost your bottom-line&quot;,&quot;description&quot;:&quot;Unlock the sales potential of Black Friday with expert tips on SEO, PPC, email, social media, and CRO. Read now.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/how-to-boss-black-friday&quot;,&quot;shareTitle&quot;:&quot;How to boss Black Friday and boost your bottom line&quot;,&quot;shareDescription&quot;:&quot;Unlock the sales potential of Black Friday with expert tips on SEO, PPC, email, social media, and CRO. Read now.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/how-to-boss-black-friday#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/how-to-boss-black-friday\&quot;,\&quot;headline\&quot;:\&quot;Boss Black Friday and boost your bottom-line\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/lloyd-preston#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/how-to-boss-black-friday#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/How-to-boss-Black-Friday-and-boost-your-bottom-line\\\/blog_blackfriday24_1x1.png\&quot;,\&quot;datePublished\&quot;:\&quot;2025-07-09T21:14:18+01:00\&quot;,\&quot;description\&quot;:\&quot;Unlock the sales potential of Black Friday with expert tips on SEO, PPC, email, social media, and CRO. Read now.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/how-to-boss-black-friday#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/how-to-boss-black-friday\&quot;,\&quot;name\&quot;:\&quot;Boss Black Friday and boost your bottom-line\&quot;,\&quot;description\&quot;:\&quot;Unlock the sales potential of Black Friday with expert tips on SEO, PPC, email, social media, and CRO. Read now.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/how-to-boss-black-friday#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;How to boss Black Friday and boost your bottom line\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/how-to-boss-black-friday\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/How-to-boss-Black-Friday-and-boost-your-bottom-line\\\/blog_blackfriday24_1x1.png\&quot;},\&quot;datePublished\&quot;:\&quot;2025-07-09T21:14:18+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2025-07-22T14:42:34+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/how-to-boss-black-friday#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;How to boss Black Friday and boost your bottom line&quot;,&quot;date&quot;:&quot;30th October 2024&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Lloyd&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/lloyd-preston&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 9 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Blog blackfriday24 1x1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_blackfriday24_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_blackfriday24_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_blackfriday24_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_blackfriday24_1x1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/blog_blackfriday24_1x1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;strong&gt;It\u2019s that time of year again! Black Friday is right around the corner, and (dare we say it), Christmas isn\u2019t far behind.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;As shopper interest peaks, with everyone eager to bag the best deals, so does the competition for attention. With that in mind, we\u2019ve gathered the team\u2019s top tips to help you boost visibility, engagement and importantly, sales - on Black Friday and\u00a0beyond.&lt;\/p&gt;&lt;p&gt;Don\u2019t fear - we\u2019re not talking about a complete strategic overhaul, or building a brand new website. You\u2019ll find something in here that you can action, whether you\u2019re reading this well ahead of time or the night before (don\u2019t worry, we\u2019ve got\u00a0you)!&lt;\/p&gt;&lt;h2&gt;The stats behind Black\u00a0Friday&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Image asset&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=892\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=529\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=578\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;If Black Friday is your \u201cthing\u201d - and let\u2019s face it, it\u2019s not for everyone - you\u2019ve got to be in it to win it. But if you do need more convincing to join the Black Friday bandwagon, these stats from &lt;a href=\&quot;https:\/\/store.mintel.com\/report\/uk-black-friday-market-report\&quot;&gt;Mintel&lt;\/a&gt; may just do the\u00a0trick:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Total sales during Black Friday reached an estimated \u00a313.3 billion in 2023, up 7.3%\u00a0year-on-year.&lt;\/strong&gt;&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;84% of consumers agree that a positive experience with a retailer during Black Friday would encourage them to shop there\u00a0again.&lt;\/strong&gt;&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;What do these stats tell us? In short: Black Friday sales are rising year-on-year. But it isn\u2019t just about driving sales; it\u2019s about building lasting customer loyalty. And who wouldn\u2019t want\u00a0that?&lt;\/p&gt;&lt;p&gt;Now we\u2019ve highlighted the opportunity, let\u2019s explore the tactics you can use to unlock\u00a0it.&lt;\/p&gt;&lt;h2&gt;SEO: Optimise early, and\u00a0strategically&lt;\/h2&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/www.expertmarket.com\/uk\/merchant-accounts\/mobile-commerce-trends-statistics#:~:text=Globally%2C%20m-commerce%20sales%20have,rather%20than%20a%20mobile%20website.\&quot;&gt;With 68% of online experiences beginning with a search engine&lt;\/a&gt;, SEO can deliver some seriously valuable traffic. As a channel that typically requires long-term investment, there\u2019s simply no better time to get started. Here\u2019s\u00a0how:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Update seasonal content:&lt;\/strong&gt; Refresh existing Black Friday landing pages or create new ones. Ensure your titles, meta descriptions, and content highlight relevant offers and keywords such as \u201cBlack Friday deals [your\u00a0product\/service]\u201d.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Leverage long-tail keywords:&lt;\/strong&gt; Competition is intense for broad terms like \u201cBlack Friday deals\u201d. Instead, focus on long-tail variations like \u201cBlack Friday discounts on [specific product]\u201d or \u201c[brand name] Black Friday offers\u201d. Use tools like Google\u2019s Keyword Planner to identify lesser-known\u00a0opportunities.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Improve page speed:&lt;\/strong&gt; During high traffic periods, site speed can make or break the user experience. Test your site using tools like Google PageSpeed Insights and make optimisations such as compressing images, browser caching, minifying CSS and JavaScript, and using a content delivery network (CDN) to ensure your site handles Black Friday traffic without\u00a0hiccups.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Optimise for mobile:&lt;\/strong&gt; &lt;a href=\&quot;https:\/\/www.expertmarket.com\/uk\/merchant-accounts\/mobile-commerce-trends-statistics#:~:text=Globally%2C%20m-commerce%20sales%20have,rather%20than%20a%20mobile%20website.\&quot;&gt;Globally, mobile-commerce sales have increased by 20% since 2023&lt;\/a&gt;. Ensure that your site is fully responsive, with easily navigable pages, fast load times, and mobile-friendly content\u00a0layouts.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Boost internal linking: &lt;\/strong&gt;Drive traffic to your Black Friday deals pages through strategic internal linking. Include these in blog posts, product descriptions, and homepage banners to make it easy for both Google to crawl, and users to find your top\u00a0offers.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Add product schema:&lt;\/strong&gt; Implementing product schema on your Black Friday pages helps search engines display key deal information, such as price, discounts, and availability, directly in search results. This can increase your visibility with rich snippets, improving click-through rates by providing users with essential details at a\u00a0glance.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;PPC: Target high-intent\u00a0shoppers&lt;\/h2&gt;&lt;p&gt;Pay-per-click advertising is a powerful tool when intent to buy is at its highest. And did you know that &lt;a href=\&quot;https:\/\/growthscribe.com\/ppc-statistics\/#:~:text=PPC%20ads%20contribute%20to%2045,across%20all%20industries%20is%203.52%25.\&quot;&gt;PPC ads account for around 45% of page clicks&lt;\/a&gt;, and visitors from &lt;a href=\&quot;https:\/\/growthscribe.com\/ppc-statistics\/#:~:text=PPC%20ads%20contribute%20to%2045,across%20all%20industries%20is%203.52%25.\&quot;&gt;PPC ads are 50% more likely to make a purchase&lt;\/a&gt; than organic visitors? Here\u2019s how to make the most of PPC ahead of Black\u00a0Friday:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Plan your budget:&lt;\/strong&gt; Black Friday ad costs can skyrocket, so plan for an increased budget, particularly on high-demand platforms like Google Ads and Facebook. Prioritise best-selling products and offers that historically perform\u00a0well.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Segment your audience:&lt;\/strong&gt; Create different ad sets for various audience segments (e.g. existing customers vs. new prospects) to tailor your messaging. For loyal customers, emphasise exclusivity with \u201cearly access\u201d to deals or VIP\u00a0discounts.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Create time sensitive ad copy: &lt;\/strong&gt;Highlight urgency in your PPC ads. Phrases like \u201climited time only,\u201d \u201c24-hour sale,\u201d or \u201clast chance\u201d encourage immediate\u00a0clicks.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Use retargeting ads: &lt;\/strong&gt;Broaded retargeting audiences to include visitors who have been on your website in the last 180 days. Show them specific ads related to their previous behaviour, such as items they viewed or left in their cart. Retargeting ensures your brand stays top of\u00a0mind.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Capitalise on shopping ads: &lt;\/strong&gt;Data suggests that &lt;a href=\&quot;https:\/\/wifitalents.com\/statistic\/google-shopping\/#:~:text=Google%20Shopping%20ads%20generate%2052,through%20rate%20than%20text%20ads.\&quot;&gt;Google Shopping ads generate 52% more clicks than text ads&lt;\/a&gt;. So if you haven\u2019t considered these before, now\u2019s the\u00a0time!&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;Email Marketing: Fuel the\u00a0excitement&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Image asset Email Design&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=892\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-_-Email-Design.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=529\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-_-Email-Design.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-_-Email-Design.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=578\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-_-Email-Design.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-_-Email-Design.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;Email is still one of the most effective marketing channels for driving engagement and conversions during Black Friday, with &lt;a href=\&quot;https:\/\/wisernotify.com\/blog\/black-friday-stats\/\&quot;&gt;open rates increasing compared to normal days by almost 30%&lt;\/a&gt;. Here\u2019s how to use email marketing\u00a0wisely:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Build anticipation:&lt;\/strong&gt; With a series of automated emails leading up to Black Friday, featuring sneak peeks of upcoming deals and offering subscribers the chance to sign-up for early access to\u00a0discounts.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Use granular segmentation:&lt;\/strong&gt; &lt;a href=\&quot;https:\/\/ninetailed.io\/blog\/personalization-statistics\/\&quot;&gt;71% of customers want personalised experiences&lt;\/a&gt;. For instance, if you\u2019re using Shopify and Klaviyo, you can create a segment for all customers who made Black Friday purchases last\u00a0year.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Create dynamic content: &lt;\/strong&gt;Introduce dynamic content blocks for greater personalisation, and offer deals that are relevant to previous purchase\u00a0behaviour.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Design mobile-friendly emails: &lt;\/strong&gt;Ensure your email design is fully responsive and functions seamlessly on mobile devices, taking into account that a high percentage of emails are opened on smartphones and\u00a0tablets.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Clear CTAs:&lt;\/strong&gt; Create call-to-action buttons that are easy to find and understand. Use direct language like \u201cShop Now\u201d or \u201cClaim Your Deal\u201d to drive\u00a0action.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;Social media: Build a buzz and drive\u00a0traffic&lt;\/h2&gt;&lt;p&gt;In 2024, there are estimated to be &lt;a href=\&quot;https:\/\/sproutsocial.com\/insights\/social-media-statistics\/#:~:text=bright%20for%20Instagram.-,LinkedIn%20statistics,exceeding%20any%20other%20age%20group.\&quot;&gt;5.17 billion total social media users worldwide&lt;\/a&gt;. Make sure your brand is the one they can\u2019t\u00a0miss:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Have community management on standby:&lt;\/strong&gt; The pre-Christmas shopping period can be a wild one. Shoppers are increasingly short on time and patience. Try to have people on-hand to respond to comments and DMs as quickly as possible and prepare common responses ahead of\u00a0time.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Utilise user-generated content (UGC):&lt;\/strong&gt; Did you know that &lt;a href=\&quot;https:\/\/www.searchlogistics.com\/learn\/statistics\/user-generated-content-statistics\/\&quot;&gt;UGC can increase conversion rates by up to 29%&lt;\/a&gt;? That\u2019s because it makes your brand feel more relatable and trustworthy. Taking this into account, encourage your audience to share their experiences with your products leading up to Black\u00a0Friday.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Leverage influencers: &lt;\/strong&gt;Collaborating with micro and macro-influencers can amplify your Black Friday reach. &lt;a href=\&quot;https:\/\/www.charleagency.com\/articles\/influencer-marketing-statistics\/#:~:text=Quick%20Stats,$1%20spent%20on%20influencer%20marketing.\&quot;&gt;Over 60% of consumers trust recommendations from influencers when making purchasing decisions&lt;\/a&gt;, so consider running influencer promotions and tap into their highly-engaged audience\u00a0base.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Interactive content: &lt;\/strong&gt;Engage your followers with quizzes, polls, or contests. For example, a spin-to-win wheel or deal voting polls leading up to Black Friday can create extra excitement, generate shares and give you a greater audience insights.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Capitalise on TikTok shop: &lt;\/strong&gt;Approximately &lt;a href=\&quot;https:\/\/www.tiktok.com\/business\/en-US\/blog\/tiktok-reimagines-entertainment-discovery-community-culture?ab_version=control\&quot;&gt;two out of every three people using TikTok will make a purchase through the app&lt;\/a&gt;. Tap into the spontaneity and trend-driven nature of the platform by using TikTok\u2019s in-feed videos, LIVE videos, and the \u2018Showcase\u2019 tab to sell your products within the TikTok\u00a0shop.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;&lt;strong&gt;Conversion Rate Optimisation (CRO): Make the shopping experience simple and\u00a0seamless&lt;\/strong&gt;&lt;\/h2&gt;&lt;p&gt;With high traffic comes the need for a smooth conversion process. Optimising your site for conversion will help you turn more browsers into buyers, with stats suggesting that &lt;a href=\&quot;https:\/\/www.demandsage.com\/cro-statistics\/\&quot;&gt;the average ROI for companies using CRO tactics is\u00a0223%&lt;\/a&gt;.&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Simplify the check-out process:&lt;\/strong&gt; Ensure your checkout process is as quick and hassle-free as possible. Implement guest checkout options and make sure the number of steps is\u00a0minimal.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Integrate one-click payment options:&lt;\/strong&gt; Offering one-click payment methods like Apple Pay, Google Pay, or PayPal can significantly reduce friction at checkout. By eliminating the need for customers to manually enter their payment details, you streamline the process and minimise cart abandonment, especially during high traffic periods like Black\u00a0Friday.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Exit-intent pop-ups:&lt;\/strong&gt; Capture potential leads with exit-intent popups offering an additional discount to users who might abandon their\u00a0carts.&lt;\/li&gt;&lt;li&gt;&lt;strong&gt;Display trust signals: &lt;\/strong&gt;With &lt;a href=\&quot;https:\/\/www.cdpinstitute.org\/news\/81-of-consumers-say-trust-is-deciding-factor-in-purchasing-only-34-trust-brands-they-use\/\&quot;&gt;81% of consumers stating that trust is a deciding factor in purchasing&lt;\/a&gt;, the importance of building credibility and confidence cannot be overstated. With this in mind, be sure to display customer reviews, secure payment badges, and clear return policies prominently on product pages and during\u00a0checkout.&lt;\/li&gt;&lt;\/ul&gt;&lt;h2&gt;Case study: Driving a 110% increase in online revenue for\u00a0Herdysleep&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Image asset 1&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=892\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=529\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=578\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-1.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396\/engage-website\/production\/Blog\/How-to-boss-Black-Friday-and-boost-your-bottom-line\/Image-asset-1.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;native&quot;,&quot;width&quot;:2464,&quot;height&quot;:1628},&quot;caption&quot;:null,&quot;layout&quot;:&quot;small&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;&lt;a href=\&quot;https:\/\/www.herdysleep.com\/\&quot;&gt;Herdysleep&lt;\/a&gt;, a UK-based luxury mattress retailer known for its sustainable and high-quality products, challenged us to drive online transactions during the bustling Black Friday period. We were ready to rise to the\u00a0occasion!&lt;\/p&gt;&lt;p&gt;We rolled out a dynamic digital campaign across Paid Search, Display and Social, featuring real-time countdowns to drive urgency, supported by eye-catching creative and strong\u00a0call-to-actions.&lt;\/p&gt;&lt;p&gt;The results? Herdysleep experienced a 90% increase in transactions year-on-year, revenue jumped by 110%, and the average order value also climbed by 10%. This campaign demonstrated how a holistic approach to digital can drive significant sales growth on Black Friday and\u00a0beyond.&lt;\/p&gt;&lt;h2&gt;Make Black Friday yours, year after\u00a0year&lt;\/h2&gt;&lt;p&gt;Ready to knock Black Friday right out of the park? Our team is here to help you shape a strategy that not only drives some serious sales on the big day but keeps that momentum going well after the last deal is snapped\u00a0up.&lt;\/p&gt;&lt;p&gt;Whether it\u2019s creating highly personalised emails, optimising your brand for search, turning heads on social media, launching powerful PPC campaigns - or all of the above, we\u2019ve got you covered. &lt;a href=\&quot;https:\/\/engage.agency\/contact\&quot;&gt;Get in touch today&lt;\/a&gt; to see how we can\u00a0help.&lt;\/p&gt;&quot;}}]}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_blackfriday24_1x1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_blackfriday24_1x1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_blackfriday24_1x1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_blackfriday24_1x1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/blog_blackfriday24_1x1.png"
+		alt="Blog blackfriday24 1x1"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>How to boss Black Friday and boost your bottom line</h1>
+	
+			<p>30th October 2024</p>
+	
+	
+			<p>Roughly a 9 minute read by</p>
+	
+						<p>
+									<a href="../team/lloyd-preston.html">
+						Lloyd
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><strong>It’s that time of year again! Black Friday is right around the corner, and (dare we say it), Christmas isn’t far behind.</strong></p><p>As shopper interest peaks, with everyone eager to bag the best deals, so does the competition for attention. With that in mind, we’ve gathered the team’s top tips to help you boost visibility, engagement and importantly, sales - on Black Friday and beyond.</p><p>Don’t fear - we’re not talking about a complete strategic overhaul, or building a brand new website. You’ll find something in here that you can action, whether you’re reading this well ahead of time or the night before (don’t worry, we’ve got you)!</p><h2>The stats behind Black Friday</h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=892/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=529/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=578/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset.png"
+		alt="Image asset"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>If Black Friday is your “thing” - and let’s face it, it’s not for everyone - you’ve got to be in it to win it. But if you do need more convincing to join the Black Friday bandwagon, these stats from <a href="https://store.mintel.com/report/uk-black-friday-market-report">Mintel</a> may just do the trick:</p><ul><li><strong>Total sales during Black Friday reached an estimated £13.3 billion in 2023, up 7.3% year-on-year.</strong></li><li><strong>84% of consumers agree that a positive experience with a retailer during Black Friday would encourage them to shop there again.</strong></li></ul><p>What do these stats tell us? In short: Black Friday sales are rising year-on-year. But it isn’t just about driving sales; it’s about building lasting customer loyalty. And who wouldn’t want that?</p><p>Now we’ve highlighted the opportunity, let’s explore the tactics you can use to unlock it.</p><h2>SEO: Optimise early, and strategically</h2><p><a href="https://www.expertmarket.com/uk/merchant-accounts/mobile-commerce-trends-statistics#:~:text=Globally%2C%20m-commerce%20sales%20have,rather%20than%20a%20mobile%20website.">With 68% of online experiences beginning with a search engine</a>, SEO can deliver some seriously valuable traffic. As a channel that typically requires long-term investment, there’s simply no better time to get started. Here’s how:</p><ul><li><strong>Update seasonal content:</strong> Refresh existing Black Friday landing pages or create new ones. Ensure your titles, meta descriptions, and content highlight relevant offers and keywords such as “Black Friday deals [your product/service]”.</li><li><strong>Leverage long-tail keywords:</strong> Competition is intense for broad terms like “Black Friday deals”. Instead, focus on long-tail variations like “Black Friday discounts on [specific product]” or “[brand name] Black Friday offers”. Use tools like Google’s Keyword Planner to identify lesser-known opportunities.</li><li><strong>Improve page speed:</strong> During high traffic periods, site speed can make or break the user experience. Test your site using tools like Google PageSpeed Insights and make optimisations such as compressing images, browser caching, minifying CSS and JavaScript, and using a content delivery network (CDN) to ensure your site handles Black Friday traffic without hiccups.</li><li><strong>Optimise for mobile:</strong> <a href="https://www.expertmarket.com/uk/merchant-accounts/mobile-commerce-trends-statistics#:~:text=Globally%2C%20m-commerce%20sales%20have,rather%20than%20a%20mobile%20website.">Globally, mobile-commerce sales have increased by 20% since 2023</a>. Ensure that your site is fully responsive, with easily navigable pages, fast load times, and mobile-friendly content layouts.</li><li><strong>Boost internal linking: </strong>Drive traffic to your Black Friday deals pages through strategic internal linking. Include these in blog posts, product descriptions, and homepage banners to make it easy for both Google to crawl, and users to find your top offers.</li><li><strong>Add product schema:</strong> Implementing product schema on your Black Friday pages helps search engines display key deal information, such as price, discounts, and availability, directly in search results. This can increase your visibility with rich snippets, improving click-through rates by providing users with essential details at a glance.</li></ul><h2>PPC: Target high-intent shoppers</h2><p>Pay-per-click advertising is a powerful tool when intent to buy is at its highest. And did you know that <a href="https://growthscribe.com/ppc-statistics/#:~:text=PPC%20ads%20contribute%20to%2045,across%20all%20industries%20is%203.52%25.">PPC ads account for around 45% of page clicks</a>, and visitors from <a href="https://growthscribe.com/ppc-statistics/#:~:text=PPC%20ads%20contribute%20to%2045,across%20all%20industries%20is%203.52%25.">PPC ads are 50% more likely to make a purchase</a> than organic visitors? Here’s how to make the most of PPC ahead of Black Friday:</p><ul><li><strong>Plan your budget:</strong> Black Friday ad costs can skyrocket, so plan for an increased budget, particularly on high-demand platforms like Google Ads and Facebook. Prioritise best-selling products and offers that historically perform well.</li><li><strong>Segment your audience:</strong> Create different ad sets for various audience segments (e.g. existing customers vs. new prospects) to tailor your messaging. For loyal customers, emphasise exclusivity with “early access” to deals or VIP discounts.</li><li><strong>Create time sensitive ad copy: </strong>Highlight urgency in your PPC ads. Phrases like “limited time only,” “24-hour sale,” or “last chance” encourage immediate clicks.</li><li><strong>Use retargeting ads: </strong>Broaded retargeting audiences to include visitors who have been on your website in the last 180 days. Show them specific ads related to their previous behaviour, such as items they viewed or left in their cart. Retargeting ensures your brand stays top of mind.</li><li><strong>Capitalise on shopping ads: </strong>Data suggests that <a href="https://wifitalents.com/statistic/google-shopping/#:~:text=Google%20Shopping%20ads%20generate%2052,through%20rate%20than%20text%20ads.">Google Shopping ads generate 52% more clicks than text ads</a>. So if you haven’t considered these before, now’s the time!</li></ul><h2>Email Marketing: Fuel the excitement</h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=892/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-_-Email-Design.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=529/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-_-Email-Design.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-_-Email-Design.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=578/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-_-Email-Design.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-_-Email-Design.png"
+		alt="Image asset Email Design"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>Email is still one of the most effective marketing channels for driving engagement and conversions during Black Friday, with <a href="https://wisernotify.com/blog/black-friday-stats/">open rates increasing compared to normal days by almost 30%</a>. Here’s how to use email marketing wisely:</p><ul><li><strong>Build anticipation:</strong> With a series of automated emails leading up to Black Friday, featuring sneak peeks of upcoming deals and offering subscribers the chance to sign-up for early access to discounts.</li><li><strong>Use granular segmentation:</strong> <a href="https://ninetailed.io/blog/personalization-statistics/">71% of customers want personalised experiences</a>. For instance, if you’re using Shopify and Klaviyo, you can create a segment for all customers who made Black Friday purchases last year.</li><li><strong>Create dynamic content: </strong>Introduce dynamic content blocks for greater personalisation, and offer deals that are relevant to previous purchase behaviour.</li><li><strong>Design mobile-friendly emails: </strong>Ensure your email design is fully responsive and functions seamlessly on mobile devices, taking into account that a high percentage of emails are opened on smartphones and tablets.</li><li><strong>Clear CTAs:</strong> Create call-to-action buttons that are easy to find and understand. Use direct language like “Shop Now” or “Claim Your Deal” to drive action.</li></ul><h2>Social media: Build a buzz and drive traffic</h2><p>In 2024, there are estimated to be <a href="https://sproutsocial.com/insights/social-media-statistics/#:~:text=bright%20for%20Instagram.-,LinkedIn%20statistics,exceeding%20any%20other%20age%20group.">5.17 billion total social media users worldwide</a>. Make sure your brand is the one they can’t miss:</p><ul><li><strong>Have community management on standby:</strong> The pre-Christmas shopping period can be a wild one. Shoppers are increasingly short on time and patience. Try to have people on-hand to respond to comments and DMs as quickly as possible and prepare common responses ahead of time.</li><li><strong>Utilise user-generated content (UGC):</strong> Did you know that <a href="https://www.searchlogistics.com/learn/statistics/user-generated-content-statistics/">UGC can increase conversion rates by up to 29%</a>? That’s because it makes your brand feel more relatable and trustworthy. Taking this into account, encourage your audience to share their experiences with your products leading up to Black Friday.</li><li><strong>Leverage influencers: </strong>Collaborating with micro and macro-influencers can amplify your Black Friday reach. <a href="https://www.charleagency.com/articles/influencer-marketing-statistics/#:~:text=Quick%20Stats,$1%20spent%20on%20influencer%20marketing.">Over 60% of consumers trust recommendations from influencers when making purchasing decisions</a>, so consider running influencer promotions and tap into their highly-engaged audience base.</li><li><strong>Interactive content: </strong>Engage your followers with quizzes, polls, or contests. For example, a spin-to-win wheel or deal voting polls leading up to Black Friday can create extra excitement, generate shares and give you a greater audience insights.</li><li><strong>Capitalise on TikTok shop: </strong>Approximately <a href="https://www.tiktok.com/business/en-US/blog/tiktok-reimagines-entertainment-discovery-community-culture?ab_version=control">two out of every three people using TikTok will make a purchase through the app</a>. Tap into the spontaneity and trend-driven nature of the platform by using TikTok’s in-feed videos, LIVE videos, and the ‘Showcase’ tab to sell your products within the TikTok shop.</li></ul><h2><strong>Conversion Rate Optimisation (CRO): Make the shopping experience simple and seamless</strong></h2><p>With high traffic comes the need for a smooth conversion process. Optimising your site for conversion will help you turn more browsers into buyers, with stats suggesting that <a href="https://www.demandsage.com/cro-statistics/">the average ROI for companies using CRO tactics is 223%</a>.</p><ul><li><strong>Simplify the check-out process:</strong> Ensure your checkout process is as quick and hassle-free as possible. Implement guest checkout options and make sure the number of steps is minimal.</li><li><strong>Integrate one-click payment options:</strong> Offering one-click payment methods like Apple Pay, Google Pay, or PayPal can significantly reduce friction at checkout. By eliminating the need for customers to manually enter their payment details, you streamline the process and minimise cart abandonment, especially during high traffic periods like Black Friday.</li><li><strong>Exit-intent pop-ups:</strong> Capture potential leads with exit-intent popups offering an additional discount to users who might abandon their carts.</li><li><strong>Display trust signals: </strong>With <a href="https://www.cdpinstitute.org/news/81-of-consumers-say-trust-is-deciding-factor-in-purchasing-only-34-trust-brands-they-use/">81% of consumers stating that trust is a deciding factor in purchasing</a>, the importance of building credibility and confidence cannot be overstated. With this in mind, be sure to display customer reviews, secure payment badges, and clear return policies prominently on product pages and during checkout.</li></ul><h2>Case study: Driving a 110% increase in online revenue for Herdysleep</h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=892/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-1.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=800,height=529/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-1.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-1.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=875,height=578/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-1.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=396/engage-website/production/Blog/How-to-boss-Black-Friday-and-boost-your-bottom-line/Image-asset-1.png"
+		alt="Image asset 1"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p><a href="https://www.herdysleep.com/">Herdysleep</a>, a UK-based luxury mattress retailer known for its sustainable and high-quality products, challenged us to drive online transactions during the bustling Black Friday period. We were ready to rise to the occasion!</p><p>We rolled out a dynamic digital campaign across Paid Search, Display and Social, featuring real-time countdowns to drive urgency, supported by eye-catching creative and strong call-to-actions.</p><p>The results? Herdysleep experienced a 90% increase in transactions year-on-year, revenue jumped by 110%, and the average order value also climbed by 10%. This campaign demonstrated how a holistic approach to digital can drive significant sales growth on Black Friday and beyond.</p><h2>Make Black Friday yours, year after year</h2><p>Ready to knock Black Friday right out of the park? Our team is here to help you shape a strategy that not only drives some serious sales on the big day but keeps that momentum going well after the last deal is snapped up.</p><p>Whether it’s creating highly personalised emails, optimising your brand for search, turning heads on social media, launching powerful PPC campaigns - or all of the above, we’ve got you covered. <a href="../contact.html">Get in touch today</a> to see how we can help.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c0e69cecc479',t:'MTc5MDI3MzUwNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

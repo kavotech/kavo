@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Career Vacancies: Middleweight UX/UI Designer</title>
+<meta name="description" content="Join Engage as a Middleweight UX/UI Designer, creating user-centred, responsive digital experiences across web, UX, UI and activation projects.">
+
+	<link rel="canonical" href="middleweight-ux-ui-designer.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="middleweight-ux-ui-designer.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Career Vacancies: Middleweight UX/UI Designer">
+<meta property="og:description" content="Join Engage as a Middleweight UX/UI Designer, creating user-centred, responsive digital experiences across web, UX, UI and activation projects.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/careers/middleweight-ux-ui-designer">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/People-images/Ste-Livsey.JPG">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer#jobposting","url":"https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer","title":"Middleweight UX\/UI Designer","directApply":true,"datePosted":"2026-03-09T12:43:00+00:00","validThrough":null,"hiringOrganization":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"jobLocation":{"@type":"Place","address":{"@type":"PostalAddress","streetAddress":"1st Floor, Munro House, Duke Street","addressLocality":"Leeds","addressRegion":"West Yorkshire","postalCode":"LS9 8AG","addressCountry":"GB"}},"description":"Join Engage as a Middleweight UX\/UI Designer, creating user-centred, responsive digital experiences across web, UX, UI and activation projects.","employmentType":"FULL_TIME","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer#webpage"}},{"@type":"WebPage","@id":"https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer#webpage","url":"https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer","name":"Career Vacancies: Middleweight UX\/UI Designer","description":"Join Engage as a Middleweight UX\/UI Designer, creating user-centred, responsive digital experiences across web, UX, UI and activation projects.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Join the team","item":"https:\/\/engage.agency\/careers"},{"@type":"ListItem","position":3,"name":"Middleweight UX\/UI Designer","item":"https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/People-images\/ATD-Office.jpg"},"datePublished":"2026-08-07T14:36:20+01:00","dateModified":"2026-09-17T10:56:17+01:00","inLanguage":"en-GB","mainEntity":{"@type":"JobPosting","@id":"https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer#jobposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="middleweight-ux-ui-designer.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Career Vacancies: Middleweight UX\/UI Designer&quot;,&quot;description&quot;:&quot;Join Engage as a Middleweight UX\/UI Designer, creating user-centred, responsive digital experiences across web, UX, UI and activation projects.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/careers\/middleweight-ux-ui-designer&quot;,&quot;shareTitle&quot;:&quot;Career Vacancies: Middleweight UX\/UI Designer&quot;,&quot;shareDescription&quot;:&quot;Join Engage as a Middleweight UX\/UI Designer, creating user-centred, responsive digital experiences across web, UX, UI and activation projects.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/middleweight-ux-ui-designer#jobposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/middleweight-ux-ui-designer\&quot;,\&quot;title\&quot;:\&quot;Middleweight UX\\\/UI Designer\&quot;,\&quot;directApply\&quot;:true,\&quot;datePosted\&quot;:\&quot;2026-03-09T12:43:00+00:00\&quot;,\&quot;validThrough\&quot;:null,\&quot;hiringOrganization\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;jobLocation\&quot;:{\&quot;@type\&quot;:\&quot;Place\&quot;,\&quot;address\&quot;:{\&quot;@type\&quot;:\&quot;PostalAddress\&quot;,\&quot;streetAddress\&quot;:\&quot;1st Floor, Munro House, Duke Street\&quot;,\&quot;addressLocality\&quot;:\&quot;Leeds\&quot;,\&quot;addressRegion\&quot;:\&quot;West Yorkshire\&quot;,\&quot;postalCode\&quot;:\&quot;LS9 8AG\&quot;,\&quot;addressCountry\&quot;:\&quot;GB\&quot;}},\&quot;description\&quot;:\&quot;Join Engage as a Middleweight UX\\\/UI Designer, creating user-centred, responsive digital experiences across web, UX, UI and activation projects.\&quot;,\&quot;employmentType\&quot;:\&quot;FULL_TIME\&quot;,\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/middleweight-ux-ui-designer#webpage\&quot;}},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/middleweight-ux-ui-designer#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/middleweight-ux-ui-designer\&quot;,\&quot;name\&quot;:\&quot;Career Vacancies: Middleweight UX\\\/UI Designer\&quot;,\&quot;description\&quot;:\&quot;Join Engage as a Middleweight UX\\\/UI Designer, creating user-centred, responsive digital experiences across web, UX, UI and activation projects.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/middleweight-ux-ui-designer#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Join the team\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Middleweight UX\\\/UI Designer\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/middleweight-ux-ui-designer\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/People-images\\\/ATD-Office.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2026-08-07T14:36:20+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-17T10:56:17+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;JobPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/careers\\\/middleweight-ux-ui-designer#jobposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:true},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;basic&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Middleweight UX\/UI Designer&quot;,&quot;copy&quot;:null,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=UX\/UI+Designer&amp;team=Design&amp;salary=yes&quot;},&quot;video&quot;:null,&quot;image&quot;:{&quot;alt&quot;:&quot;ATD Office&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/People-images\/ATD-Office.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768]},&quot;stat&quot;:null}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Salary&lt;\/h2&gt;&lt;p&gt;\u00a332,000 - \u00a342,000&lt;\/p&gt;&lt;h2&gt;Hours and\u00a0location&lt;\/h2&gt;&lt;p&gt;This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a\u00a0week.&lt;\/p&gt;&lt;h2&gt;Benefits\u00a0package&lt;\/h2&gt;&lt;p&gt;As part of our commitment to making Engage a great place to work, we\u2019ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks\u00a0are:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e2c85787a6eb254a40738d5aae4e9801c\&quot;&gt;We&#039;re &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;employee owned&lt;\/a&gt;&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e94355a390a84110b75432867ffc81d7c\&quot;&gt;25 days holiday + bank holidays (rising after 5\u00a0years)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e81aa54596a3bff11884f77848974a0e9\&quot;&gt;Company performance linked bonus scheme (this is depending on the business\u2019 performance and is not a contractual\u00a0benefit)&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea4a969d8b35dfeea5ef9df513411f5c4\&quot;&gt;Comprehensive private health\u00a0insurance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee1586c630a56c8c666a55195540c59ce\&quot;&gt;5% company pension\u00a0scheme&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e073bc33919c1b32b2e2952b0ee937248\&quot;&gt;Access to financial\u00a0coaching&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e514664c1313a733bfd99c25ba77a69bc\&quot;&gt;A company culture that promotes work-life\u00a0balance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec5cb06ee8cf7e5ee9081aa670f586045\&quot;&gt;Access to mental health\u00a0support&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4b0694e9012319f15e85abf77bc25d75\&quot;&gt;Free on-site\u00a0gym&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e211317672aed3b4a936f574a93f0f0a4\&quot;&gt;Hybrid working&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e440a3153a494bd3a049877981f016231\&quot;&gt;An award-winning office&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ece3aa84dd4e9d1e65f055fc9430ed7cb\&quot;&gt;Your birthday\u00a0off&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e018f1a070bf80517a9ed37e0507488d2\&quot;&gt;Regular socials, epic Summer parties and\u00a0more\u2026&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=UX\/UI+Designer&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}}]}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Yas Phoebe&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Yas-Phoebe.JPG&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;What we&#039;re looking for&lt;\/h2&gt;&lt;p&gt;As a Middleweight UX\/UI Designer at Engage, you will create high-quality, user-centred digital experiences across our Web and Activation propositions.&lt;\/p&gt;&lt;p&gt;Reporting to our Senior UX\/UI Designer, You will combine strong UX thinking with polished UI design, translating user needs, business objectives, research and technical requirements into clear journeys, intuitive structures and engaging digital interfaces.&lt;\/p&gt;&lt;p&gt;The role will primarily support Web projects and retainers, with additional involvement in interactive and campaign-led Activation work. You will take ownership of agreed UX\/UI work from early discovery and definition through to wireframing, prototyping, high-fidelity design, developer handover and quality assurance.&lt;\/p&gt;&lt;p&gt;We&#039;re looking for someone who can strengthen the team\u2019s research-led UX capability, particularly across customer journeys, information architecture, navigation and content structure. You should also be confident producing high-quality responsive UI and developing scalable design systems, components and reusable patterns.&lt;\/p&gt;&lt;p&gt;You will work closely with designers, developers, project managers, account teams and clients. You will be expected to manage your own delivery, explain the rationale behind your decisions and identify risks or opportunities early.&lt;\/p&gt;&lt;p&gt;This role will help provide greater specialist ownership across Web and Activation, improve the consistency and resilience of our UX\/UI delivery, and reduce reliance on senior team members for day-to-day production, intervention and quality assurance.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now &quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=UX\/UI+Designer&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Ste Livsey&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Ste-Livsey.JPG&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Responsibilities&lt;\/h2&gt;&lt;h4&gt;Design\u00a0&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e90360a9611ca0d7108db7b917c8f14d4\&quot;&gt;Deliver high-quality UX and UI design across Web and Activation projects, from early thinking through to final design and handover.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3a03a60d8eed09390357bd7ac33be99f\&quot;&gt;Translate briefs, research, user needs and commercial requirements into clear and practical digital experiences.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ebe59c505a6510c7ef1a9d60ffd128e38\&quot;&gt;Plan and create customer journeys, user flows, sitemaps, information architecture and content structures.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1bdcc3ae7ca77c1af65cce19f487eba7\&quot;&gt;Produce wireframes and interactive prototypes that clearly communicate structure, functionality and intended behaviour.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1c7fb5fa19084d86a7c44539cbdce005\&quot;&gt;Design polished, responsive and accessible interfaces that align with client brands and project objectives.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9df071c4aa1643a6391defe39a353c7c\&quot;&gt;Conduct or contribute to customer research, stakeholder interviews, competitor reviews, journey audits and usability testing.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;edd264b253055270d37fe994972b78af6\&quot;&gt;Turn research, analytics and user insight into clear design recommendations and prioritised opportunities.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3bfe99903cb095f2da879fa12bb73eae\&quot;&gt;Build and maintain scalable design systems, reusable components and consistent interface patterns in Figma.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e965504cba854e39adfc6ca56dbd9b1f3\&quot;&gt;Apply accessibility and inclusive-design principles throughout the design process&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec1e0055f0736d7cf1da04eef05998f46\&quot;&gt;Work closely with developers to ensure proposed designs are practical, responsive and technically achievable.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e7ec6712e3c19b098b318597f8bcf94d7\&quot;&gt;Prepare clear and complete design handovers, including responsive behaviours, component states and interaction requirements.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e865fd7e76c72e339852d0dd85ca8f02c\&quot;&gt;Review implemented work and support design quality assurance throughout development.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec9e4996b0a8232af88247e7fdb85f7c3\&quot;&gt;Present work confidently to internal teams and clients, explaining the thinking and evidence behind design decisions.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9ccc80d1dc461f63f43c953b708868f6\&quot;&gt;Proactively seek feedback at appropriate stages and use it to improve the quality and effectiveness of the work.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e76a1b213c94478a9de6f974f068bbe71\&quot;&gt;Review your own work against the brief, user needs, commercial objectives and Engage\u2019s quality standards before seeking sign-off.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee1bd473967c08abadcfd1ecb6f3a7988\&quot;&gt;Support lower-risk UX\/UI reviews and provide constructive feedback to other designers.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ebb86f1ea8b15cc54cf02aaa38e861901\&quot;&gt;Stay informed about relevant UX methods, UI patterns, accessibility requirements, platform developments and emerging technologies.&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Retainer and delivery\u00a0&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e37a32263598b15650934afb7a5e1441d\&quot;&gt;Provide consistent UX\/UI ownership across agreed Web and Activation retainers&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed6aedc7901b644bb311ab99625d0ea70\&quot;&gt;Identify proactive opportunities to improve customer journeys, usability, accessibility, conversion and overall digital performance.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e528e715937770149f979e15d3be4f249\&quot;&gt;Work with account and proposition teams to turn opportunities into clear, commercially appropriate recommendations.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e37c71f7666705b2a147bcbd6e234abc7\&quot;&gt;Contribute to journey audits, usability reviews, competitor analysis and optimisation roadmaps.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3fc73554f28cafe9425aaeffb7bf2db4\&quot;&gt;Support conversion rate optimisation activity, experimentation and A\/B testing where appropriate.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3fb2f8824ba5b15a3552561d490b9c50\&quot;&gt;Use available analytics, performance data and user behaviour insights to inform design decisions.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e012231a50a4772c793d6e0e6f01cbbb6\&quot;&gt;Help establish repeatable UX\/UI approaches, frameworks, templates and services across the Web and Activation propositions.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee203e1345f57985ded04737b618f5e9a\&quot;&gt;Contribute to the continued improvement of Engage\u2019s UX\/UI capability and the consistency of its digital output.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef5b2e1cbf89dcd9efd56ef6651eaf144\&quot;&gt;Support scoping and estimating by helping teams understand the UX\/UI activity required to deliver work effectively.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea66271f1f983b5c947831eba12c5425c\&quot;&gt;Flag potential upsell, optimisation or follow-on opportunities to the relevant senior, account or proposition lead&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Operational\u00a0&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ed56e26b47a886b4748150a4dba028609\&quot;&gt;Take ownership of agreed projects and workstreams, managing them from initial brief through to delivery.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef82cb1075c7202b11d744e8ba2cf3383\&quot;&gt;Manage your workload independently across multiple projects and retainers, meeting agreed deadlines and budgets.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eaa676818bcceb64a3ce22a0325bb802b\&quot;&gt;Raise delivery risks, quality concerns, missing information or resourcing challenges early.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e895ac27ffd227a22f99895ba96c08c45\&quot;&gt;Log time accurately in Productive and work towards the agency\u2019s billability expectations.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1e96f7e48366542791b67f514f6f0e82\&quot;&gt;Work efficiently within the agreed scope while communicating where additional time or activity may be required.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0427bf04e4e6d34f354406424e8918fe\&quot;&gt;Contribute to estimates, scopes, delivery plans and project documentation&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4166a1642598d3afbeb8f97b4710ccf5\&quot;&gt;Communicate clearly with designers, developers, project managers, account teams and clients.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e726c06c3b238c6720d8b6565f18ff2cc\&quot;&gt;Participate actively in internal reviews and critiques, providing constructive and actionable feedback.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9fea3f669e1debb39f7d0cbc18a558fd\&quot;&gt;Share knowledge, useful methods and UX\/UI best practice with the wider Design team.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4bb039ed478bb22c14d90580a5fa1250\&quot;&gt;Support less-experienced designers with lower-risk UI tasks, tools and digital design principles where appropriate.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea02cb9e11fe05fa751f212115d52b0a4\&quot;&gt;Ensure work meets Engage\u2019s Attention to Digital\u2122 standards before it is shared, with minimal intervention required at senior sign-off.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=UX\/UI+Designer&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Charlie Matt Charlotte&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Charlie-Matt-Charlotte.jpg&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Person specification&lt;\/h2&gt;&lt;h4&gt;Skills &amp;amp; experience&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e91653fc7f273bd4d4143f901fbb4d420\&quot;&gt;Approximately 2 to 5 years of professional UX\/UI design experience, ideally within an agency or similarly fast-paced environment&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e641d406304e13b4ef8e4cdbcf77ff983\&quot;&gt;A strong portfolio demonstrating both UX thinking and high-quality UI design across responsive digital experiences&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec9c267c4d5fbe89f296e9d918ebe0ef6\&quot;&gt;Highly proficient in Figma, including components, variants, variables, auto layout, prototyping and design systems&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef9dd941359ce320d2a19aaa8146408a8\&quot;&gt;Strong understanding of UX principles, including user journeys, information architecture, navigation, wireframing and prototyping&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ee3e33b8623ced6354e82b84affc82160\&quot;&gt;Experience translating research, briefs and business requirements into clear and practical user experiences&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e2b9f42af41d8290fb6243a930ff0e4b8\&quot;&gt;Experience designing responsive websites and digital interfaces across desktop, tablet and mobile&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e60e857bb702b4b92e30a32d44e8d2cc1\&quot;&gt;Proven ability to produce accessible, visually consistent and technically achievable UI&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ebf2ad59e2be3d9c6709ef0d6e752fc4e\&quot;&gt;Experience working directly with developers and an understanding of front-end capabilities, constraints and responsive behaviour&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ebed347a5d29f89d96b8b30ea98f0cc60\&quot;&gt;Confidence presenting work and rationalising design decisions to internal teams and clients&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e96d9a446b356e8aecb5b5e59f5f99a43\&quot;&gt;Strong attention to interaction details, component states, content hierarchy and overall digital craft&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e0a6f7757a2182aeaa030513fa6728acf\&quot;&gt;Experience managing multiple projects or workstreams and taking ownership of delivery&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6483a8ac3686aa22bab66c70007aa1e5\&quot;&gt;An understanding of commercial constraints, project scope, budgets and efficient agency delivery&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;UX focus&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e86f87e5d50e943762468838f57fab715\&quot;&gt;Strong understanding of customer journeys and task-based experience design&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e37c32ba77321b292408d114a8f378a67\&quot;&gt;Experience producing sitemaps, user flows and information architecture&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea86fba9e7c6379a7e31c9887c6a1a0fe\&quot;&gt;Ability to simplify complex services, content or requirements into intuitive digital structures&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e34afed1e49ed8afe2bc338177a4eafb7\&quot;&gt;Experience contributing to user research, customer interviews, stakeholder workshops or usability testing&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ec889ab2619255b5140312f4110ada1ba\&quot;&gt;Ability to interpret qualitative and quantitative insight and turn it into clear recommendations&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e4e24fb8fbac256e32a14536706fad24c\&quot;&gt;Understanding of accessibility standards and inclusive-design principles&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e247de8e1c4fb9b4e5b42d37b9d03d837\&quot;&gt;Ability to balance user needs, business objectives, brand requirements and technical constraints&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Attitude &amp;amp; approach&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e2655c3720584f757a85cac886f9f94b4\&quot;&gt;A thoughtful and curious problem-solver who looks beyond the surface of a brief&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e249226d0cbe7a3fbf15292753a7eadd1\&quot;&gt;Confident working across both UX definition and polished UI execution&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e3311c51836060d8b5586c854bd24208e\&quot;&gt;Comfortable taking ownership while knowing when to seek support or escalate concerns&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eea98cf6c28ffd3925c6c0304eb0ff271\&quot;&gt;Able to explain decisions clearly without relying solely on personal design preference&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e8ba5000eaa1cec0032ebc91667a9eae6\&quot;&gt;Commercially aware and respectful of agreed estimates, budgets and scope&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eaa72e2478e0ba9ea3a0dad93f6b6938d\&quot;&gt;Receptive to feedback and willing to challenge thinking constructively&lt;\/li&gt;&lt;li data-list-item-id=\&quot;efd58e291c9328c789389f96655df13eb\&quot;&gt;Collaborative and comfortable working with different disciplines&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e319eef53c9802688c1ef0d499b761835\&quot;&gt;Supportive of other designers and willing to share knowledge and practical guidance&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5ca5bf29cd4cc39b337e4f86d8fa28d4\&quot;&gt;Positive, adaptable and calm when priorities change&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e2590bd13374ad1659e46996aa1f71360\&quot;&gt;Organised, dependable and able to maintain quality across multiple workstreams&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef20c4fac889d8dc7779ce06031fea888\&quot;&gt;Motivated to strengthen the team\u2019s overall UX\/UI capability, not only deliver individual tasks&lt;\/li&gt;&lt;\/ul&gt;&lt;h4&gt;Nice to have\u00a0&lt;\/h4&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e5f54283100a081683a448671a75d244c\&quot;&gt;Practical Webflow experience, including responsive builds, CMS structures, components and reusable development approaches&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e72e573c9034b28a0a8c31c74dfb9af33\&quot;&gt;Experience working on service-led, content-rich or lead-generation websites&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e97b31d93497e9e97014afb93521c579f\&quot;&gt;Experience designing interactive campaign experiences, digital activations, tools, games or quizzes&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eeb79381cbfcb8e6e371a29e8cee87656\&quot;&gt;Experience with conversion rate optimisation, experimentation or A\/B testing&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e15746f8c727008a5c9fb013278c879ba\&quot;&gt;Experience designing mobile-first experiences or native app interfaces, with an understanding of platform conventions, responsive behaviour and touch-based interactions.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eb107ad9448c7dd68412ee34a27f230b1\&quot;&gt;Familiarity with analytics and behaviour tools such as GA4, Microsoft Clarity, Hotjar or similar&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e059c05f8ad2de37984b0e4b68e99fa88\&quot;&gt;Experience conducting customer interviews, moderated usability testing or structured journey audits&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e49d2c5074dba21eabfc9987b7aa3a364\&quot;&gt;Experience facilitating or contributing to client workshops&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e38a4bf83b9dad3e2ddc473f0ae541a0f\&quot;&gt;Familiarity with HTML and CSS and an understanding of how digital interfaces are built&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e927d47fd63070c2f07c0dc6534777c0b\&quot;&gt;Experience supporting or mentoring junior and non-specialist designers&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=UX\/UI+Designer&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Tom Pensive&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/People-images\/Tom-Pensive.JPG&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;What does success look like in this role?&lt;\/h2&gt;&lt;p&gt;It is important that we have measures of success for every role in the agency. This means that we can objectively assess your performance. It also helps you to know when you are doing a good job.&lt;\/p&gt;&lt;p&gt;Performance will be measured against the following criteria:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ee6720104447545107a4f28319f8a5320\&quot;&gt;Logs time accurately and consistently achieves the agency\u2019s agreed billability expectation&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5ebdfbdaec1461a27d0c1f1e3d2247bb\&quot;&gt;Takes ownership of agreed UX\/UI projects and workstreams, delivering them on time, within scope and to a high standard&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e683a1e5871bfe162c26c20b20fc0acc4\&quot;&gt;Produces work that demonstrates clear UX thinking as well as strong visual and interaction design&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e92b6c10ffa6c7cdad98ad698b3a14f2f\&quot;&gt;Regularly delivers work that requires minimal correction or intervention at senior sign-off&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9eeb43136eccff7071a085951fab5204\&quot;&gt;Creates clear user journeys, information architecture, wireframes and prototypes that respond effectively to the brief&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e77fabbc046fb0399ab02fea979adc384\&quot;&gt;Designs responsive, accessible and technically achievable interfaces that are implemented successfully&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e607adbf46fbff616529b7f3f5b6c42d9\&quot;&gt;Receives consistently positive feedback from clients, developers and internal teams&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eb9cdde69e1e6a979175ed126a662c5f6\&quot;&gt;Communicates risks, scope changes and delivery concerns early enough for them to be managed effectively&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6a61e1740cb958b3ed478b37268fb4f3\&quot;&gt;Builds strong working relationships with developers and supports a smooth handover and quality-assurance process&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e92ab17b0cbdae467131c4035d96ac0a1\&quot;&gt;Provides consistent and proactive UX\/UI support across allocated projects and retainers&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ebe7e4b3ba09be3729a028788c4deda87\&quot;&gt;Identifies useful optimisation, conversion or customer-experience opportunities rather than working only from reactive briefs&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ed9101de4e166fedbe81ea97f89c987fb\&quot;&gt;Contributes practical UX methods, reusable frameworks, components and patterns to the team&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eaf0c095cbbca69b81559ff05e8c7e0e4\&quot;&gt;Helps improve the UX\/UI skills and confidence of other designers through feedback, reviews and knowledge sharing&lt;\/li&gt;&lt;li data-list-item-id=\&quot;eb673212e602ba18616608315c2896c9e\&quot;&gt;Demonstrates increasing independence across research, UX definition, UI delivery and client communication&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e30fc7b04a86d49f0e7c3543eb2b5ece7\&quot;&gt;Contributes positively to the quality, consistency and commercial sustainability of Engage\u2019s Web and Activation output&lt;\/li&gt;&lt;\/ul&gt;&quot;}}]}},{&quot;type&quot;:&quot;fifty-fifty&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;A bit about us&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Founded in 2007, we\u2019re the digital agency for brands that demand attention. &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned\&quot;&gt;100% employee owned&lt;\/a&gt;, we\u2019re a tight-knit team, motivated to achieve more - for our people, partners, and the planet. That&#039;s what led us to become Leeds&#039; first &lt;a href=\&quot;https:\/\/engage.agency\/about-us\/b-corp\&quot;&gt;B Corp&lt;\/a&gt;.\u00a0&lt;\/p&gt;&lt;p&gt;Find out more &lt;a href=\&quot;https:\/\/engage.agency\/about-us\&quot;&gt;about us&lt;\/a&gt;, &lt;a href=\&quot;https:\/\/engage.agency\/team\&quot;&gt;meet the team&lt;\/a&gt; and be sure to check out our &lt;a href=\&quot;https:\/\/engage.agency\/work\&quot;&gt;latest work&lt;\/a&gt;.&lt;\/p&gt;&lt;p&gt;Thinking we might be a good fit?\u00a0&lt;\/p&gt;&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Apply now&quot;,&quot;href&quot;:&quot;https:\/\/engageinteractive.typeform.com\/application#role=UX\/UI+Designer&amp;team=Design&amp;salary=yes&quot;,&quot;external&quot;:true,&quot;current&quot;:false},&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1280,1024],&quot;ratio&quot;:&quot;3\/2&quot;},&quot;video&quot;:null,&quot;reverse&quot;:false}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;featured-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;There&#039;s more to explore&quot;,&quot;items&quot;:[{&quot;prefix&quot;:null,&quot;title&quot;:&quot;We\u2019re proudly employee owned&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;We\u2019re proudly employee owned&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}},{&quot;prefix&quot;:null,&quot;title&quot;:&quot;Meet the team&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Meet the team&quot;,&quot;src&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;webp&quot;:[&quot;https:\/\/engage.agency\/static\/img\/crosslink-placeholders\/1.png&quot;],&quot;sizes&quot;:[]}}],&quot;elympics&quot;:{&quot;title&quot;:&quot;Engage Elympics&quot;,&quot;action&quot;:&quot;https:\/\/engage.agency\/api\/elympics\/stats&quot;},&quot;awards&quot;:[{&quot;image&quot;:{&quot;alt&quot;:&quot;PNCA 25 WINNER footer WHITE&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=160\/engage-website\/production\/Awards\/PNCA-25-WINNER-footer-WHITE.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=107\/engage-website\/production\/Awards\/PNCA-25-WINNER-footer-WHITE.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:625,&quot;height&quot;:334},&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;UK Company culture awards&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=229\/engage-website\/production\/Awards\/UK-Company-culture-awards.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=153\/engage-website\/production\/Awards\/UK-Company-culture-awards.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:768,&quot;height&quot;:587},&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/building-a-multi-award-winning-agency-an-interview-with-founder-alex-willcocks&quot;,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Drum recommended&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=106\/engage-website\/production\/Awards\/Drum-recommended.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=71\/engage-website\/production\/Awards\/Drum-recommended.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:144,&quot;height&quot;:51},&quot;href&quot;:null,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Certified b corp white&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=498\/engage-website\/production\/Awards\/certified-b-corp-white.svg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=332\/engage-website\/production\/Awards\/certified-b-corp-white.svg&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:386,&quot;height&quot;:641},&quot;href&quot;:null,&quot;shape&quot;:&quot;square&quot;},{&quot;image&quot;:{&quot;alt&quot;:&quot;Proudly employee owned round holo&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=300,height=300\/engage-website\/production\/Awards\/proudly-employee-owned-round-holo.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=200,height=200\/engage-website\/production\/Awards\/proudly-employee-owned-round-holo.png&quot;],&quot;sizes&quot;:[768],&quot;width&quot;:1518,&quot;height&quot;:1518},&quot;href&quot;:null,&quot;shape&quot;:&quot;circle&quot;}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1200,height=675/engage-website/production/People-images/ATD-Office.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/People-images/ATD-Office.jpg"
+		alt="ATD Office"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Middleweight UX/UI Designer</h1>
+	
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=UX/UI+Designer&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Salary</h2><p>£32,000 - £42,000</p><h2>Hours and location</h2><p>This is a full-time role based in Leeds, UK. We offer hybrid working and flexible hours to everyone in the team, but this is not a fully remote opportunity, and we require you to be in the office at least 3 days a week.</p><h2>Benefits package</h2><p>As part of our commitment to making Engage a great place to work, we’ve built a comprehensive benefits package that fuels our thriving culture and delivers an exceptional, well-rounded employee experience. Some of our most popular perks are:</p><ul><li data-list-item-id="e2c85787a6eb254a40738d5aae4e9801c">We're <a href="../about-us/proudly-employee-owned.html">employee owned</a></li><li data-list-item-id="e94355a390a84110b75432867ffc81d7c">25 days holiday + bank holidays (rising after 5 years)</li><li data-list-item-id="e81aa54596a3bff11884f77848974a0e9">Company performance linked bonus scheme (this is depending on the business’ performance and is not a contractual benefit)</li><li data-list-item-id="ea4a969d8b35dfeea5ef9df513411f5c4">Comprehensive private health insurance</li><li data-list-item-id="ee1586c630a56c8c666a55195540c59ce">5% company pension scheme</li><li data-list-item-id="e073bc33919c1b32b2e2952b0ee937248">Access to financial coaching</li><li data-list-item-id="e514664c1313a733bfd99c25ba77a69bc">A company culture that promotes work-life balance</li><li data-list-item-id="ec5cb06ee8cf7e5ee9081aa670f586045">Access to mental health support</li><li data-list-item-id="e4b0694e9012319f15e85abf77bc25d75">Free on-site gym</li><li data-list-item-id="e211317672aed3b4a936f574a93f0f0a4">Hybrid working</li><li data-list-item-id="e440a3153a494bd3a049877981f016231">An award-winning office</li><li data-list-item-id="ece3aa84dd4e9d1e65f055fc9430ed7cb">Your birthday off</li><li data-list-item-id="e018f1a070bf80517a9ed37e0507488d2">Regular socials, epic Summer parties and more…</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=UX/UI+Designer&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+			
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Yas-Phoebe.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Yas-Phoebe.JPG"
+		alt="Yas Phoebe"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>What we're looking for</h2><p>As a Middleweight UX/UI Designer at Engage, you will create high-quality, user-centred digital experiences across our Web and Activation propositions.</p><p>Reporting to our Senior UX/UI Designer, You will combine strong UX thinking with polished UI design, translating user needs, business objectives, research and technical requirements into clear journeys, intuitive structures and engaging digital interfaces.</p><p>The role will primarily support Web projects and retainers, with additional involvement in interactive and campaign-led Activation work. You will take ownership of agreed UX/UI work from early discovery and definition through to wireframing, prototyping, high-fidelity design, developer handover and quality assurance.</p><p>We're looking for someone who can strengthen the team’s research-led UX capability, particularly across customer journeys, information architecture, navigation and content structure. You should also be confident producing high-quality responsive UI and developing scalable design systems, components and reusable patterns.</p><p>You will work closely with designers, developers, project managers, account teams and clients. You will be expected to manage your own delivery, explain the rationale behind your decisions and identify risks or opportunities early.</p><p>This role will help provide greater specialist ownership across Web and Activation, improve the consistency and resilience of our UX/UI delivery, and reduce reliance on senior team members for day-to-day production, intervention and quality assurance.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=UX/UI+Designer&amp;team=Design&amp;salary=yes"
+	>
+	Apply now 
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Ste-Livsey.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Ste-Livsey.JPG"
+		alt="Ste Livsey"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Responsibilities</h2><h4>Design </h4><ul><li data-list-item-id="e90360a9611ca0d7108db7b917c8f14d4">Deliver high-quality UX and UI design across Web and Activation projects, from early thinking through to final design and handover.</li><li data-list-item-id="e3a03a60d8eed09390357bd7ac33be99f">Translate briefs, research, user needs and commercial requirements into clear and practical digital experiences.</li><li data-list-item-id="ebe59c505a6510c7ef1a9d60ffd128e38">Plan and create customer journeys, user flows, sitemaps, information architecture and content structures.</li><li data-list-item-id="e1bdcc3ae7ca77c1af65cce19f487eba7">Produce wireframes and interactive prototypes that clearly communicate structure, functionality and intended behaviour.</li><li data-list-item-id="e1c7fb5fa19084d86a7c44539cbdce005">Design polished, responsive and accessible interfaces that align with client brands and project objectives.</li><li data-list-item-id="e9df071c4aa1643a6391defe39a353c7c">Conduct or contribute to customer research, stakeholder interviews, competitor reviews, journey audits and usability testing.</li><li data-list-item-id="edd264b253055270d37fe994972b78af6">Turn research, analytics and user insight into clear design recommendations and prioritised opportunities.</li><li data-list-item-id="e3bfe99903cb095f2da879fa12bb73eae">Build and maintain scalable design systems, reusable components and consistent interface patterns in Figma.</li><li data-list-item-id="e965504cba854e39adfc6ca56dbd9b1f3">Apply accessibility and inclusive-design principles throughout the design process</li><li data-list-item-id="ec1e0055f0736d7cf1da04eef05998f46">Work closely with developers to ensure proposed designs are practical, responsive and technically achievable.</li><li data-list-item-id="e7ec6712e3c19b098b318597f8bcf94d7">Prepare clear and complete design handovers, including responsive behaviours, component states and interaction requirements.</li><li data-list-item-id="e865fd7e76c72e339852d0dd85ca8f02c">Review implemented work and support design quality assurance throughout development.</li><li data-list-item-id="ec9e4996b0a8232af88247e7fdb85f7c3">Present work confidently to internal teams and clients, explaining the thinking and evidence behind design decisions.</li><li data-list-item-id="e9ccc80d1dc461f63f43c953b708868f6">Proactively seek feedback at appropriate stages and use it to improve the quality and effectiveness of the work.</li><li data-list-item-id="e76a1b213c94478a9de6f974f068bbe71">Review your own work against the brief, user needs, commercial objectives and Engage’s quality standards before seeking sign-off.</li><li data-list-item-id="ee1bd473967c08abadcfd1ecb6f3a7988">Support lower-risk UX/UI reviews and provide constructive feedback to other designers.</li><li data-list-item-id="ebb86f1ea8b15cc54cf02aaa38e861901">Stay informed about relevant UX methods, UI patterns, accessibility requirements, platform developments and emerging technologies.</li></ul><h4>Retainer and delivery </h4><ul><li data-list-item-id="e37a32263598b15650934afb7a5e1441d">Provide consistent UX/UI ownership across agreed Web and Activation retainers</li><li data-list-item-id="ed6aedc7901b644bb311ab99625d0ea70">Identify proactive opportunities to improve customer journeys, usability, accessibility, conversion and overall digital performance.</li><li data-list-item-id="e528e715937770149f979e15d3be4f249">Work with account and proposition teams to turn opportunities into clear, commercially appropriate recommendations.</li><li data-list-item-id="e37c71f7666705b2a147bcbd6e234abc7">Contribute to journey audits, usability reviews, competitor analysis and optimisation roadmaps.</li><li data-list-item-id="e3fc73554f28cafe9425aaeffb7bf2db4">Support conversion rate optimisation activity, experimentation and A/B testing where appropriate.</li><li data-list-item-id="e3fb2f8824ba5b15a3552561d490b9c50">Use available analytics, performance data and user behaviour insights to inform design decisions.</li><li data-list-item-id="e012231a50a4772c793d6e0e6f01cbbb6">Help establish repeatable UX/UI approaches, frameworks, templates and services across the Web and Activation propositions.</li><li data-list-item-id="ee203e1345f57985ded04737b618f5e9a">Contribute to the continued improvement of Engage’s UX/UI capability and the consistency of its digital output.</li><li data-list-item-id="ef5b2e1cbf89dcd9efd56ef6651eaf144">Support scoping and estimating by helping teams understand the UX/UI activity required to deliver work effectively.</li><li data-list-item-id="ea66271f1f983b5c947831eba12c5425c">Flag potential upsell, optimisation or follow-on opportunities to the relevant senior, account or proposition lead</li></ul><h4>Operational </h4><ul><li data-list-item-id="ed56e26b47a886b4748150a4dba028609">Take ownership of agreed projects and workstreams, managing them from initial brief through to delivery.</li><li data-list-item-id="ef82cb1075c7202b11d744e8ba2cf3383">Manage your workload independently across multiple projects and retainers, meeting agreed deadlines and budgets.</li><li data-list-item-id="eaa676818bcceb64a3ce22a0325bb802b">Raise delivery risks, quality concerns, missing information or resourcing challenges early.</li><li data-list-item-id="e895ac27ffd227a22f99895ba96c08c45">Log time accurately in Productive and work towards the agency’s billability expectations.</li><li data-list-item-id="e1e96f7e48366542791b67f514f6f0e82">Work efficiently within the agreed scope while communicating where additional time or activity may be required.</li><li data-list-item-id="e0427bf04e4e6d34f354406424e8918fe">Contribute to estimates, scopes, delivery plans and project documentation</li><li data-list-item-id="e4166a1642598d3afbeb8f97b4710ccf5">Communicate clearly with designers, developers, project managers, account teams and clients.</li><li data-list-item-id="e726c06c3b238c6720d8b6565f18ff2cc">Participate actively in internal reviews and critiques, providing constructive and actionable feedback.</li><li data-list-item-id="e9fea3f669e1debb39f7d0cbc18a558fd">Share knowledge, useful methods and UX/UI best practice with the wider Design team.</li><li data-list-item-id="e4bb039ed478bb22c14d90580a5fa1250">Support less-experienced designers with lower-risk UI tasks, tools and digital design principles where appropriate.</li><li data-list-item-id="ea02cb9e11fe05fa751f212115d52b0a4">Ensure work meets Engage’s Attention to Digital™ standards before it is shared, with minimal intervention required at senior sign-off.</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=UX/UI+Designer&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Charlie-Matt-Charlotte.jpg"
+		alt="Charlie Matt Charlotte"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Person specification</h2><h4>Skills &amp; experience</h4><ul><li data-list-item-id="e91653fc7f273bd4d4143f901fbb4d420">Approximately 2 to 5 years of professional UX/UI design experience, ideally within an agency or similarly fast-paced environment</li><li data-list-item-id="e641d406304e13b4ef8e4cdbcf77ff983">A strong portfolio demonstrating both UX thinking and high-quality UI design across responsive digital experiences</li><li data-list-item-id="ec9c267c4d5fbe89f296e9d918ebe0ef6">Highly proficient in Figma, including components, variants, variables, auto layout, prototyping and design systems</li><li data-list-item-id="ef9dd941359ce320d2a19aaa8146408a8">Strong understanding of UX principles, including user journeys, information architecture, navigation, wireframing and prototyping</li><li data-list-item-id="ee3e33b8623ced6354e82b84affc82160">Experience translating research, briefs and business requirements into clear and practical user experiences</li><li data-list-item-id="e2b9f42af41d8290fb6243a930ff0e4b8">Experience designing responsive websites and digital interfaces across desktop, tablet and mobile</li><li data-list-item-id="e60e857bb702b4b92e30a32d44e8d2cc1">Proven ability to produce accessible, visually consistent and technically achievable UI</li><li data-list-item-id="ebf2ad59e2be3d9c6709ef0d6e752fc4e">Experience working directly with developers and an understanding of front-end capabilities, constraints and responsive behaviour</li><li data-list-item-id="ebed347a5d29f89d96b8b30ea98f0cc60">Confidence presenting work and rationalising design decisions to internal teams and clients</li><li data-list-item-id="e96d9a446b356e8aecb5b5e59f5f99a43">Strong attention to interaction details, component states, content hierarchy and overall digital craft</li><li data-list-item-id="e0a6f7757a2182aeaa030513fa6728acf">Experience managing multiple projects or workstreams and taking ownership of delivery</li><li data-list-item-id="e6483a8ac3686aa22bab66c70007aa1e5">An understanding of commercial constraints, project scope, budgets and efficient agency delivery</li></ul><h4>UX focus</h4><ul><li data-list-item-id="e86f87e5d50e943762468838f57fab715">Strong understanding of customer journeys and task-based experience design</li><li data-list-item-id="e37c32ba77321b292408d114a8f378a67">Experience producing sitemaps, user flows and information architecture</li><li data-list-item-id="ea86fba9e7c6379a7e31c9887c6a1a0fe">Ability to simplify complex services, content or requirements into intuitive digital structures</li><li data-list-item-id="e34afed1e49ed8afe2bc338177a4eafb7">Experience contributing to user research, customer interviews, stakeholder workshops or usability testing</li><li data-list-item-id="ec889ab2619255b5140312f4110ada1ba">Ability to interpret qualitative and quantitative insight and turn it into clear recommendations</li><li data-list-item-id="e4e24fb8fbac256e32a14536706fad24c">Understanding of accessibility standards and inclusive-design principles</li><li data-list-item-id="e247de8e1c4fb9b4e5b42d37b9d03d837">Ability to balance user needs, business objectives, brand requirements and technical constraints</li></ul><h4>Attitude &amp; approach</h4><ul><li data-list-item-id="e2655c3720584f757a85cac886f9f94b4">A thoughtful and curious problem-solver who looks beyond the surface of a brief</li><li data-list-item-id="e249226d0cbe7a3fbf15292753a7eadd1">Confident working across both UX definition and polished UI execution</li><li data-list-item-id="e3311c51836060d8b5586c854bd24208e">Comfortable taking ownership while knowing when to seek support or escalate concerns</li><li data-list-item-id="eea98cf6c28ffd3925c6c0304eb0ff271">Able to explain decisions clearly without relying solely on personal design preference</li><li data-list-item-id="e8ba5000eaa1cec0032ebc91667a9eae6">Commercially aware and respectful of agreed estimates, budgets and scope</li><li data-list-item-id="eaa72e2478e0ba9ea3a0dad93f6b6938d">Receptive to feedback and willing to challenge thinking constructively</li><li data-list-item-id="efd58e291c9328c789389f96655df13eb">Collaborative and comfortable working with different disciplines</li><li data-list-item-id="e319eef53c9802688c1ef0d499b761835">Supportive of other designers and willing to share knowledge and practical guidance</li><li data-list-item-id="e5ca5bf29cd4cc39b337e4f86d8fa28d4">Positive, adaptable and calm when priorities change</li><li data-list-item-id="e2590bd13374ad1659e46996aa1f71360">Organised, dependable and able to maintain quality across multiple workstreams</li><li data-list-item-id="ef20c4fac889d8dc7779ce06031fea888">Motivated to strengthen the team’s overall UX/UI capability, not only deliver individual tasks</li></ul><h4>Nice to have </h4><ul><li data-list-item-id="e5f54283100a081683a448671a75d244c">Practical Webflow experience, including responsive builds, CMS structures, components and reusable development approaches</li><li data-list-item-id="e72e573c9034b28a0a8c31c74dfb9af33">Experience working on service-led, content-rich or lead-generation websites</li><li data-list-item-id="e97b31d93497e9e97014afb93521c579f">Experience designing interactive campaign experiences, digital activations, tools, games or quizzes</li><li data-list-item-id="eeb79381cbfcb8e6e371a29e8cee87656">Experience with conversion rate optimisation, experimentation or A/B testing</li><li data-list-item-id="e15746f8c727008a5c9fb013278c879ba">Experience designing mobile-first experiences or native app interfaces, with an understanding of platform conventions, responsive behaviour and touch-based interactions.</li><li data-list-item-id="eb107ad9448c7dd68412ee34a27f230b1">Familiarity with analytics and behaviour tools such as GA4, Microsoft Clarity, Hotjar or similar</li><li data-list-item-id="e059c05f8ad2de37984b0e4b68e99fa88">Experience conducting customer interviews, moderated usability testing or structured journey audits</li><li data-list-item-id="e49d2c5074dba21eabfc9987b7aa3a364">Experience facilitating or contributing to client workshops</li><li data-list-item-id="e38a4bf83b9dad3e2ddc473f0ae541a0f">Familiarity with HTML and CSS and an understanding of how digital interfaces are built</li><li data-list-item-id="e927d47fd63070c2f07c0dc6534777c0b">Experience supporting or mentoring junior and non-specialist designers</li></ul>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=UX/UI+Designer&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/People-images/Tom-Pensive.JPG"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/People-images/Tom-Pensive.JPG"
+		alt="Tom Pensive"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>What does success look like in this role?</h2><p>It is important that we have measures of success for every role in the agency. This means that we can objectively assess your performance. It also helps you to know when you are doing a good job.</p><p>Performance will be measured against the following criteria:</p><ul><li data-list-item-id="ee6720104447545107a4f28319f8a5320">Logs time accurately and consistently achieves the agency’s agreed billability expectation</li><li data-list-item-id="e5ebdfbdaec1461a27d0c1f1e3d2247bb">Takes ownership of agreed UX/UI projects and workstreams, delivering them on time, within scope and to a high standard</li><li data-list-item-id="e683a1e5871bfe162c26c20b20fc0acc4">Produces work that demonstrates clear UX thinking as well as strong visual and interaction design</li><li data-list-item-id="e92b6c10ffa6c7cdad98ad698b3a14f2f">Regularly delivers work that requires minimal correction or intervention at senior sign-off</li><li data-list-item-id="e9eeb43136eccff7071a085951fab5204">Creates clear user journeys, information architecture, wireframes and prototypes that respond effectively to the brief</li><li data-list-item-id="e77fabbc046fb0399ab02fea979adc384">Designs responsive, accessible and technically achievable interfaces that are implemented successfully</li><li data-list-item-id="e607adbf46fbff616529b7f3f5b6c42d9">Receives consistently positive feedback from clients, developers and internal teams</li><li data-list-item-id="eb9cdde69e1e6a979175ed126a662c5f6">Communicates risks, scope changes and delivery concerns early enough for them to be managed effectively</li><li data-list-item-id="e6a61e1740cb958b3ed478b37268fb4f3">Builds strong working relationships with developers and supports a smooth handover and quality-assurance process</li><li data-list-item-id="e92ab17b0cbdae467131c4035d96ac0a1">Provides consistent and proactive UX/UI support across allocated projects and retainers</li><li data-list-item-id="ebe7e4b3ba09be3729a028788c4deda87">Identifies useful optimisation, conversion or customer-experience opportunities rather than working only from reactive briefs</li><li data-list-item-id="ed9101de4e166fedbe81ea97f89c987fb">Contributes practical UX methods, reusable frameworks, components and patterns to the team</li><li data-list-item-id="eaf0c095cbbca69b81559ff05e8c7e0e4">Helps improve the UX/UI skills and confidence of other designers through feedback, reviews and knowledge sharing</li><li data-list-item-id="eb673212e602ba18616608315c2896c9e">Demonstrates increasing independence across research, UX definition, UI delivery and client communication</li><li data-list-item-id="e30fc7b04a86d49f0e7c3543eb2b5ece7">Contributes positively to the quality, consistency and commercial sustainability of Engage’s Web and Activation output</li></ul>
+	
+	
+	
+	
+		
+	</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							A bit about us
+					</h2>
+	
+	
+			<p>Founded in 2007, we’re the digital agency for brands that demand attention. <a href="../about-us/proudly-employee-owned.html">100% employee owned</a>, we’re a tight-knit team, motivated to achieve more - for our people, partners, and the planet. That's what led us to become Leeds' first <a href="../about-us/b-corp.html">B Corp</a>. </p><p>Find out more <a href="../about-us.html">about us</a>, <a href="../team.html">meet the team</a> and be sure to check out our <a href="../work.html">latest work</a>.</p><p>Thinking we might be a good fit? </p>
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=850,height=567/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=700,height=467/engage-website/production/People-images/Team-photo-March-26.jpg"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=333/engage-website/production/People-images/Team-photo-March-26.jpg"
+		alt="Team photo March 26"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="https://engageinteractive.typeform.com/application#role=UX/UI+Designer&amp;team=Design&amp;salary=yes"
+	>
+	Apply now
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							There's more to explore
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							We’re proudly employee owned
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="We’re proudly employee owned"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../about-us/proudly-employee-owned.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Meet the team
+					</h3>
+	
+	
+	
+			<figure>
+							<picture>
+			<source
+			srcset="https://engage.agency/static/img/crosslink-placeholders/1.png"
+						 type="image/webp" 		>
+	
+	
+	<img
+		src="../static/img/crosslink-placeholders/1.png"
+		alt="Meet the team"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="../team.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c02edbfbc479',t:'MTc5MDI3MzQ3Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Demand, attention and the art of getting booked: digital marketing in travel</title>
+<meta name="description" content="Digital marketing in travel needs to move with demand. Learn how SEO, paid media, CRM and activations help travel brands win more bookings.">
+
+	<link rel="canonical" href="digital-marketing-in-travel-the-art-of-getting-booked.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="digital-marketing-in-travel-the-art-of-getting-booked.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="Demand, attention and the art of getting booked: digital marketing in travel">
+<meta property="og:description" content="Digital marketing in travel needs to move with demand. Learn how SEO, paid media, CRM and activations help travel brands win more bookings.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/digital-marketing-in-travel-the-art-of-getting-booked">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Blog/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel/Travel-Marketing-Blog-Hero-2.png">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked#blogposting","url":"https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked","headline":"Demand, attention and the art of getting booked: digital marketing in travel","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/tom-schofield#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\/Travel-Marketing-Blog-Hero-2.png","datePublished":"2026-05-28T12:28:58+01:00","description":"Digital marketing in travel needs to move with demand. Learn how SEO, paid media, CRM and activations help travel brands win more bookings."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked#webpage","url":"https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked","name":"Demand, attention and the art of getting booked: digital marketing in travel","description":"Digital marketing in travel needs to move with demand. Learn how SEO, paid media, CRM and activations help travel brands win more bookings.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"Demand, attention and the art of getting booked: Digital marketing in travel","item":"https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\/Travel-Marketing-Blog-Hero-2.png"},"datePublished":"2026-05-28T12:28:58+01:00","dateModified":"2026-09-10T09:14:29+01:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="digital-marketing-in-travel-the-art-of-getting-booked.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;Demand, attention and the art of getting booked: digital marketing in travel&quot;,&quot;description&quot;:&quot;Digital marketing in travel needs to move with demand. Learn how SEO, paid media, CRM and activations help travel brands win more bookings.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Blog\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\/Travel-Marketing-Blog-Hero-2.png&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-in-travel-the-art-of-getting-booked&quot;,&quot;shareTitle&quot;:&quot;Demand, attention and the art of getting booked: digital marketing in travel&quot;,&quot;shareDescription&quot;:&quot;Digital marketing in travel needs to move with demand. Learn how SEO, paid media, CRM and activations help travel brands win more bookings.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-travel-the-art-of-getting-booked#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-travel-the-art-of-getting-booked\&quot;,\&quot;headline\&quot;:\&quot;Demand, attention and the art of getting booked: digital marketing in travel\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/tom-schofield#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-travel-the-art-of-getting-booked#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\\\/Travel-Marketing-Blog-Hero-2.png\&quot;,\&quot;datePublished\&quot;:\&quot;2026-05-28T12:28:58+01:00\&quot;,\&quot;description\&quot;:\&quot;Digital marketing in travel needs to move with demand. Learn how SEO, paid media, CRM and activations help travel brands win more bookings.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-travel-the-art-of-getting-booked#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-travel-the-art-of-getting-booked\&quot;,\&quot;name\&quot;:\&quot;Demand, attention and the art of getting booked: digital marketing in travel\&quot;,\&quot;description\&quot;:\&quot;Digital marketing in travel needs to move with demand. Learn how SEO, paid media, CRM and activations help travel brands win more bookings.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-travel-the-art-of-getting-booked#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;Demand, attention and the art of getting booked: Digital marketing in travel\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-travel-the-art-of-getting-booked\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\\\/Travel-Marketing-Blog-Hero-2.png\&quot;},\&quot;datePublished\&quot;:\&quot;2026-05-28T12:28:58+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-09-10T09:14:29+01:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/digital-marketing-in-travel-the-art-of-getting-booked#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Demand, attention and the art of getting booked: Digital marketing in travel&quot;,&quot;date&quot;:&quot;28th May 2026&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Tom&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/tom-schofield&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 10 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Travel Marketing Blog Hero 2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\/Travel-Marketing-Blog-Hero-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\/Travel-Marketing-Blog-Hero-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\/Travel-Marketing-Blog-Hero-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\/Travel-Marketing-Blog-Hero-2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel\/Travel-Marketing-Blog-Hero-2.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;article-builder&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;p&gt;Travel is one of the most demanding sectors to market in, and not just because of the competition. Demand shifts overnight. Pricing changes can halve conversion rates without a single campaign variable moving. A news cycle, a weather event or a viral social moment can spike or sink destination interest in days.&lt;\/p&gt;&lt;p&gt;Performance problems in travel are rarely isolated to channels. They\u2019re almost always the result of misalignment - between demand and digital activity, between pricing and conversion expectation, between what the market is doing and what the strategy is set up to respond to.&lt;\/p&gt;&lt;p&gt;The brands that outperform aren\u2019t always the most sophisticated marketers. They\u2019re the one who move fastest when conditions change.&lt;\/p&gt;&lt;h2&gt;What drives performance in travel marketing?&lt;\/h2&gt;&lt;p&gt;Before getting into channels and tactics, it&#039;s worth being clear about the fundamentals, because they&#039;re the things that get overlooked when strategies become very complex.&lt;\/p&gt;&lt;p&gt;Performance in travel comes down to four things, and none of them are glamorous, which is probably why they get skipped.&lt;br \/&gt;&lt;br \/&gt;1. Focusing on real demand: prioritising destinations and queries that are actively converting, not just generating traffic.\u00a0&lt;\/p&gt;&lt;p&gt;2. Reacting to market conditions: adjusting budgets, messaging and priorities based on pricing, availability and competition as they shift.\u00a0&lt;\/p&gt;&lt;p&gt;3. Aligning marketing with commercial reality: ensuring campaigns reflect margins, inventory and actual business goals rather than vanity metrics.\u00a0&lt;\/p&gt;&lt;p&gt;4.\u00a0Turning traffic into genuine engagement: using activations and digital experiences to communicate value clearly and capture that all-important first-party data.&lt;\/p&gt;&lt;p&gt;The biggest performance gains we see in travel rarely come from small channel optimisations. They come from better decisions about where to focus and when to act.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Case study26 Jet2 2024 Activations&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041\/engage-website\/production\/Case-study-images\/Jet2-Seasonal-Success-Story\/Engage_Case-study26_Jet2_2024Activations.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956\/engage-website\/production\/Case-study-images\/Jet2-Seasonal-Success-Story\/Engage_Case-study26_Jet2_2024Activations.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844\/engage-website\/production\/Case-study-images\/Jet2-Seasonal-Success-Story\/Engage_Case-study26_Jet2_2024Activations.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810\/engage-website\/production\/Case-study-images\/Jet2-Seasonal-Success-Story\/Engage_Case-study26_Jet2_2024Activations.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Case-study-images\/Jet2-Seasonal-Success-Story\/Engage_Case-study26_Jet2_2024Activations.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Case-study-images\/Jet2-Seasonal-Success-Story\/Engage_Case-study26_Jet2_2024Activations.png&quot;],&quot;sizes&quot;:[1600,1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null,&quot;layout&quot;:&quot;default&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;Seen in practice: Delivering 26m plays for Jet2holidays&lt;\/h2&gt;&lt;p&gt;For Jet2holidays, visibility was never the problem. In one of the most competitive travel markets in the UK, they had the brand presence and media weight to be seen. The challenge was deeper than that.\u00a0&lt;\/p&gt;&lt;p&gt;In a market where every operator is pushing deals, discounts and dream destinations simultaneously, how do you create something that users actually want to spend time with? Something they remember when it comes to booking?&lt;\/p&gt;&lt;p&gt;&lt;a href=\&quot;https:\/\/engage.agency\/work\/seasonal-success-story-for-jet2holidays-26-million-plays\&quot;&gt;Our answer was gamification&lt;\/a&gt;. A series of large-scale digital activations built around key seasonal moments, each designed with a simple brief: make it fast, frictionless and genuinely worth playing. Ideally, worth playing repeatedly.&lt;\/p&gt;&lt;p&gt;Across the campaign series, the results were significant: over 26 million plays \u2013 that\u2019s not a typo \u2013 averaging 95 plays per user in some executions, with first-party data capture running throughout. More than that, the campaigns created something that pure channel activity rarely does \u2013 a reason to choose Jet2 that had nothing to do with price. Read the .&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;cta-button&quot;,&quot;data&quot;:{&quot;cta&quot;:{&quot;title&quot;:&quot;Read the full jet2holidays case study&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work\/seasonal-success-story-for-jet2holidays-26-million-plays&quot;,&quot;external&quot;:false,&quot;current&quot;:false},&quot;ctaAlt&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;copy&quot;:&quot;&lt;h2&gt;The state of digital in travel&lt;\/h2&gt;&lt;p&gt;Three things define the travel digital landscape right now, and all three shape how strategy needs to work.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Demand is volatile.&lt;\/strong&gt; We&#039;ve seen destination interest drop by double digits week-on-week purely due to pricing shifts, with no change in campaign structure or visibility. Declining traffic in those moments isn&#039;t a marketing failure. It&#039;s a market signal. Knowing the difference quickly is one of the most valuable things a travel marketing team can do.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Search behaviour has fragmented&lt;\/strong&gt;. People compare across multiple sessions, switch between devices and consult reviews before committing. The conversion path is longer than it used to be, which means capturing initial intent is only half the job. Supporting users through the full decision \u2013 through remarketing, CRM, content and brand recall \u2013 is where bookings are actually won.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Travel is inherently comparison-driven&lt;\/strong&gt;. A strong ranking or high impression share doesn&#039;t protect you if your proposition is weaker than the next result. Digital brings users into consideration. The strength of the offer determines whether they convert.&lt;\/p&gt;&lt;h2&gt;SERPS, AI and the comparison challenge&lt;\/h2&gt;&lt;p&gt;Search results in travel aren&#039;t just a list of links anymore. They&#039;re packed with price comparisons, maps, reviews, AI-generated summaries and booking widgets, all competing for attention before a user has clicked on anything.&lt;\/p&gt;&lt;p&gt;When users do land on your site, they arrive with high expectations, limited patience and often several tabs already open. Value has to be obvious immediately. Confidence needs to be established within seconds. Any hesitation is an invitation to go back and try the next result.&lt;\/p&gt;&lt;p&gt;This is the attention economy in its most unforgiving form. Visibility gets you into consideration. Execution is what gets you booked.&lt;\/p&gt;&lt;h2&gt;The Demand Alignment Model&lt;\/h2&gt;&lt;p&gt;One of the most useful frameworks for diagnosing travel performance is what we refer to as the Demand Alignment Model \u2013 the relationship between three things that need to be in sync for a strategy to work.&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;ecd789dd31c38f7a8a7f5867c9dc9a5f1\&quot;&gt;Demand: where genuine user interest exists right now, not where it existed last quarter.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5a0c5130fd09dbc4dba8d2e5c5fbf48b\&quot;&gt;Commercials: pricing, margins and availability, which determine what&#039;s worth promoting and how aggressively.\u00a0&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1828b17cfb7473f14f24ad5913db9ad9\&quot;&gt;Channels: the combination of SEO, paid media, CRM and activations through which that demand is reached and converted.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Performance problems typically occur when one of these three is out of step with the others. Paid media amplifying a product with weak pricing. SEO driving traffic to destinations with no availability. CRM working with insufficient data to do anything meaningful. We&#039;ve seen all three. Sometimes simultaneously. When the model is aligned, each element makes the others more effective. When it isn&#039;t, the whole strategy leaks.&lt;\/p&gt;&lt;h2&gt;Pricing, margins and availability: the conversion triangle&lt;\/h2&gt;&lt;p&gt;These are the most immediate performance levers in travel, and the most commonly underestimated. A few things worth knowing:&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Pricing&lt;\/strong&gt; is probably the single biggest driver of conversion rate in travel. A 5-10% pricing gap relative to competitors is often enough to significantly reduce conversion, even with strong visibility.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Margins&lt;\/strong&gt; determine how aggressively a brand can compete. Higher-margin products support broader targeting and more competitive bidding. Lower-margin offerings require tighter focus on high-intent queries and proven destinations.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Availability&lt;\/strong&gt; is the most immediate lever of all. There&#039;s limited value in driving traffic to destinations or experiences that are sold out or nearly so, yet campaigns routinely continue to push these areas because structures haven&#039;t been updated to reflect live inventory. Aligning activity with real-time availability data is one of the faster wins available to most travel brands. It&#039;s also one of the most satisfying \u2013 because the results tend to show up quickly.&lt;\/p&gt;&lt;h2&gt;Seasonality is a signal, not a schedule&lt;\/h2&gt;&lt;p&gt;The travel industry has always run on seasonal rhythms \u2013 but treating seasonality as a fixed calendar is one of the more reliable ways to underperform.&lt;\/p&gt;&lt;p&gt;Demand shifts based on pricing and competitor behaviour, not just the time of year. Booking windows vary. External factors \u2013 weather events, news cycles, trending destinations \u2013 can create or destroy demand rapidly. What works better than a fixed plan is a genuinely responsive approach: monitoring signals in real time, adjusting budgets and messaging as conditions change, and redirecting effort quickly when the data warrants it.&lt;\/p&gt;&lt;p&gt;Seasonality should inform the starting point for strategy, not fix it in place. Think of it as a compass, not a map.&lt;\/p&gt;&lt;h2&gt;How the channels work together&lt;\/h2&gt;&lt;p&gt;No channel in travel works well in isolation. Each plays a distinct role in a connected system \u2013 and performance suffers when they&#039;re managed independently.&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;eb9172e1865663c765808e7b80f5b1b6b\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/seo\&quot;&gt;&lt;u&gt;SEO&lt;\/u&gt;&lt;\/a&gt; drives discovery, capturing high-intent and branded search demand over the long term.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ece8ad0dd26457c11dd77a886cb6833e1\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/ppc\&quot;&gt;&lt;u&gt;Paid media&lt;\/u&gt;&lt;\/a&gt; intercepts users who are ready to book and provides the scale and flexibility to respond to market conditions quickly.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e1c986c9ac40a96106de25f9f466ed605\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/crm\&quot;&gt;&lt;u&gt;CRM&lt;\/u&gt;&lt;\/a&gt; supports the longer conversion journeys that are normal in travel \u2013 nurturing users who aren&#039;t ready to book yet and re-engaging those who didn&#039;t convert first time.&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ea3011364af96f48871175fcae528f95a\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/digital-activations-for-engagement\&quot;&gt;&lt;u&gt;Digital activations&lt;\/u&gt;&lt;\/a&gt; create reasons to engage beyond price and availability, capturing first-party data in the process.&lt;a href=\&quot;https:\/\/engage.agency\/services\/digital-pr\&quot;&gt;\u00a0&lt;\/a&gt;&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e6399fb97bc3fb8dc542f406a830cfdcd\&quot;&gt;&lt;a href=\&quot;https:\/\/engage.agency\/services\/digital-pr\&quot;&gt;&lt;u&gt;Digital PR&lt;\/u&gt;&lt;\/a&gt; builds the authority and visibility that strengthens organic performance over time.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;The failure mode isn&#039;t usually a single weak channel. It&#039;s misalignment. Paid amplifying weak pricing. SEO bringing traffic to poor offers. CRM with nothing to work with because there&#039;s no activation strategy generating data. These aren&#039;t channel problems \u2013 they&#039;re strategic alignment problems, and they&#039;re the ones worth solving first. The good news is that when you fix the alignment, you often don&#039;t need to spend more. You just need to spend better&lt;\/p&gt;&lt;h2&gt;The role of activations in travel marketing&lt;\/h2&gt;&lt;p&gt;In a sector where most brands are competing on largely similar propositions \u2013 price, destination, inclusions \u2013 the ability to create genuine engagement beyond those comparisons is a meaningful differentiator.&lt;\/p&gt;&lt;p&gt;Activations do that job. Gamified experiences, quizzes, reward mechanics and interactive content give users a reason to spend time with a brand rather than simply passing through it - driving dwell time, encouraging return visits and generating first-party data that makes CRM and remarketing significantly more effective.&lt;\/p&gt;&lt;p&gt;This is also the part of travel marketing that can&#039;t be automated. Real engagement \u2013 the kind that influences a booking decision \u2013 takes creativity, craft and a genuine understanding of what makes people tick. That&#039;s what we bring to it.&lt;\/p&gt;&lt;p&gt;Our Jet2holidays work is a clear example of what&#039;s possible at scale. But the principle applies at every level: activations turn passive traffic into active engagement, and active engagement influences booking decisions in ways that a well-targeted ad simply can&#039;t.&lt;\/p&gt;&lt;h2&gt;Where travel brands typically lose performance&lt;\/h2&gt;&lt;p&gt;The most common performance issues we see in travel are the ones that are easiest to miss - because surface metrics look fine. Traffic holds steady. Impressions are strong. But revenue doesn&#039;t scale.&lt;\/p&gt;&lt;p&gt;The underlying causes tend to follow a familiar pattern:&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e870759a4904085fc279fd5bf39643328\&quot;&gt;Landing pages that don&#039;t clearly differentiate the offer from competitors&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e9e03f50e102d74b6bf96614e748c8da4\&quot;&gt;Destination content that&#039;s broad enough to rank but not focused enough to convert&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e699ef887f10271ba3a4ee3421115f53b\&quot;&gt;Over-reliance on brand traffic that masks weakness in acquisition&lt;\/li&gt;&lt;li data-list-item-id=\&quot;efcbd9fc6f6cbce1fa06d3b7bfefbb5a2\&quot;&gt;Disconnected messaging across channels that creates a fragmented experience&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e683bbdedae36e9f4c6b1b33d7e864f2c\&quot;&gt;Slow reaction times when performance starts to shift&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;Addressing these usually delivers more impact than any incremental channel improvement. They&#039;re structural issues \u2013 and they respond to structural thinking as part of a broader, bells-and-whistles&lt;a href=\&quot;https:\/\/engage.agency\/services\/digital-marketing\&quot;&gt;\u00a0&lt;u&gt;digital marketing strategy&lt;\/u&gt;&lt;\/a&gt;.&lt;\/p&gt;&lt;h2&gt;Common mistakes worth avoiding&lt;\/h2&gt;&lt;p&gt;A few patterns come up repeatedly across travel brands, and they&#039;re worth naming because they&#039;re so common:.&lt;\/p&gt;&lt;ul&gt;&lt;li data-list-item-id=\&quot;e45360ad2209b5093fd2921138219245c\&quot;&gt;Treating all destinations and products equally regardless of demand or margin&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ecfa065974a06435a2f114321a906650d\&quot;&gt;Focusing on traffic growth metrics while conversion quality quietly deteriorates&lt;\/li&gt;&lt;li data-list-item-id=\&quot;ef1463e9d1a4f8ee2a3ed2e2eeb97ef5c\&quot;&gt;Over-relying on historical data when market conditions have moved on&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e5d021b57a51c69220c496e64ce78e32b\&quot;&gt;Overcomplicating campaign structures without a clear commercial rationale&lt;\/li&gt;&lt;li data-list-item-id=\&quot;e659588be6ded58091f97c2d08ab496c6\&quot;&gt;Underestimating the role pricing and availability play in conversion \u2013 probably the costliest mistake of all.&lt;\/li&gt;&lt;\/ul&gt;&lt;p&gt;The solution in most cases isn&#039;t more complexity. It&#039;s more clarity about where effort is actually worth applying. Less doing. More thinking. Then better doing.&lt;\/p&gt;&lt;h2&gt;Final thoughts&lt;\/h2&gt;&lt;p&gt;Digital marketing in travel is less about mastering individual channels and more about understanding how those channels interact with the real-world factors that actually drive performance \u2013 demand, pricing, availability and timing.&lt;\/p&gt;&lt;p&gt;The biggest gains rarely come from better campaigns in isolation. They come from better decisions: about where to focus, when to act and how to align digital activity with what&#039;s genuinely happening in the market rather than what happened last quarter.&lt;\/p&gt;&lt;p&gt;The brands that succeed here aren&#039;t necessarily the most sophisticated marketers. They&#039;re the ones that stay closest to the fundamentals, move quickly when conditions change and treat commercial reality as part of the strategy rather than a constraint on it. We&#039;ve built our travel marketing practice around exactly that thinking \u2013 and we&#039;d love to bring it to yours.&lt;\/p&gt;&lt;h2&gt;Want to talk about your travel strategy?&lt;\/h2&gt;&lt;p&gt;We work with travel brands to build digital strategies that stay close to demand, align with commercial reality and create genuine engagement at scale. If you&#039;d like to explore what that could look like for your business,&lt;a href=\&quot;https:\/\/engage.agency\/contact\&quot;&gt;\u00a0&lt;u&gt;we&#039;d love to hear from you.&lt;\/u&gt;&lt;\/a&gt;&lt;\/p&gt;&lt;h2&gt;Frequently asked questions&lt;\/h2&gt;&quot;}},{&quot;type&quot;:&quot;accordion&quot;,&quot;data&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;What&#039;s the most important channel for travel digital marketing?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Search \u2013 both organic and paid \u2013 is typically the primary driver of high-intent traffic for most travel brands.. The strongest results come when all channels are working in a connected strategy rather than independently.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Why doesn&#039;t travel traffic always convert well?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Most often because of a mismatch between what users expect and what they find \u2013 whether that&#039;s a landing page that doesn&#039;t reflect their search intent, pricing that isn&#039;t competitive or availability that doesn&#039;t match what was advertised.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How should travel brands manage seasonality?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;With flexibility rather than fixed planning. Monitor demand signals regularly, adjust budgets based on real performance and stay willing to redirect effort when conditions change.\u00a0&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;Is SEO or PPC more important in travel?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Both, used well together. SEO builds long-term visibility. PPC responds to immediate intent and provides flexibility to scale quickly. Prioritising one at the expense of the other tends to limit overall performance.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;What&#039;s the biggest opportunity for improvement in most travel strategies?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Better alignment between digital activity and commercial reality \u2013 specifically pricing, margins and availability. When campaigns are built around what&#039;s actually worth promoting at any given moment, performance tends to improve significantly.&lt;\/p&gt;&quot;,&quot;cta&quot;:null},{&quot;title&quot;:&quot;How can travel brands improve conversion rates?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;By starting with the offer rather than the channel. Clearer messaging, stronger landing pages and upfront communication of value, pricing and availability all make a meaningful difference.&lt;\/p&gt;&quot;,&quot;cta&quot;:null}]}}]}},{&quot;type&quot;:&quot;cta-panel&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Ready to elevate your digital marketing?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Let&#039;s talk &quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel/Travel-Marketing-Blog-Hero-2.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel/Travel-Marketing-Blog-Hero-2.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel/Travel-Marketing-Blog-Hero-2.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel/Travel-Marketing-Blog-Hero-2.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/Demand-attention-and-the-art-of-getting-booked-digital-marketing-in-travel/Travel-Marketing-Blog-Hero-2.png"
+		alt="Travel Marketing Blog Hero 2"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>Demand, attention and the art of getting booked: Digital marketing in travel</h1>
+	
+			<p>28th May 2026</p>
+	
+	
+			<p>Roughly a 10 minute read by</p>
+	
+						<p>
+									<a href="../team/tom-schofield.html">
+						Tom
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<p>Travel is one of the most demanding sectors to market in, and not just because of the competition. Demand shifts overnight. Pricing changes can halve conversion rates without a single campaign variable moving. A news cycle, a weather event or a viral social moment can spike or sink destination interest in days.</p><p>Performance problems in travel are rarely isolated to channels. They’re almost always the result of misalignment - between demand and digital activity, between pricing and conversion expectation, between what the market is doing and what the strategy is set up to respond to.</p><p>The brands that outperform aren’t always the most sophisticated marketers. They’re the one who move fastest when conditions change.</p><h2>What drives performance in travel marketing?</h2><p>Before getting into channels and tactics, it's worth being clear about the fundamentals, because they're the things that get overlooked when strategies become very complex.</p><p>Performance in travel comes down to four things, and none of them are glamorous, which is probably why they get skipped.<br /><br />1. Focusing on real demand: prioritising destinations and queries that are actively converting, not just generating traffic. </p><p>2. Reacting to market conditions: adjusting budgets, messaging and priorities based on pricing, availability and competition as they shift. </p><p>3. Aligning marketing with commercial reality: ensuring campaigns reflect margins, inventory and actual business goals rather than vanity metrics. </p><p>4. Turning traffic into genuine engagement: using activations and digital experiences to communicate value clearly and capture that all-important first-party data.</p><p>The biggest performance gains we see in travel rarely come from small channel optimisations. They come from better decisions about where to focus and when to act.</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		media-single-image
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1850,height=1041/engage-website/production/Case-study-images/Jet2-Seasonal-Success-Story/Engage_Case-study26_Jet2_2024Activations.png"
+			 media="(min-width: 1600px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1700,height=956/engage-website/production/Case-study-images/Jet2-Seasonal-Success-Story/Engage_Case-study26_Jet2_2024Activations.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1500,height=844/engage-website/production/Case-study-images/Jet2-Seasonal-Success-Story/Engage_Case-study26_Jet2_2024Activations.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1440,height=810/engage-website/production/Case-study-images/Jet2-Seasonal-Success-Story/Engage_Case-study26_Jet2_2024Activations.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Case-study-images/Jet2-Seasonal-Success-Story/Engage_Case-study26_Jet2_2024Activations.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Case-study-images/Jet2-Seasonal-Success-Story/Engage_Case-study26_Jet2_2024Activations.png"
+		alt="Engage Case study26 Jet2 2024 Activations"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>Seen in practice: Delivering 26m plays for Jet2holidays</h2><p>For Jet2holidays, visibility was never the problem. In one of the most competitive travel markets in the UK, they had the brand presence and media weight to be seen. The challenge was deeper than that. </p><p>In a market where every operator is pushing deals, discounts and dream destinations simultaneously, how do you create something that users actually want to spend time with? Something they remember when it comes to booking?</p><p><a href="../work/seasonal-success-story-for-jet2holidays-26-million-plays.html">Our answer was gamification</a>. A series of large-scale digital activations built around key seasonal moments, each designed with a simple brief: make it fast, frictionless and genuinely worth playing. Ideally, worth playing repeatedly.</p><p>Across the campaign series, the results were significant: over 26 million plays – that’s not a typo – averaging 95 plays per user in some executions, with first-party data capture running throughout. More than that, the campaigns created something that pure channel activity rarely does – a reason to choose Jet2 that had nothing to do with price. Read the .</p>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		cta-button
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+			<a
+	href="../work/seasonal-success-story-for-jet2holidays-26-million-plays.html"
+	>
+	Read the full jet2holidays case study
+</a>
+	
+	
+		
+	</div>
+		
+	<div>
+		rich-text
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+			<h2>The state of digital in travel</h2><p>Three things define the travel digital landscape right now, and all three shape how strategy needs to work.</p><p><strong>Demand is volatile.</strong> We've seen destination interest drop by double digits week-on-week purely due to pricing shifts, with no change in campaign structure or visibility. Declining traffic in those moments isn't a marketing failure. It's a market signal. Knowing the difference quickly is one of the most valuable things a travel marketing team can do.</p><p><strong>Search behaviour has fragmented</strong>. People compare across multiple sessions, switch between devices and consult reviews before committing. The conversion path is longer than it used to be, which means capturing initial intent is only half the job. Supporting users through the full decision – through remarketing, CRM, content and brand recall – is where bookings are actually won.</p><p><strong>Travel is inherently comparison-driven</strong>. A strong ranking or high impression share doesn't protect you if your proposition is weaker than the next result. Digital brings users into consideration. The strength of the offer determines whether they convert.</p><h2>SERPS, AI and the comparison challenge</h2><p>Search results in travel aren't just a list of links anymore. They're packed with price comparisons, maps, reviews, AI-generated summaries and booking widgets, all competing for attention before a user has clicked on anything.</p><p>When users do land on your site, they arrive with high expectations, limited patience and often several tabs already open. Value has to be obvious immediately. Confidence needs to be established within seconds. Any hesitation is an invitation to go back and try the next result.</p><p>This is the attention economy in its most unforgiving form. Visibility gets you into consideration. Execution is what gets you booked.</p><h2>The Demand Alignment Model</h2><p>One of the most useful frameworks for diagnosing travel performance is what we refer to as the Demand Alignment Model – the relationship between three things that need to be in sync for a strategy to work.</p><ul><li data-list-item-id="ecd789dd31c38f7a8a7f5867c9dc9a5f1">Demand: where genuine user interest exists right now, not where it existed last quarter.</li><li data-list-item-id="e5a0c5130fd09dbc4dba8d2e5c5fbf48b">Commercials: pricing, margins and availability, which determine what's worth promoting and how aggressively. </li><li data-list-item-id="e1828b17cfb7473f14f24ad5913db9ad9">Channels: the combination of SEO, paid media, CRM and activations through which that demand is reached and converted.</li></ul><p>Performance problems typically occur when one of these three is out of step with the others. Paid media amplifying a product with weak pricing. SEO driving traffic to destinations with no availability. CRM working with insufficient data to do anything meaningful. We've seen all three. Sometimes simultaneously. When the model is aligned, each element makes the others more effective. When it isn't, the whole strategy leaks.</p><h2>Pricing, margins and availability: the conversion triangle</h2><p>These are the most immediate performance levers in travel, and the most commonly underestimated. A few things worth knowing:</p><p><strong>Pricing</strong> is probably the single biggest driver of conversion rate in travel. A 5-10% pricing gap relative to competitors is often enough to significantly reduce conversion, even with strong visibility.</p><p><strong>Margins</strong> determine how aggressively a brand can compete. Higher-margin products support broader targeting and more competitive bidding. Lower-margin offerings require tighter focus on high-intent queries and proven destinations.</p><p><strong>Availability</strong> is the most immediate lever of all. There's limited value in driving traffic to destinations or experiences that are sold out or nearly so, yet campaigns routinely continue to push these areas because structures haven't been updated to reflect live inventory. Aligning activity with real-time availability data is one of the faster wins available to most travel brands. It's also one of the most satisfying – because the results tend to show up quickly.</p><h2>Seasonality is a signal, not a schedule</h2><p>The travel industry has always run on seasonal rhythms – but treating seasonality as a fixed calendar is one of the more reliable ways to underperform.</p><p>Demand shifts based on pricing and competitor behaviour, not just the time of year. Booking windows vary. External factors – weather events, news cycles, trending destinations – can create or destroy demand rapidly. What works better than a fixed plan is a genuinely responsive approach: monitoring signals in real time, adjusting budgets and messaging as conditions change, and redirecting effort quickly when the data warrants it.</p><p>Seasonality should inform the starting point for strategy, not fix it in place. Think of it as a compass, not a map.</p><h2>How the channels work together</h2><p>No channel in travel works well in isolation. Each plays a distinct role in a connected system – and performance suffers when they're managed independently.</p><ul><li data-list-item-id="eb9172e1865663c765808e7b80f5b1b6b"><a href="../services/seo.html"><u>SEO</u></a> drives discovery, capturing high-intent and branded search demand over the long term.</li><li data-list-item-id="ece8ad0dd26457c11dd77a886cb6833e1"><a href="../services/ppc.html"><u>Paid media</u></a> intercepts users who are ready to book and provides the scale and flexibility to respond to market conditions quickly.</li><li data-list-item-id="e1c986c9ac40a96106de25f9f466ed605"><a href="../services/crm.html"><u>CRM</u></a> supports the longer conversion journeys that are normal in travel – nurturing users who aren't ready to book yet and re-engaging those who didn't convert first time.</li><li data-list-item-id="ea3011364af96f48871175fcae528f95a"><a href="https://engage.agency/services/digital-activations-for-engagement"><u>Digital activations</u></a> create reasons to engage beyond price and availability, capturing first-party data in the process.<a href="../services/digital-pr.html"> </a></li><li data-list-item-id="e6399fb97bc3fb8dc542f406a830cfdcd"><a href="../services/digital-pr.html"><u>Digital PR</u></a> builds the authority and visibility that strengthens organic performance over time.</li></ul><p>The failure mode isn't usually a single weak channel. It's misalignment. Paid amplifying weak pricing. SEO bringing traffic to poor offers. CRM with nothing to work with because there's no activation strategy generating data. These aren't channel problems – they're strategic alignment problems, and they're the ones worth solving first. The good news is that when you fix the alignment, you often don't need to spend more. You just need to spend better</p><h2>The role of activations in travel marketing</h2><p>In a sector where most brands are competing on largely similar propositions – price, destination, inclusions – the ability to create genuine engagement beyond those comparisons is a meaningful differentiator.</p><p>Activations do that job. Gamified experiences, quizzes, reward mechanics and interactive content give users a reason to spend time with a brand rather than simply passing through it - driving dwell time, encouraging return visits and generating first-party data that makes CRM and remarketing significantly more effective.</p><p>This is also the part of travel marketing that can't be automated. Real engagement – the kind that influences a booking decision – takes creativity, craft and a genuine understanding of what makes people tick. That's what we bring to it.</p><p>Our Jet2holidays work is a clear example of what's possible at scale. But the principle applies at every level: activations turn passive traffic into active engagement, and active engagement influences booking decisions in ways that a well-targeted ad simply can't.</p><h2>Where travel brands typically lose performance</h2><p>The most common performance issues we see in travel are the ones that are easiest to miss - because surface metrics look fine. Traffic holds steady. Impressions are strong. But revenue doesn't scale.</p><p>The underlying causes tend to follow a familiar pattern:</p><ul><li data-list-item-id="e870759a4904085fc279fd5bf39643328">Landing pages that don't clearly differentiate the offer from competitors</li><li data-list-item-id="e9e03f50e102d74b6bf96614e748c8da4">Destination content that's broad enough to rank but not focused enough to convert</li><li data-list-item-id="e699ef887f10271ba3a4ee3421115f53b">Over-reliance on brand traffic that masks weakness in acquisition</li><li data-list-item-id="efcbd9fc6f6cbce1fa06d3b7bfefbb5a2">Disconnected messaging across channels that creates a fragmented experience</li><li data-list-item-id="e683bbdedae36e9f4c6b1b33d7e864f2c">Slow reaction times when performance starts to shift</li></ul><p>Addressing these usually delivers more impact than any incremental channel improvement. They're structural issues – and they respond to structural thinking as part of a broader, bells-and-whistles<a href="../services/digital-marketing.html"> <u>digital marketing strategy</u></a>.</p><h2>Common mistakes worth avoiding</h2><p>A few patterns come up repeatedly across travel brands, and they're worth naming because they're so common:.</p><ul><li data-list-item-id="e45360ad2209b5093fd2921138219245c">Treating all destinations and products equally regardless of demand or margin</li><li data-list-item-id="ecfa065974a06435a2f114321a906650d">Focusing on traffic growth metrics while conversion quality quietly deteriorates</li><li data-list-item-id="ef1463e9d1a4f8ee2a3ed2e2eeb97ef5c">Over-relying on historical data when market conditions have moved on</li><li data-list-item-id="e5d021b57a51c69220c496e64ce78e32b">Overcomplicating campaign structures without a clear commercial rationale</li><li data-list-item-id="e659588be6ded58091f97c2d08ab496c6">Underestimating the role pricing and availability play in conversion – probably the costliest mistake of all.</li></ul><p>The solution in most cases isn't more complexity. It's more clarity about where effort is actually worth applying. Less doing. More thinking. Then better doing.</p><h2>Final thoughts</h2><p>Digital marketing in travel is less about mastering individual channels and more about understanding how those channels interact with the real-world factors that actually drive performance – demand, pricing, availability and timing.</p><p>The biggest gains rarely come from better campaigns in isolation. They come from better decisions: about where to focus, when to act and how to align digital activity with what's genuinely happening in the market rather than what happened last quarter.</p><p>The brands that succeed here aren't necessarily the most sophisticated marketers. They're the ones that stay closest to the fundamentals, move quickly when conditions change and treat commercial reality as part of the strategy rather than a constraint on it. We've built our travel marketing practice around exactly that thinking – and we'd love to bring it to yours.</p><h2>Want to talk about your travel strategy?</h2><p>We work with travel brands to build digital strategies that stay close to demand, align with commercial reality and create genuine engagement at scale. If you'd like to explore what that could look like for your business,<a href="../contact.html"> <u>we'd love to hear from you.</u></a></p><h2>Frequently asked questions</h2>
+	
+	
+	
+	
+		
+	</div>
+		
+	<div>
+		accordion
+	</div>
+
+			<div>
+	
+	
+
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h2>
+							What's the most important channel for travel digital marketing?
+					</h2>
+	
+	
+			<p>Search – both organic and paid – is typically the primary driver of high-intent traffic for most travel brands.. The strongest results come when all channels are working in a connected strategy rather than independently.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Why doesn't travel traffic always convert well?
+					</h2>
+	
+	
+			<p>Most often because of a mismatch between what users expect and what they find – whether that's a landing page that doesn't reflect their search intent, pricing that isn't competitive or availability that doesn't match what was advertised.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							How should travel brands manage seasonality?
+					</h2>
+	
+	
+			<p>With flexibility rather than fixed planning. Monitor demand signals regularly, adjust budgets based on real performance and stay willing to redirect effort when conditions change. </p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							Is SEO or PPC more important in travel?
+					</h2>
+	
+	
+			<p>Both, used well together. SEO builds long-term visibility. PPC responds to immediate intent and provides flexibility to scale quickly. Prioritising one at the expense of the other tends to limit overall performance.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							What's the biggest opportunity for improvement in most travel strategies?
+					</h2>
+	
+	
+			<p>Better alignment between digital activity and commercial reality – specifically pricing, margins and availability. When campaigns are built around what's actually worth promoting at any given moment, performance tends to improve significantly.</p>
+	
+	
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h2>
+							How can travel brands improve conversion rates?
+					</h2>
+	
+	
+			<p>By starting with the offer rather than the channel. Clearer messaging, stronger landing pages and upfront communication of value, pricing and availability all make a meaningful difference.</p>
+	
+	
+	
+	
+		
+	</article>
+			</div>
+			
+			<section>
+	
+	
+
+			<h2>
+							Ready to elevate your digital marketing?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Let&#039;s talk 
+</a>
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c1ccaf5ec479',t:'MTc5MDI3MzU0Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+			<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>15 Website Accessibility Tips &amp; Solutions | Improve UX | Engage</title>
+<meta name="description" content="Discover 15 practical website accessibility tips to improve UX, meet compliance standards, and create inclusive digital experiences for all users.">
+
+	<link rel="canonical" href="15-website-accessibility-tips-solutions.html" />
+
+<meta name="theme-color" content="#ff585d">
+<meta name="color-scheme" content="only light">
+<link rel="apple-touch-icon" href="../static/img/meta/icon-180.png">
+<link rel="icon" href="../static/img/meta/icon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../static/img/meta/icon-180.png" type="image/png" sizes="180x180">
+
+<link rel="preload" as="style" href="../build/assets/view-transition-Dlez9ItX.css" /><link rel="stylesheet" href="../build/assets/view-transition-Dlez9ItX.css" />
+
+<script>
+	/* Initialize immediately - before any scripts run */
+	window.viewTransition = undefined;
+	// Path where this app is deployed. Because we donâ€™t deploy at the root of the domain
+	// we need to keep track of this and adjust any URL matching using this value.
+	// const basePath = '/templates/pages';
+
+	// Make sure browser has support
+	// document.addEventListener("DOMContentLoaded", (e) => {
+	// 	let shouldThrow = false;
+
+	// 	if (!window.navigation) {
+	// 		document.querySelector('.warning[data-reason="navigation-api"]').style.display = "block";
+	// 		shouldThrow = false;
+	// 	}
+
+	// 	if (!("CSSViewTransitionRule" in window)) {
+	// 		document.querySelector('.warning[data-reason="cross-document-view-transitions"]').style.display = "block";
+	// 		shouldThrow = true;
+	// 	}
+
+	// 	if (shouldThrow) {
+	// 		// Throwing here, to prevent the rest of the code from getting executed
+	// 		// If only JS (in the browser) had something like process.exit().
+	// 		throw new Error('Browser is lacking support â€¦');
+	// 	}
+	// });
+
+	// Note: determining the types is typically needed only on the new page (thus: in `pageswap`)
+	// However, because we set the `view-transition-names` based on the types (see `mpa.css`)
+	// we also determine it on the outgoing page.
+	window.addEventListener("pageswap", async (e) => {
+		if (e.viewTransition) {
+			// @TODO: If destination does not start with basePath, abort the VT
+
+			const transitionType = determineTransitionType(e.activation);
+
+			// console.log(`pageSwap: ${transitionType}`);
+			// window.alert(`pageSwap: ${e.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			// Persist transitionType for browsers that donâ€™t have the Navigation API
+			if (!window.navigation) {
+				localStorage.setItem('transitionType', transitionType);
+			}
+		} else {
+			// No view transition available
+			// console.log('pageSwap: no view transition');
+		}
+	});
+
+	window.addEventListener("pagereveal", async (e) => {
+		if (e.viewTransition) {
+			window.viewTransition = e.viewTransition;
+
+			// Get transitionType from localStorage or derive it using the NavigationActivationInformation
+			let transitionType;
+
+			if (!window.navigation) {
+				transitionType = localStorage.getItem('transitionType');
+			} else {
+				const { navigationType } = navigation.activation.navigationType;
+
+				transitionType = determineTransitionType(navigation.activation);
+			}
+
+			// console.log(`pageReveal: ${transitionType}`);
+			// window.alert(`pageReveal: ${navigation.activation.navigationType}`);
+
+			e.viewTransition.types.add(transitionType);
+
+			if (transitionType !== 'push') {
+				// For reloads, we want to skip the transition entirely
+				// e.viewTransition.skip();
+
+				return;
+			}
+
+			// console.log('transitionType', transitionType);
+
+			await e.viewTransition.ready;
+
+			const $mask = document.getElementById('mask');
+
+			// console.log('pageReveal: view transition ready', $mask);
+
+			await e.viewTransition.updateCallbackDone;
+
+			// console.log('pageReveal: view transition update callback done');
+
+			await e.viewTransition.finished;
+
+			// console.log('pageReveal: view transition finished');
+
+			$mask.classList.add('translated');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.add('animate-out');
+
+			// await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// $mask.classList.remove('translated', 'animate-out');
+		} else {
+			// No view transition available
+			// console.log('pageReveal: no view transition');
+			window.viewTransition = false;
+		}
+	});
+
+
+	// Determine the View Transition class to use based on the old and new navigation entries
+	// Also take the navigateEvent into account to detect UA back/forward navigations
+	// @TODO: Check for dead code paths now that reload is triggered manually
+	const determineTransitionType = (activation) => {
+		const { from: oldNavigationEntry, entry: newNavigationEntry, navigationType } = activation;
+
+		// console.log('A oldNavigationEntry', oldNavigationEntry, 'A newNavigationEntry', newNavigationEntry);
+		// console.log('A navigationType', navigationType);
+
+		if (!oldNavigationEntry || !newNavigationEntry) {
+			return 'unknown';
+		}
+
+		const currentURL = new URL(oldNavigationEntry.url);
+		const destinationURL = new URL(newNavigationEntry.url);
+
+		// const currentPathname = currentURL.pathname.replace(basePath, '');
+		// const destinationPathname = destinationURL.pathname.replace(basePath, '');
+		const currentPathname = currentURL.pathname;
+		const destinationPathname = destinationURL.pathname;
+
+		// console.log('currentPathname', currentPathname, 'destinationPathname', destinationPathname, activation);
+
+		if (currentPathname === destinationPathname) {
+			return 'reload';
+		} else {
+			if (navigationType === 'traverse') {
+				// console.log('traverse', 'oldNavigationEntry', oldNavigationEntry.index, 'newNavigationEntry', newNavigationEntry.index);
+
+				return oldNavigationEntry.index > newNavigationEntry.index ? 'backwards' : 'forwards';
+			}
+			/* let currentPageIndex = currentPathname.replace('/index', '').replace('/', '').replace('.html', '');
+			let destinationPageIndex = destinationPathname.replace('/index', '').replace('/', '').replace('.html', '');
+
+			// The first page has no number in its path
+			currentPageIndex = currentPageIndex ? parseInt(currentPageIndex) : 1;
+			destinationPageIndex = destinationPageIndex ? parseInt(destinationPageIndex) : 1;
+
+			if (currentPageIndex > destinationPageIndex) {
+				return 'backwards';
+			}
+			if (currentPageIndex < destinationPageIndex) {
+				return 'forwards';
+			} */
+
+			return navigationType;
+		}
+	};
+
+	if (!('onpagereveal' in window)) {
+		window.viewTransition = false;
+	}
+</script>
+
+
+
+
+<link rel="preload" as="image" href="15-website-accessibility-tips-solutions.html" media="(width < 768px)" fetchpriority="high" />
+	
+
+
+
+<link rel="preload" as="style" href="../build/assets/app-NX5jMW5-.css" /><link rel="stylesheet" href="../build/assets/app-NX5jMW5-.css" /><link rel="modulepreload" as="script" href="../build/assets/app-CZ4HxMW9.js" /><script type="module" src="../build/assets/app-CZ4HxMW9.js"></script>
+<meta property="og:title" content="15 Website Accessibility Tips &amp; Solutions | Improve UX | Engage">
+<meta property="og:description" content="Discover 15 practical website accessibility tips to improve UX, meet compliance standards, and create inclusive digital experiences for all users.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://engage.agency/blog/15-website-accessibility-tips-solutions">
+<meta property="og:site_name" content="Engage">
+<meta property="og:image" content="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5/engage-website/production/Share-Images/Employee-Owned.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+
+	<script type="application/ld+json">
+		{"@context":"https:\/\/schema.org","@graph":[{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions#blogposting","url":"https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions","headline":"15 Website Accessibility Tips & Solutions | Improve UX | Engage","author":{"@type":"Person","@id":"https:\/\/engage.agency\/team\/simon-willians#person"},"publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions#webpage"},"image":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Laptop-with-braille-reader_230321_105344.jpg","datePublished":"2025-07-25T15:26:00+01:00","description":"Discover 15 practical website accessibility tips to improve UX, meet compliance standards, and create inclusive digital experiences for all users."},{"@type":"WebPage","@id":"https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions#webpage","url":"https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions","name":"15 Website Accessibility Tips & Solutions | Improve UX | Engage","description":"Discover 15 practical website accessibility tips to improve UX, meet compliance standards, and create inclusive digital experiences for all users.","publisher":{"@type":"Organization","@id":"https:\/\/engage.agency\/#organization"},"breadcrumb":{"@type":"BreadcrumbList","@id":"https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions#breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/engage.agency\/"},{"@type":"ListItem","position":2,"name":"Blog index","item":"https:\/\/engage.agency\/blog"},{"@type":"ListItem","position":3,"name":"15 website accessibility tips & solutions","item":"https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions"}]},"primaryImageOfPage":{"@type":"ImageObject","url":"https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Laptop-with-braille-reader_230321_105344.jpg"},"datePublished":"2025-07-25T15:26:00+01:00","dateModified":"2026-03-27T15:43:46+00:00","inLanguage":"en-GB","mainEntity":{"@type":"BlogPosting","@id":"https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions#blogposting"}}]}
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-P4KN3MHT');</script>
+	<!-- End Google Tag Manager -->
+	</head>
+<body>
+			<!-- Google Tag Manager (noscript) -->
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P4KN3MHT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<!-- End Google Tag Manager (noscript) -->
+	
+			<nav class="absolute top-0 left-0 z-50">
+	<ul>
+		<li>
+			<a href="15-website-accessibility-tips-solutions.html#page-content" class="sr-only focus:not-sr-only bg-white text-black">Skip to main content</a>
+		</li>
+	</ul>
+</nav>
+	
+		<div id="mask"></div>
+
+	<div
+		id="app"
+		data-page="{&quot;cookieBanner&quot;:{&quot;title&quot;:&quot;We value your privacy&quot;,&quot;copy&quot;:&quot;We use cookies to give you the best online experience. Please let us know if you agree to all of these &lt;a href=\&quot;\/cookie-policy\&quot;&gt;cookies&lt;\/a&gt;.&quot;,&quot;groups&quot;:{&quot;necessary&quot;:{&quot;title&quot;:&quot;Necessary&quot;,&quot;copy&quot;:&quot;Required to provide necessary security measures for visitors, provide key functionality within the website, and to access authenticated areas of the website. These cannot be disabled.&quot;},&quot;preferences&quot;:{&quot;title&quot;:&quot;Preferences&quot;,&quot;copy&quot;:&quot;Preference cookies enable a website to remember information that changes the way the website behaves or looks, like your preferred language or the region that you are in.&quot;},&quot;analytics&quot;:{&quot;title&quot;:&quot;Analytics &amp; statistics&quot;,&quot;copy&quot;:&quot;Analytics &amp; statistics cookies help website owners to understand how visitors interact with websites by collecting and reporting information anonymously.&quot;},&quot;marketing&quot;:{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Marketing cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third party advertisers.&quot;}},&quot;ui&quot;:{&quot;accept&quot;:&quot;Allow all&quot;,&quot;reject&quot;:&quot;Reject&quot;,&quot;save&quot;:&quot;Allow selected&quot;,&quot;manage&quot;:&quot;Manage&quot;}},&quot;title&quot;:&quot;15 Website Accessibility Tips &amp; Solutions | Improve UX | Engage&quot;,&quot;description&quot;:&quot;Discover 15 practical website accessibility tips to improve UX, meet compliance standards, and create inclusive digital experiences for all users.&quot;,&quot;siteName&quot;:&quot;Engage&quot;,&quot;socialImage&quot;:&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200,ar=40%3A21,crop=focalpoint,fp-x=0.5,fp-y=0.5\/engage-website\/production\/Share-Images\/Employee-Owned.jpg&quot;,&quot;url&quot;:&quot;https:\/\/engage.agency\/blog\/15-website-accessibility-tips-solutions&quot;,&quot;shareTitle&quot;:&quot;15 Website Accessibility Tips &amp; Solutions | Improve UX | Engage&quot;,&quot;shareDescription&quot;:&quot;Discover 15 practical website accessibility tips to improve UX, meet compliance standards, and create inclusive digital experiences for all users.&quot;,&quot;type&quot;:&quot;article&quot;,&quot;noindex&quot;:false,&quot;structuredData&quot;:&quot;{\&quot;@context\&quot;:\&quot;https:\\\/\\\/schema.org\&quot;,\&quot;@graph\&quot;:[{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/15-website-accessibility-tips-solutions#blogposting\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/15-website-accessibility-tips-solutions\&quot;,\&quot;headline\&quot;:\&quot;15 Website Accessibility Tips &amp; Solutions | Improve UX | Engage\&quot;,\&quot;author\&quot;:{\&quot;@type\&quot;:\&quot;Person\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/team\\\/simon-willians#person\&quot;},\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;mainEntityOfPage\&quot;:{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/15-website-accessibility-tips-solutions#webpage\&quot;},\&quot;image\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/15-website-accessibility-tips-solutions\\\/Laptop-with-braille-reader_230321_105344.jpg\&quot;,\&quot;datePublished\&quot;:\&quot;2025-07-25T15:26:00+01:00\&quot;,\&quot;description\&quot;:\&quot;Discover 15 practical website accessibility tips to improve UX, meet compliance standards, and create inclusive digital experiences for all users.\&quot;},{\&quot;@type\&quot;:\&quot;WebPage\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/15-website-accessibility-tips-solutions#webpage\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/15-website-accessibility-tips-solutions\&quot;,\&quot;name\&quot;:\&quot;15 Website Accessibility Tips &amp; Solutions | Improve UX | Engage\&quot;,\&quot;description\&quot;:\&quot;Discover 15 practical website accessibility tips to improve UX, meet compliance standards, and create inclusive digital experiences for all users.\&quot;,\&quot;publisher\&quot;:{\&quot;@type\&quot;:\&quot;Organization\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/#organization\&quot;},\&quot;breadcrumb\&quot;:{\&quot;@type\&quot;:\&quot;BreadcrumbList\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/15-website-accessibility-tips-solutions#breadcrumbs\&quot;,\&quot;itemListElement\&quot;:[{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:1,\&quot;name\&quot;:\&quot;Home\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:2,\&quot;name\&quot;:\&quot;Blog index\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\&quot;},{\&quot;@type\&quot;:\&quot;ListItem\&quot;,\&quot;position\&quot;:3,\&quot;name\&quot;:\&quot;15 website accessibility tips &amp; solutions\&quot;,\&quot;item\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/15-website-accessibility-tips-solutions\&quot;}]},\&quot;primaryImageOfPage\&quot;:{\&quot;@type\&quot;:\&quot;ImageObject\&quot;,\&quot;url\&quot;:\&quot;https:\\\/\\\/images.engagecdn.net\\\/cdn-cgi\\\/image\\\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=auto,metadata=none,dpr=1,w=1200\\\/engage-website\\\/production\\\/Blog\\\/15-website-accessibility-tips-solutions\\\/Laptop-with-braille-reader_230321_105344.jpg\&quot;},\&quot;datePublished\&quot;:\&quot;2025-07-25T15:26:00+01:00\&quot;,\&quot;dateModified\&quot;:\&quot;2026-03-27T15:43:46+00:00\&quot;,\&quot;inLanguage\&quot;:\&quot;en-GB\&quot;,\&quot;mainEntity\&quot;:{\&quot;@type\&quot;:\&quot;BlogPosting\&quot;,\&quot;@id\&quot;:\&quot;https:\\\/\\\/engage.agency\\\/blog\\\/15-website-accessibility-tips-solutions#blogposting\&quot;}}]}&quot;,&quot;siteHeader&quot;:{&quot;home&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;nav&quot;:{&quot;items&quot;:[{&quot;title&quot;:&quot;Our services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;services&quot;,&quot;propositions&quot;:{&quot;title&quot;:&quot;Expertise&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;copy&quot;:&quot;Seamless, secure, future-ready websites built to perform and evolve beautifully.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Taylors&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/taylors.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/taylors.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Marketing&quot;,&quot;copy&quot;:&quot;Digital marketing that demands attention and drives real results.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Gracefood&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/gracefood.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/gracefood.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;title&quot;:&quot;Activations&quot;,&quot;copy&quot;:&quot;Digital activations that make you more memorable, data-rich, and ready to convert at scale.&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Jet2&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=430,height=258\/engage-website\/production\/Case-study-images\/jet2.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=520,height=347\/engage-website\/production\/Case-study-images\/jet2.png&quot;],&quot;sizes&quot;:[1024]}}]},&quot;services&quot;:{&quot;title&quot;:&quot;Services&quot;,&quot;groups&quot;:[{&quot;title&quot;:&quot;Websites&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/websites&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Craft CMS&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/craft-cms&quot;},{&quot;title&quot;:&quot;Development&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/website-development&quot;},{&quot;title&quot;:&quot;Digital Branding&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-branding&quot;},{&quot;title&quot;:&quot;UX\/UI Design&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ux-ui-design&quot;},{&quot;title&quot;:&quot;Motion Graphics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/motion-graphics&quot;}]},{&quot;title&quot;:&quot;Marketing&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-marketing&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;SEO&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/seo&quot;},{&quot;title&quot;:&quot;PPC&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/ppc&quot;},{&quot;title&quot;:&quot;Digital PR&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-pr&quot;},{&quot;title&quot;:&quot;Social Media&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/social-media-marketing&quot;},{&quot;title&quot;:&quot;Data &amp; Analytics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/data-analytics&quot;}]},{&quot;title&quot;:&quot;Activations&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activations&quot;,&quot;items&quot;:[{&quot;title&quot;:&quot;Activations for Engagement&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-engagement&quot;},{&quot;title&quot;:&quot;Activations for Sales&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-sales&quot;},{&quot;title&quot;:&quot;Activations for CRM&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services\/digital-activation-for-crm&quot;},{&quot;title&quot;:&quot;All Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;}]}],&quot;highlights&quot;:null}}},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;subnav&quot;:null},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;subnav&quot;:{&quot;type&quot;:&quot;standard&quot;,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;About us&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Team photo March 26&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=756,height=567\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=560,height=315\/engage-website\/production\/People-images\/Team-photo-March-26.jpg&quot;],&quot;sizes&quot;:[1024]}},&quot;items&quot;:[{&quot;title&quot;:&quot;Meet the team&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team&quot;},{&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},{&quot;title&quot;:&quot;Employee ownership&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/proudly-employee-owned&quot;},{&quot;title&quot;:&quot;The Elympics&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/the-elympics&quot;},{&quot;title&quot;:&quot;Purpose&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us\/purpose&quot;}]}},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;subnav&quot;:null}],&quot;ui&quot;:{&quot;back&quot;:&quot;Go back&quot;,&quot;close&quot;:&quot;Close&quot;,&quot;open&quot;:&quot;Menu&quot;}},&quot;vacanciesCta&quot;:{&quot;meta&quot;:6,&quot;title&quot;:&quot;Careers&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/careers&quot;},&quot;cta&quot;:{&quot;title&quot;:&quot;Get in touch&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;},&quot;dark&quot;:false},&quot;siteBanner&quot;:{&quot;id&quot;:20260527114819,&quot;copy&quot;:&quot;We&#039;re hiring - apply now!&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/&quot;,&quot;ui&quot;:{&quot;close&quot;:&quot;Close&quot;}},&quot;siteFooter&quot;:{&quot;minimal&quot;:false,&quot;ctaPanel&quot;:{&quot;title&quot;:&quot;Need some expert attention?&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Start your project&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/contact&quot;}},&quot;nav&quot;:[{&quot;title&quot;:&quot;Services&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/services&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Work&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/work&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;About&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/about-us&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;phone&quot;:{&quot;title&quot;:&quot;T. 0113 457 4090&quot;,&quot;href&quot;:&quot;tel:01134574090&quot;},&quot;address&quot;:&quot;Munro House, Duke St, Leeds LS9 8AG&quot;,&quot;legals&quot;:[{&quot;title&quot;:&quot;Privacy policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/privacy-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false},{&quot;title&quot;:&quot;Cookie policy&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/cookie-policy&quot;,&quot;external&quot;:false,&quot;current&quot;:false}],&quot;socials&quot;:[{&quot;title&quot;:&quot;LinkedIn&quot;,&quot;icon&quot;:&quot;linkedin&quot;,&quot;href&quot;:&quot;https:\/\/www.linkedin.com\/company\/engage-interactive&quot;},{&quot;title&quot;:&quot;Instagram&quot;,&quot;icon&quot;:&quot;instagram&quot;,&quot;href&quot;:&quot;https:\/\/www.instagram.com\/engageinteractive&quot;},{&quot;title&quot;:&quot;TikTok&quot;,&quot;icon&quot;:&quot;tiktok&quot;,&quot;href&quot;:&quot;https:\/\/www.tiktok.com\/@engageinteractive.agency&quot;}],&quot;copyright&quot;:&quot;&amp;copy; Engage 2026&quot;}}"
+		data-model="{&quot;header&quot;:{&quot;type&quot;:&quot;article&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;15 website accessibility tips &amp; solutions&quot;,&quot;date&quot;:&quot;21st April 2023&quot;,&quot;author&quot;:{&quot;name&quot;:&quot;Simon&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/team\/simon-willians&quot;},&quot;category&quot;:{&quot;title&quot;:&quot;Performance&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/performance&quot;},&quot;readtime&quot;:&quot;Roughly a 19 minute read by&quot;,&quot;image&quot;:{&quot;alt&quot;:&quot;Laptop with braille reader 230321 105344&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Laptop-with-braille-reader_230321_105344.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Laptop-with-braille-reader_230321_105344.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Laptop-with-braille-reader_230321_105344.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Laptop-with-braille-reader_230321_105344.jpg&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Laptop-with-braille-reader_230321_105344.jpg&quot;],&quot;sizes&quot;:[1440,1280,1024,768]}}},&quot;content&quot;:null,&quot;blocks&quot;:[{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;TL;DR Accessible websites are successful websites&quot;,&quot;copy&quot;:&quot;&lt;p&gt;In this handy guide, we\u2019ve put together our top tips for website accessibility from our amazing team of developers, designers and general website experts. Keep reading to learn more about making your site as accessible as possible and tap into new and loyal customers your competitors have\u00a0forgotten.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;What is website accessibility?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;So, before we dive into our list of web accessibility solutions, let\u2019s talk about what we actually mean by accessibility. Well, quite simply, it\u2019s making sure that your design and content can be used and consumed by most people without needing to adapt it, while also supporting those who do need to adapt\u00a0things.&lt;\/p&gt;&lt;p&gt;This includes people\u00a0with:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;impaired\u00a0vision;&lt;\/li&gt;&lt;li&gt;motor\u00a0difficulties;&lt;\/li&gt;&lt;li&gt;cognitive impairments or learning\u00a0disabilities;&lt;\/li&gt;&lt;li&gt;and deafness or impaired\u00a0hearing.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;What are some ways users can adapt websites?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;In order to make browsing the web as easy as possible, some users will\u00a0use:&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Screen readers: &lt;\/strong&gt;software that lets a user navigate a website and reads the content aloud to the\u00a0user.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Screen magnifier: &lt;\/strong&gt;a tool to effectively increase the size of the content by zooming into the\u00a0page.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Braille display: &lt;\/strong&gt;a box with a line of braille cells. Pins in each of the braille cells move up and down to allow users to read a line of braille text. They range in size from 12 cell lines to 80 cell\u00a0lines.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Speech recognition:&lt;\/strong&gt; software that enables a program to process human speech into a written\u00a0format.&lt;\/p&gt;&lt;p&gt;&lt;strong&gt;Built in browser tools: &lt;\/strong&gt;browsers have a handy set of tools built in that can assist people with adding their own preferences, such as default font sizes, zoom options, default colours, backgrounds, and\u00a0languages.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;How vital is website accessibility?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Website accessibility has never been more important than it is today. According to the World Health Organization (WHO), \u201can estimated 1.3 billion people \u2013 or 1 in 6 people worldwide - experience significant disability.\u201d So, what does this\u00a0mean?&lt;\/p&gt;&lt;p&gt;This means, if your website is not accessible, people may struggle to use it, and some people won\u2019t use it all because they simply can\u2019t. There are three stand-out reasons why you should make sure your website is accessible for\u00a0everyone:&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Social&quot;,&quot;copy&quot;:&quot;&lt;p&gt;People who are living with disabilities are further marginalised by not being able to access content online. By taking steps to increase digital inclusion on your website, you are demonstrating how you care about your customers and want to provide the best experience\u00a0possible&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Economic&quot;,&quot;copy&quot;:&quot;&lt;p&gt;You can reach a larger audience by ensuring website accessibility. If users with disabilities reach your site and are unable to access the content, they are more likely to leave and find a website that is accessible to\u00a0them.&lt;\/p&gt;&lt;p&gt;This also has an effect on brand awareness and loyalty. According to &lt;a href=\&quot;https:\/\/purpletuesday.co\/\&quot;&gt;Purple Tuesday&lt;\/a&gt;, a global social movement committed to improving the customer experience for disabled people and their families, a massive \u201c70% of disabled people will NOT return to a business after receiving poor customer\u00a0service.\u201d&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Legal&quot;,&quot;copy&quot;:&quot;&lt;p&gt;In 2010, the UK (excluding NI) replaced the 1995 Disability Discrimination Act with the Equality Act (EQA). This meant that UK goods and service providers (both public and private sector) have a &lt;strong&gt;legal obligation not to discriminate against people based on a number of protected characteristics &lt;\/strong&gt;- including\u00a0disability.&lt;\/p&gt;&lt;p&gt;The EQA doesn\u2019t outline the technical accessibility requirements, but for best practice, companies should follow the Web Content Accessibility Guidelines (WCAG) set by the &lt;a href=\&quot;https:\/\/www.w3.org\/WAI\/standards-guidelines\/wcag\/#intro\&quot;&gt;Web Accessibility Initiative&lt;\/a&gt;\u00a0(WAI).&lt;\/p&gt;&lt;p&gt;These guidelines were developed with the goal of providing a single shared standard for web content accessibility that meets the needs of individuals, organisations, and governments around the\u00a0world.&lt;\/p&gt;&lt;p&gt;According to the Web AIM Million accessibility analysis of the top 1,000,000 home pages, &lt;a href=\&quot;https:\/\/webaim.org\/projects\/million\/#facts\&quot;&gt;96.8% don\u2019t meet the WCAG standards&lt;\/a&gt;. The top three issues detected on these homepages were low contrast text, missing alt (alternative) text for images &amp;amp; empty links (hyperlinks which have no meaningful text to explain where the link directs\u00a0to).&lt;\/p&gt;&lt;p&gt;One particularly high-profile case of a website not following these guidelines was in 2019. &lt;a href=\&quot;https:\/\/musically.com\/2019\/01\/07\/beyonces-company-sued-over-the-accessibility-of-her-website\/\&quot;&gt;Beyonc\u00e9\u2019s entertainment company was sued over the lack of accessibility on her website.&lt;\/a&gt; The main issue being that none of the images had alt text, which stops screen readers from explaining what is on the page to the\u00a0user.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Website accessibility testing&quot;,&quot;copy&quot;:&quot;&lt;p&gt;There are two ways you can start looking at your website\u2019s\u00a0accessibility:&lt;\/p&gt;&lt;ol&gt;&lt;li&gt;Perform the checks\u00a0manually.&lt;\/li&gt;&lt;li&gt;Use a tool created specifically to test your website for\u00a0you.&lt;\/li&gt;&lt;\/ol&gt;&lt;p&gt;If you\u2019ve had a chance to take a look at the &lt;a href=\&quot;https:\/\/www.w3.org\/WAI\/standards-guidelines\/wcag\/#intro\&quot;&gt;WCAG&lt;\/a&gt; already, you\u2019ll know there are A LOT of guidelines, and checking these manually can be incredibly\u00a0time-consuming.&lt;\/p&gt;&lt;p&gt;On the other hand, the tools available online are fast, free and easy to use - but not comprehensive. That\u2019s why the best route is to use a combination of\u00a0both.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Understanding the difference between A, AA and AAA accessibility compliance&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Throughout this list of website accessibility tips, we\u2019ve linked to some handy sites to give you even more support. As you\u2019re exploring these sites, you\u2019ll likely come across someone mentioning \u201cdouble A\u201d or \u201ctriple A\u201d website accessibility compliance. But what exactly does it\u00a0mean?&lt;\/p&gt;&lt;p&gt;The higher the level (the more A\u2019s), the more strict the requirements. Achieving level A is pretty straightforward, whereas achieving AAA is a lot more involved and requires more effort. Double A (AA) is the most common target when aiming for an accessible\u00a0website.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;15 Top tips for website accessibility&quot;,&quot;copy&quot;:&quot;&lt;p&gt;I know, I know, get to the good stuff, &lt;strong&gt;the actionable website accessibility\u00a0advice.&lt;\/strong&gt;&lt;\/p&gt;&lt;p&gt;So far, while this article has been filled with some pretty exciting stuff - laws, jargon, acronyms a plenty, let\u2019s dive into why you\u2019re here with our 15 top tips for website\u00a0accessibility\u2026&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;1. Choose a content management system with accessibility in mind&quot;,&quot;copy&quot;:&quot;&lt;p&gt;If you have a CMS-driven content populated website, then a CMS built with accessibility in mind can make a huge difference, particularly to the end\u00a0user.&lt;\/p&gt;&lt;p&gt;Some things to ask yourself are, can the editor of pages and content add the appropriate heading types (h2, h3, h4 etc.), use the correct HTML for ordered or unordered lists and create accessible\u00a0tables?&lt;\/p&gt;&lt;p&gt;Another often overlooked feature in a CMS is the ability and ease of adding alt text for images for users of screen readers. Some CMS can make the process harder than it needs to be - and if there\u2019s a lot of time or effort needed, it can quickly be discounted as \u2018not\u00a0worthwhile\u2019.&lt;\/p&gt;&lt;p&gt;Engage\u2019s go-to CMS of choice is &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/services\/development\/craft-cms-development\&quot;&gt;Craft CMS&lt;\/a&gt;. Beyond being an amazing and simple to use CMS, it really does tick the boxes for us when it comes to accessibility. Craft don\u2019t simply have an accessible CMS, &lt;a href=\&quot;https:\/\/craftcms.com\/blog\/accessibility\&quot;&gt;they also like to blog about it too&lt;\/a&gt;. From plugins to target sizes, you can take a deep dive into accessibility with their up-to-date\u00a0pondering.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Craft Blog Logo&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Craft-Blog-Logo.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Craft-Blog-Logo.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Craft-Blog-Logo.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Craft-Blog-Logo.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Craft-Blog-Logo.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;2. Structure your page logically using headings&quot;,&quot;copy&quot;:&quot;&lt;p&gt;If you\u2019re thinking, &lt;i&gt;of course, we already use headings! &lt;\/i&gt;Then awesome, you\u2019re already adding some structure to your content. It\u2019s worth considering, though, if the page is structured as well as possible for screen readers. By using the headings in the correct order, you\u2019re explaining the content logically, not just for screen reader users, but search engines\u00a0too.&lt;\/p&gt;&lt;p&gt;Here are some bonus quick tips for accessible page\u00a0structure:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Avoid using a &amp;lt;h1&amp;gt; for anything other than the title of the website or\u00a0page.&lt;\/li&gt;&lt;li&gt;Don\u2019t skip heading levels (&amp;lt;h1&amp;gt; to &amp;lt;h3&amp;gt;), this jump appears to screen reader users that content is\u00a0missing.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Example of heading structure for content accessibility&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Example-of-heading-structure-for-content-accessibility.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Example-of-heading-structure-for-content-accessibility.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Example-of-heading-structure-for-content-accessibility.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Example-of-heading-structure-for-content-accessibility.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Example-of-heading-structure-for-content-accessibility.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;3. Include descriptive alt text for images&quot;,&quot;copy&quot;:&quot;&lt;p&gt;As we mentioned before, alt text for images is sometimes viewed as an extra optimisation that can be added \u2018if you have the time\u2019. However, they are vital in helping screen reader users to understand the message conveyed by the use of images on the\u00a0page.&lt;\/p&gt;&lt;p&gt;This becomes even more important when considering infographics that include key messages for your\u00a0user.&lt;\/p&gt;&lt;p&gt;Bonus\u00a0tips:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;If your image includes text of any kind, this should also be included in the alt\u00a0text.&lt;\/li&gt;&lt;li&gt;If an image is used as a link, the screen reader will read the file name, so if you don\u2019t plan to optimise your alt text, make sure you consider your image file names and try to make them as descriptive as\u00a0possible.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Example alt text code&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/example-alt-text-code.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/example-alt-text-code.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/example-alt-text-code.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/example-alt-text-code.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/example-alt-text-code.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;4. Give hyperlinks unique and descriptive names&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Speaking of links\u2026 think about the text that you use in your links. Ideally, you need to make sure that the text properly describes where the link will\u00a0go.&lt;\/p&gt;&lt;p&gt;Using \u201cclick here\u201d, while quick and easy to implement, is not descriptive, and is ineffective for a screen reader user. Visually impaired users are able to use their screen reader to scan for links on a webpage, which means that the link is often read aloud without any\u00a0context.&lt;\/p&gt;&lt;p&gt;For\u00a0example,&lt;\/p&gt;&lt;p&gt;\u201cTake a look at Motion Designer Ollie\u2019s blog, &lt;a href=\&quot;https:\/\/engageinteractive.co.uk\/blog\/expressions-in-after-effects\&quot;&gt;Top Tips for Creating Wiggle Expressions in After\u00a0Effects.&lt;\/a&gt;\u201d&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;5. Consider your colours&quot;,&quot;copy&quot;:&quot;&lt;p&gt;According to &lt;a href=\&quot;https:\/\/www.colourblindawareness.org\/\&quot;&gt;Colour Blind Awareness&lt;\/a&gt;, \u201cColour blindness (colour vision deficiency, or CVD) affects approximately 1 in 12 men (8%) and 1 in 200 women in the world. In Britain, this means that there are approximately 3 million colour-blind people (about 4.5% of the entire population), most of whom are\u00a0male.\u201d&lt;\/p&gt;&lt;p&gt;Obviously, brand considerations have to be made when creating your website. Having said this, the most common colour deficiency is red-green. Therefore, by using only these colours, you could be preventing this group of users from understanding your message and eventually\u00a0converting.&lt;\/p&gt;&lt;p&gt;Contrast and colour use are vital to accessibility. The guidelines on contrast are arguably complex and can easily confuse web content creators and web accessibility evaluators. To learn more about contrast for accessibility, take a look at the &lt;a href=\&quot;https:\/\/webaim.org\/articles\/contrast\/\&quot;&gt;Colour Requirement Article from the\u00a0WebAIM&lt;\/a&gt;.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Contrast checker&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Contrast-checker.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Contrast-checker.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Contrast-checker.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Contrast-checker.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Contrast-checker.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;6. Design your forms for accessibility&quot;,&quot;copy&quot;:&quot;&lt;p&gt;We\u2019ve all been there, filling out a form on a website, and it feels like you\u2019re jumping through hoops, or adding the wrong information and having to keep going back to\u00a0re-submit.&lt;\/p&gt;&lt;p&gt;This can be an even more laborious process for those who use screen readers. When designing your forms, you should ensure each field has a well-positioned, descriptive label. For example, if you need the customer to fill out their name, on the field it should read Full Name or have two separate fields for First Name and Last\u00a0Name.&lt;\/p&gt;&lt;p&gt;To do this, you can use the &amp;lt;label&amp;gt; tag or an ARIA property to associate the label text with the form\u00a0field.&lt;\/p&gt;&lt;p&gt;For keyboard only users, make it possible for people to tab through each field or section of the form\u00a0easily.&lt;\/p&gt;&lt;p&gt;It\u2019s also worth grouping related or similar fields in the form together to make the data more organised for screen readers to keep track of\u00a0progress.&lt;\/p&gt;&lt;p&gt;If you have required fields, make sure you label them as such, and configure them to alert the user to this. If you have already added visual indications such as asterisks this is perfect for sighted users, however, some screen readers won\u2019t acknowledge\u00a0them.&lt;\/p&gt;&lt;p&gt;To indicate that a field is required to a screen reader, add ARIA required=\u201dtrue\u201d and ARIA required=\u201dfalse\u201d for optional\u00a0fields.&lt;\/p&gt;&lt;p&gt;Once the user has reached the end and clicked to submit their form, they should be alerted to submission confirmation. If error counts are included in the page title after they have submitted, the user will be informed straight away and will be able to rectify them\u00a0quicker.&lt;\/p&gt;&lt;p&gt;When a user submits a form with errors or omissions, re-displaying the form and only indicating the fields in error is insufficient for some users to perceive that an error has\u00a0occurred.&lt;\/p&gt;&lt;p&gt;The best practice, suggested by the &lt;a href=\&quot;https:\/\/www.w3.org\/WAI\/WCAG21\/Techniques\/general\/G83.html\&quot;&gt;Web Accessibility Initiative&lt;\/a&gt;, is to include a message or alert that the form is not functioning correctly. It is also suggested to include an error notification in the page title, since a screen reader user is likely to believe the page was submitted correctly and will continue to navigate to another page as soon as the new page is returned instead of reading the main content area of the page\u00a0again.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Website form&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Website-form.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Website-form.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Website-form.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Website-form.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Website-form.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;7. Use tables for tabular data, not for layout&quot;,&quot;copy&quot;:&quot;&lt;p&gt;When a screen reader encounters a table, it lets the user know how many rows and columns there are, this can distract the user from the content. They are also known to read content in the incorrect order - pesky little screen\u00a0readers!&lt;\/p&gt;&lt;p&gt;Our best practice suggestion is to use CSS for presentation. If a table &lt;i&gt;&lt;strong&gt;has&lt;\/strong&gt;&lt;\/i&gt; to be used for displaying data, use headers for rows and columns to provide context of the relationship between them. You can also add HTML5 table captions to give more\u00a0information.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;8. Make content accessible by the keyboard alone&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Some people are unable to use a mouse or a trackpad, and will have to use the keyboard tab and arrow keys to access the content of a\u00a0webpage.&lt;\/p&gt;&lt;p&gt;This means that content needs to be structured logically as mentioned in tip #2, so that the tab order reflects the visual\u00a0order.&lt;\/p&gt;&lt;p&gt;If you have pages which are very long and contain lots of content, they should be broken up with jump lists or anchor links, plus an option to skip to main content should be available at the top of each\u00a0page.&lt;\/p&gt;&lt;p&gt;To test how easily accessible your pages are to keyboard only users, have a go at navigating your site without the mouse or\u00a0trackpad.&lt;\/p&gt;&lt;p&gt;A further point to consider is to avoid using elements that only activate when a user hovers over items with a mouse, as keyboard-only or screen readers users will not be able to activate\u00a0them.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;9. ARIA roles: when are they necessary?&quot;,&quot;copy&quot;:&quot;&lt;p&gt;You might remember from tip #6 about web form accessibility that ARIA or (Accessible Rich Internet Applications) can be used to add accessibility information to elements that are not natively\u00a0accessible.&lt;\/p&gt;&lt;p&gt;While ARIA can be incredibly useful, we should add a caveat here with a few extra\u00a0notes:&lt;\/p&gt;&lt;ol&gt;&lt;li&gt;&lt;strong&gt;You should always use native HTML elements when they are\u00a0available.&lt;\/strong&gt;&lt;\/li&gt;&lt;li&gt;As a general rule, the Web Accessibility Initiative states that \u201c&lt;a href=\&quot;https:\/\/www.w3.org\/WAI\/ARIA\/apg\/practices\/read-me-first\/\&quot;&gt;no ARIA is better than bad ARIA&lt;\/a&gt; [and] incorrect ARIA misrepresents visual experiences, with potentially devastating effects on their corresponding non-visual\u00a0experiences.\u201d&lt;\/li&gt;&lt;li&gt;Many functions that used to require ARIA attributes are now implemented in HTML5. For example:&lt;ul&gt;&lt;li&gt;Use the native HTML button tag instead of the ARIA role of\u00a0button.&lt;\/li&gt;&lt;li&gt;Use the HTML label tag instead of aria-label or\u00a0aria-labeledby.&lt;\/li&gt;&lt;li&gt;Use the HTML 5 nav tag instead of the ARIA role of\u00a0navigation.&lt;\/li&gt;&lt;\/ul&gt;&lt;\/li&gt;&lt;\/ol&gt;&lt;p&gt;It is not sufficient to only add ARIA attributes in order to make complex widgets accessible, as it only affects people using assistive technology not those who only use a keyboard. In which case, you still need to set up your interactions and behaviours using\u00a0JavaScript.&lt;\/p&gt;&lt;p&gt;Two effective and appropriate uses for ARIA include, adding an alert to let screen readers know about any dynamic page changes, such as stock tickers and search filters; and making widgets such as date pickers accessible to screen reader\u00a0users.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;10. Dealing with dynamic content&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Dynamic or adaptive content refers to the content that changes on the page depending on user behaviour, preferences and\u00a0interests.&lt;\/p&gt;&lt;p&gt;An example of this kind of content is when you are provided with suggested items on an ecommerce website based on your browsing history or recent\u00a0purchases.&lt;\/p&gt;&lt;p&gt;Some drawbacks for dynamic content for accessibility include how if the content on a page updates without the page being refreshed, screen readers may not be\u00a0aware.&lt;\/p&gt;&lt;h4&gt;&lt;strong&gt;Keyboard\u00a0traps&lt;\/strong&gt;&lt;\/h4&gt;&lt;p&gt;It\u2019s also common for keyboard-only users to become trapped in a loop within page overlays of dynamic content. There should never be a keyboard trap that a user can\u2019t get out of by pressing the \u2018Esc\u2019 key, with the focus returning to the previously focused\u00a0element.&lt;\/p&gt;&lt;h4&gt;&lt;strong&gt;Video and audio\u00a0content&lt;\/strong&gt;&lt;\/h4&gt;&lt;p&gt;If you have video or audio elements on your page, ensure that they don\u2019t autoplay, as it can be alarming for those using screen readers and drown out the voice of the screen reader. These elements should also have options for closed captioning and transcripts available for the hearing\u00a0impaired.&lt;\/p&gt;&lt;p&gt;If there are slideshows, all the images should have alt text and be able to be navigated by using the\u00a0keyboard.&lt;\/p&gt;&lt;h4&gt;&lt;strong&gt;Widgets&lt;\/strong&gt;&lt;\/h4&gt;&lt;p&gt;Widgets such as search bars and clock widgets should also be tested for accessibility, including the size of the text within\u00a0it.&lt;\/p&gt;&lt;h4&gt;&lt;strong&gt;Flashing\u00a0content&lt;\/strong&gt;&lt;\/h4&gt;&lt;p&gt;Flashing content can be triggering for users who suffer with seizures from photosensitivity, and images that move on the page can be difficult to process for some\u00a0users.&lt;\/p&gt;&lt;p&gt;To help with this issue, you should give users the chance to pause an animation that lasts longer than 5 seconds. The &lt;a href=\&quot;https:\/\/www.w3.org\/WAI\/standards-guidelines\/wcag\/#intro\&quot;&gt;WCAG also states&lt;\/a&gt; that elements shouldn\u2019t flash more than 3 times every\u00a0second.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;11. Identify language of text&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Identifying the language of the entire web page or document, as well as its individual parts, helps to ensure that screen readers will correctly pronounce the\u00a0content.&lt;\/p&gt;&lt;p&gt;According to the &lt;a href=\&quot;https:\/\/www.w3.org\/WAI\/standards-guidelines\/wcag\/#intro\&quot;&gt;WCAG&lt;\/a&gt; it also \u201callows braille translation software to substitute control codes for accented characters, and insert control codes necessary to prevent erroneous creation of Grade 2 braille\u00a0contractions.\u201d&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;12. Avoid tiny fonts&quot;,&quot;copy&quot;:&quot;&lt;p&gt;It\u2019s good practice to use a decent-sized font in case users are unaware they can increase the font size with browser hotkeys. The WCAG requires pages to be able to be zoomed in to 200% and be useable without any assistive technology. There\u2019s no official number - but a generally accepted minimum font size for content is\u00a016px.&lt;\/p&gt;&lt;p&gt;It\u2019s also worth noting that while some users will be accustomed to using CMD\/CTRL and \u2018+\u2019 to enlarge the page, some will choose to resize just their text. To make sure line-height adjusts proportionately, and you retain readability, you need to define your CSS line-height using relative units or unit-less\u00a0values.&lt;\/p&gt;&lt;p&gt;According to the &lt;a href=\&quot;https:\/\/www.w3.org\/TR\/2008\/REC-WCAG20-20081211\/#visual-audio-contrast-visual-presentation:~:text=Line%20spacing%20(leading)%20is%20at%20least%20space-and-a-half%20within%20paragraphs%2C%20and%20paragraph%20spacing%20is%20at%20least%201.5%20times%20larger%20than%20the%20line%20spacing.\&quot;&gt;accessibility guidelines&lt;\/a&gt;, while the default line height in browsers is 1.2, it should actually be 1.5 within paragraphs in blocks of\u00a0text.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;13. White space&quot;,&quot;copy&quot;:&quot;&lt;p&gt;White space, or negative space as it is sometimes called, reduces clutter and provides definition to the content. While it may be used by designers to enhance page elements, it can also help users navigate the\u00a0page.&lt;\/p&gt;&lt;p&gt;As the WCAG mentions, white space has been shown to ease reading difficulties and improve understanding of content for those with cognitive and learning disabilities. This is supported by the &lt;a href=\&quot;https:\/\/www.smashingmagazine.com\/2014\/03\/design-principles-visual-perception-and-the-principles-of-gestalt\/\&quot;&gt;Principles of\u00a0Gestalt&lt;\/a&gt;:&lt;\/p&gt;&lt;p&gt;&lt;i&gt;\u201cElements are perceived as part of a group if they are located within the same closed region\u2026 Objects that are closer together are perceived as more related than objects that are further\u00a0apart.\u201d&lt;\/i&gt;&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;14. Provide a transcript&quot;,&quot;copy&quot;:&quot;&lt;p&gt;We mentioned providing a transcript within tip #10, but it\u2019s more than just making audio content accessible for users who are deaf-blind. You are also ensuring those who have low Internet bandwidth can access the content without having to play the\u00a0video.&lt;\/p&gt;&lt;p&gt;Remember that a transcript\u2019s purpose is to provide information to users who can\u2019t get it from the video or audio file alone. Consider adding headings, an overview or links if\u00a0appropriate.&lt;\/p&gt;&lt;p&gt;According to the &lt;a href=\&quot;https:\/\/www.nhs.uk\/conditions\/vision-loss\/\&quot;&gt;NHS&lt;\/a&gt;, \u201cin the UK, more than 2 million people are living with sight loss. Of these, around 340,000 are registered as blind or partially sighted.\u201d This is a great argument for you to spend the time creating a transcript, ensuring those who are using screen readers can access the\u00a0content.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;15. Testing, testing, testing!&quot;,&quot;copy&quot;:&quot;&lt;p&gt;If you\u2019re starting your mission to make your website as accessible as possible, what better way is there to see the progress you\u2019re making than testing for\u00a0yourself?&lt;\/p&gt;&lt;p&gt;Think about all the tips we\u2019ve mentioned in this article and work through it as a checklist! Do your images have alt tags, is the content structured\u00a0well?&lt;\/p&gt;&lt;p&gt;Ask yourself, can I access all the elements on my site with a keyboard? Try navigating popular user journeys, are there any rollover menus which would be missed using a keyboard? Can you close dialogue boxes using the \u2018Esc\u2019\u00a0key?&lt;\/p&gt;&lt;p&gt;Test your site with a screen reader to find any issues with dynamic content, reading order or\u00a0spellings.&lt;\/p&gt;&lt;p&gt;It\u2019s important to note that - much like the difference between different desktop browsers - different assistive technologies have their own limitations, quirks and\u00a0differences.&lt;\/p&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Tools to use to help you access and improve your website\u2019s accessibility&quot;,&quot;copy&quot;:&quot;&lt;p&gt;If you\u2019re ready to start checking your website and how it stacks up against the guidelines, check out the following web accessibility tools to get you\u00a0started!&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=\&quot;https:\/\/webaim.org\/resources\/contrastchecker\/\&quot;&gt;Contrast Checker&lt;\/a&gt;: You can enter a foreground and background colour in RGB hexadecimal format, or choose a colour using the colour picker, and it will tell you your contrast\u00a0ratio.&lt;\/li&gt;&lt;li&gt;&lt;a href=\&quot;https:\/\/wave.webaim.org\/\&quot;&gt;Web Accessibility Evaluation Tool&lt;\/a&gt;: An automated checker for web accessibility that also includes human evaluation of web\u00a0content.&lt;\/li&gt;&lt;li&gt;&lt;a href=\&quot;https:\/\/chrome.google.com\/webstore\/detail\/lighthouse\/blipmdconlkpinefehnmjammfjpmpbjk?hl=en\&quot;&gt;Lighthouse&lt;\/a&gt;: A Google extension which can be used for improving the performance, quality, and correctness of your website &amp;amp; apps. While not conclusive, it highlights the overall accessibility rating of your website out of\u00a0100.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;media-single-image&quot;,&quot;data&quot;:{&quot;image&quot;:{&quot;alt&quot;:&quot;Lighthouse Accessibility&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Lighthouse-Accessibility.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Lighthouse-Accessibility.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Lighthouse-Accessibility.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Lighthouse-Accessibility.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338\/engage-website\/production\/Blog\/15-website-accessibility-tips-solutions\/Lighthouse-Accessibility.png&quot;],&quot;sizes&quot;:[1440,1280,1024,768],&quot;ratio&quot;:&quot;16\/9&quot;,&quot;width&quot;:null,&quot;height&quot;:null},&quot;caption&quot;:null}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;WCAG 2.0 vs. WCAG 2.1: Mobile accessibility highlights&quot;,&quot;copy&quot;:&quot;&lt;p&gt;WCAG 2.0 was published as a final W3C Recommendation Web Standard on 11th December 2008. The web, as you can imagine, has come a long way since then. On 5th June 2018, WCAG released an updated version of the specification, specifically to include new requirements geared towards\u00a0mobile.&lt;\/p&gt;&lt;p&gt;The updated version included, but not limited\u00a0to:&lt;\/p&gt;&lt;ul&gt;&lt;li&gt;Speech input, including key\u00a0shortcuts.&lt;\/li&gt;&lt;li&gt;Pointer, gestures, click\/target sizes (tapping things with your finger has less precision than a mouse\u00a0pointer).&lt;\/li&gt;&lt;li&gt;Input methods (so the appropriate keyboard is presented, depending on input type, e.g. telephone numbers, names, email addresses, URLs\u00a0etc.)&lt;\/li&gt;&lt;li&gt;Device settings (portrait vs.\u00a0landscape).&lt;\/li&gt;&lt;li&gt;Other standards such as reflow, text spacing, hover\/focus states were also\u00a0updated.&lt;\/li&gt;&lt;\/ul&gt;&quot;}},{&quot;type&quot;:&quot;rich-text&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Finally\u2026&quot;,&quot;copy&quot;:&quot;&lt;p&gt;Ultimately, if you take nothing else away from this article - you\u2019ve learnt how important website accessibility is, for your customers, but also for your business and the effectiveness of your\u00a0website.&lt;\/p&gt;&lt;p&gt;Guidelines and solutions to website accessibility are being updated and streamlined regularly, which is why we\u2019d suggest it becomes part of all website owners\u2019 review processes. We haven\u2019t explored all the technical solutions to getting that AAA standard in website accessibility here (this blog would be enormous if we did!) but give us a shout if you do have questions that haven\u2019t been answered - we\u2019d love to hear from\u00a0you.&lt;\/p&gt;&lt;p&gt;At Engage, we\u2019re passionate about creating, maintaining and growing websites for our clients that are accessible to all. If you have a project, don\u2019t hesitate to get in\u00a0touch.&lt;\/p&gt;&quot;}}],&quot;crosslink&quot;:{&quot;type&quot;:&quot;generic-crosslink&quot;,&quot;data&quot;:{&quot;title&quot;:&quot;Keep reading&quot;,&quot;items&quot;:[{&quot;date&quot;:&quot;14th September 2026&quot;,&quot;title&quot;:&quot;Engage named among the world\u2019s top independent agencies by The Drum&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-named-in-the-worlds-top-independent-agencies-by-the-drum&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 09 14 CB V1 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-named-among-the-world\u2019s-top-independent-agencies-by-The-Drum\/Engage_Blog_Hero_09.14_CB_V1-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/best-cms-for-enterprise-marketing-teams-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 06 18 CB V1 6&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026\/Engage_Blog_Hero_06.18_CB_V1-6.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;9th September 2026&quot;,&quot;title&quot;:&quot;Digital marketing news and trends: September 2026&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/digital-marketing-news-september-2026&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage MMM Blog 3&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/MMM-September-2026\/Engage_MMM_Blog-3.png&quot;],&quot;sizes&quot;:[1024]}},{&quot;date&quot;:&quot;2nd September 2026&quot;,&quot;title&quot;:&quot;Engage achieves ISO\/IEC 27001 certification&quot;,&quot;cta&quot;:{&quot;title&quot;:&quot;Read more&quot;,&quot;href&quot;:&quot;https:\/\/engage.agency\/blog\/engage-achieves-iso-iec-27001-certification&quot;},&quot;image&quot;:{&quot;alt&quot;:&quot;Engage Blog Hero 08 28 CB V4&quot;,&quot;position&quot;:null,&quot;src&quot;:[&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;,&quot;https:\/\/images.engagecdn.net\/cdn-cgi\/image\/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500\/engage-website\/production\/Blog\/Engage-achieves-ISOIEC-27001-certification\/Engage_Blog_Hero_08.28_CB_V4.png&quot;],&quot;sizes&quot;:[1024]}}],&quot;ui&quot;:{&quot;prev&quot;:&quot;Previous item&quot;,&quot;next&quot;:&quot;Next item&quot;}}}}"
+		v-cloak
+	>
+			<header>
+	
+	
+
+	<a href="../index.html">Engage</a>
+
+	<nav>
+					<section>
+				<p>
+											<a href="../services.html">Our services</a>
+									</p>
+
+				
+									<h2>Expertise</h2>
+
+					<ul>
+													<li>
+								<a href="../services/websites.html">Websites</a>
+							</li>
+													<li>
+								<a href="../services/digital-marketing.html">Marketing</a>
+							</li>
+													<li>
+								<a href="../services/digital-activations.html">Activations</a>
+							</li>
+											</ul>
+				
+									<h2>Services</h2>
+
+											<h3>Websites</h3>
+
+						<ul>
+															<li>
+									<a href="../services/craft-cms.html">Craft CMS</a>
+								</li>
+															<li>
+									<a href="../services/website-development.html">Development</a>
+								</li>
+															<li>
+									<a href="../services/digital-branding.html">Digital Branding</a>
+								</li>
+															<li>
+									<a href="../services/ux-ui-design.html">UX/UI Design</a>
+								</li>
+															<li>
+									<a href="../services/motion-graphics.html">Motion Graphics</a>
+								</li>
+													</ul>
+											<h3>Marketing</h3>
+
+						<ul>
+															<li>
+									<a href="../services/seo.html">SEO</a>
+								</li>
+															<li>
+									<a href="../services/ppc.html">PPC</a>
+								</li>
+															<li>
+									<a href="../services/digital-pr.html">Digital PR</a>
+								</li>
+															<li>
+									<a href="../services/social-media-marketing.html">Social Media</a>
+								</li>
+															<li>
+									<a href="../services/data-analytics.html">Data &amp; Analytics</a>
+								</li>
+													</ul>
+											<h3>Activations</h3>
+
+						<ul>
+															<li>
+									<a href="../services/digital-activation-for-engagement.html">Activations for Engagement</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-sales.html">Activations for Sales</a>
+								</li>
+															<li>
+									<a href="../services/digital-activation-for-crm.html">Activations for CRM</a>
+								</li>
+															<li>
+									<a href="../services.html">All Services</a>
+								</li>
+													</ul>
+									
+							</section>
+					<section>
+				<p>
+											<a href="../work.html">Work</a>
+									</p>
+
+				
+				
+				
+							</section>
+					<section>
+				<p>
+											<a href="../about-us.html">About</a>
+									</p>
+
+									<ul>
+													<li>
+								<a href="../team.html">Meet the team</a>
+							</li>
+													<li>
+								<a href="../careers.html">Careers</a>
+							</li>
+													<li>
+								<a href="../about-us/proudly-employee-owned.html">Employee ownership</a>
+							</li>
+													<li>
+								<a href="../about-us/the-elympics.html">The Elympics</a>
+							</li>
+													<li>
+								<a href="../about-us/purpose.html">Purpose</a>
+							</li>
+											</ul>
+				
+				
+				
+									<a href="../about-us.html">About us</a>
+							</section>
+					<section>
+				<p>
+											<a href="../blog.html">Blog</a>
+									</p>
+
+				
+				
+				
+							</section>
+			</nav>
+
+	
+
+			<a
+	href="../contact.html"
+	>
+	Get in touch
+</a>
+	</header>
+
+<main>
+	<header>
+	
+	
+
+			<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/15-website-accessibility-tips-solutions/Laptop-with-braille-reader_230321_105344.jpg"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/15-website-accessibility-tips-solutions/Laptop-with-braille-reader_230321_105344.jpg"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/15-website-accessibility-tips-solutions/Laptop-with-braille-reader_230321_105344.jpg"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/15-website-accessibility-tips-solutions/Laptop-with-braille-reader_230321_105344.jpg"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=650,height=650/engage-website/production/Blog/15-website-accessibility-tips-solutions/Laptop-with-braille-reader_230321_105344.jpg"
+		alt="Laptop with braille reader 230321 105344"
+		loading="eager"
+			>
+</picture>
+	
+			<h1>15 website accessibility tips & solutions</h1>
+	
+			<p>21st April 2023</p>
+	
+	
+			<p>Roughly a 19 minute read by</p>
+	
+						<p>
+									<a href="../team/simon-willians.html">
+						Simon
+					</a>
+							</p>
+		
+		
+			
+	</header>
+
+	
+	<section>
+	
+	
+
+			<h2>
+							TL;DR Accessible websites are successful websites
+					</h2>
+	
+	
+			<p>In this handy guide, we’ve put together our top tips for website accessibility from our amazing team of developers, designers and general website experts. Keep reading to learn more about making your site as accessible as possible and tap into new and loyal customers your competitors have forgotten.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							What is website accessibility?
+					</h2>
+	
+	
+			<p>So, before we dive into our list of web accessibility solutions, let’s talk about what we actually mean by accessibility. Well, quite simply, it’s making sure that your design and content can be used and consumed by most people without needing to adapt it, while also supporting those who do need to adapt things.</p><p>This includes people with:</p><ul><li>impaired vision;</li><li>motor difficulties;</li><li>cognitive impairments or learning disabilities;</li><li>and deafness or impaired hearing.</li></ul>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							What are some ways users can adapt websites?
+					</h2>
+	
+	
+			<p>In order to make browsing the web as easy as possible, some users will use:</p><p><strong>Screen readers: </strong>software that lets a user navigate a website and reads the content aloud to the user.</p><p><strong>Screen magnifier: </strong>a tool to effectively increase the size of the content by zooming into the page.</p><p><strong>Braille display: </strong>a box with a line of braille cells. Pins in each of the braille cells move up and down to allow users to read a line of braille text. They range in size from 12 cell lines to 80 cell lines.</p><p><strong>Speech recognition:</strong> software that enables a program to process human speech into a written format.</p><p><strong>Built in browser tools: </strong>browsers have a handy set of tools built in that can assist people with adding their own preferences, such as default font sizes, zoom options, default colours, backgrounds, and languages.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							How vital is website accessibility?
+					</h2>
+	
+	
+			<p>Website accessibility has never been more important than it is today. According to the World Health Organization (WHO), “an estimated 1.3 billion people – or 1 in 6 people worldwide - experience significant disability.” So, what does this mean?</p><p>This means, if your website is not accessible, people may struggle to use it, and some people won’t use it all because they simply can’t. There are three stand-out reasons why you should make sure your website is accessible for everyone:</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Social
+					</h2>
+	
+	
+			<p>People who are living with disabilities are further marginalised by not being able to access content online. By taking steps to increase digital inclusion on your website, you are demonstrating how you care about your customers and want to provide the best experience possible</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Economic
+					</h2>
+	
+	
+			<p>You can reach a larger audience by ensuring website accessibility. If users with disabilities reach your site and are unable to access the content, they are more likely to leave and find a website that is accessible to them.</p><p>This also has an effect on brand awareness and loyalty. According to <a href="https://purpletuesday.co/">Purple Tuesday</a>, a global social movement committed to improving the customer experience for disabled people and their families, a massive “70% of disabled people will NOT return to a business after receiving poor customer service.”</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Legal
+					</h2>
+	
+	
+			<p>In 2010, the UK (excluding NI) replaced the 1995 Disability Discrimination Act with the Equality Act (EQA). This meant that UK goods and service providers (both public and private sector) have a <strong>legal obligation not to discriminate against people based on a number of protected characteristics </strong>- including disability.</p><p>The EQA doesn’t outline the technical accessibility requirements, but for best practice, companies should follow the Web Content Accessibility Guidelines (WCAG) set by the <a href="https://www.w3.org/WAI/standards-guidelines/wcag/#intro">Web Accessibility Initiative</a> (WAI).</p><p>These guidelines were developed with the goal of providing a single shared standard for web content accessibility that meets the needs of individuals, organisations, and governments around the world.</p><p>According to the Web AIM Million accessibility analysis of the top 1,000,000 home pages, <a href="https://webaim.org/projects/million/#facts">96.8% don’t meet the WCAG standards</a>. The top three issues detected on these homepages were low contrast text, missing alt (alternative) text for images &amp; empty links (hyperlinks which have no meaningful text to explain where the link directs to).</p><p>One particularly high-profile case of a website not following these guidelines was in 2019. <a href="https://musically.com/2019/01/07/beyonces-company-sued-over-the-accessibility-of-her-website/">Beyoncé’s entertainment company was sued over the lack of accessibility on her website.</a> The main issue being that none of the images had alt text, which stops screen readers from explaining what is on the page to the user.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Website accessibility testing
+					</h2>
+	
+	
+			<p>There are two ways you can start looking at your website’s accessibility:</p><ol><li>Perform the checks manually.</li><li>Use a tool created specifically to test your website for you.</li></ol><p>If you’ve had a chance to take a look at the <a href="https://www.w3.org/WAI/standards-guidelines/wcag/#intro">WCAG</a> already, you’ll know there are A LOT of guidelines, and checking these manually can be incredibly time-consuming.</p><p>On the other hand, the tools available online are fast, free and easy to use - but not comprehensive. That’s why the best route is to use a combination of both.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Understanding the difference between A, AA and AAA accessibility compliance
+					</h2>
+	
+	
+			<p>Throughout this list of website accessibility tips, we’ve linked to some handy sites to give you even more support. As you’re exploring these sites, you’ll likely come across someone mentioning “double A” or “triple A” website accessibility compliance. But what exactly does it mean?</p><p>The higher the level (the more A’s), the more strict the requirements. Achieving level A is pretty straightforward, whereas achieving AAA is a lot more involved and requires more effort. Double A (AA) is the most common target when aiming for an accessible website.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							15 Top tips for website accessibility
+					</h2>
+	
+	
+			<p>I know, I know, get to the good stuff, <strong>the actionable website accessibility advice.</strong></p><p>So far, while this article has been filled with some pretty exciting stuff - laws, jargon, acronyms a plenty, let’s dive into why you’re here with our 15 top tips for website accessibility…</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							1. Choose a content management system with accessibility in mind
+					</h2>
+	
+	
+			<p>If you have a CMS-driven content populated website, then a CMS built with accessibility in mind can make a huge difference, particularly to the end user.</p><p>Some things to ask yourself are, can the editor of pages and content add the appropriate heading types (h2, h3, h4 etc.), use the correct HTML for ordered or unordered lists and create accessible tables?</p><p>Another often overlooked feature in a CMS is the ability and ease of adding alt text for images for users of screen readers. Some CMS can make the process harder than it needs to be - and if there’s a lot of time or effort needed, it can quickly be discounted as ‘not worthwhile’.</p><p>Engage’s go-to CMS of choice is <a href="https://engageinteractive.co.uk/services/development/craft-cms-development">Craft CMS</a>. Beyond being an amazing and simple to use CMS, it really does tick the boxes for us when it comes to accessibility. Craft don’t simply have an accessible CMS, <a href="https://craftcms.com/blog/accessibility">they also like to blog about it too</a>. From plugins to target sizes, you can take a deep dive into accessibility with their up-to-date pondering.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/15-website-accessibility-tips-solutions/Craft-Blog-Logo.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/15-website-accessibility-tips-solutions/Craft-Blog-Logo.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/15-website-accessibility-tips-solutions/Craft-Blog-Logo.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/15-website-accessibility-tips-solutions/Craft-Blog-Logo.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/15-website-accessibility-tips-solutions/Craft-Blog-Logo.png"
+		alt="Craft Blog Logo"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							2. Structure your page logically using headings
+					</h2>
+	
+	
+			<p>If you’re thinking, <i>of course, we already use headings! </i>Then awesome, you’re already adding some structure to your content. It’s worth considering, though, if the page is structured as well as possible for screen readers. By using the headings in the correct order, you’re explaining the content logically, not just for screen reader users, but search engines too.</p><p>Here are some bonus quick tips for accessible page structure:</p><ul><li>Avoid using a &lt;h1&gt; for anything other than the title of the website or page.</li><li>Don’t skip heading levels (&lt;h1&gt; to &lt;h3&gt;), this jump appears to screen reader users that content is missing.</li></ul>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/15-website-accessibility-tips-solutions/Example-of-heading-structure-for-content-accessibility.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/15-website-accessibility-tips-solutions/Example-of-heading-structure-for-content-accessibility.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/15-website-accessibility-tips-solutions/Example-of-heading-structure-for-content-accessibility.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/15-website-accessibility-tips-solutions/Example-of-heading-structure-for-content-accessibility.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/15-website-accessibility-tips-solutions/Example-of-heading-structure-for-content-accessibility.png"
+		alt="Example of heading structure for content accessibility"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							3. Include descriptive alt text for images
+					</h2>
+	
+	
+			<p>As we mentioned before, alt text for images is sometimes viewed as an extra optimisation that can be added ‘if you have the time’. However, they are vital in helping screen reader users to understand the message conveyed by the use of images on the page.</p><p>This becomes even more important when considering infographics that include key messages for your user.</p><p>Bonus tips:</p><ul><li>If your image includes text of any kind, this should also be included in the alt text.</li><li>If an image is used as a link, the screen reader will read the file name, so if you don’t plan to optimise your alt text, make sure you consider your image file names and try to make them as descriptive as possible.</li></ul>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/15-website-accessibility-tips-solutions/example-alt-text-code.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/15-website-accessibility-tips-solutions/example-alt-text-code.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/15-website-accessibility-tips-solutions/example-alt-text-code.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/15-website-accessibility-tips-solutions/example-alt-text-code.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/15-website-accessibility-tips-solutions/example-alt-text-code.png"
+		alt="Example alt text code"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							4. Give hyperlinks unique and descriptive names
+					</h2>
+	
+	
+			<p>Speaking of links… think about the text that you use in your links. Ideally, you need to make sure that the text properly describes where the link will go.</p><p>Using “click here”, while quick and easy to implement, is not descriptive, and is ineffective for a screen reader user. Visually impaired users are able to use their screen reader to scan for links on a webpage, which means that the link is often read aloud without any context.</p><p>For example,</p><p>“Take a look at Motion Designer Ollie’s blog, <a href="https://engageinteractive.co.uk/blog/expressions-in-after-effects">Top Tips for Creating Wiggle Expressions in After Effects.</a>”</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							5. Consider your colours
+					</h2>
+	
+	
+			<p>According to <a href="https://www.colourblindawareness.org/">Colour Blind Awareness</a>, “Colour blindness (colour vision deficiency, or CVD) affects approximately 1 in 12 men (8%) and 1 in 200 women in the world. In Britain, this means that there are approximately 3 million colour-blind people (about 4.5% of the entire population), most of whom are male.”</p><p>Obviously, brand considerations have to be made when creating your website. Having said this, the most common colour deficiency is red-green. Therefore, by using only these colours, you could be preventing this group of users from understanding your message and eventually converting.</p><p>Contrast and colour use are vital to accessibility. The guidelines on contrast are arguably complex and can easily confuse web content creators and web accessibility evaluators. To learn more about contrast for accessibility, take a look at the <a href="https://webaim.org/articles/contrast/">Colour Requirement Article from the WebAIM</a>.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/15-website-accessibility-tips-solutions/Contrast-checker.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/15-website-accessibility-tips-solutions/Contrast-checker.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/15-website-accessibility-tips-solutions/Contrast-checker.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/15-website-accessibility-tips-solutions/Contrast-checker.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/15-website-accessibility-tips-solutions/Contrast-checker.png"
+		alt="Contrast checker"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							6. Design your forms for accessibility
+					</h2>
+	
+	
+			<p>We’ve all been there, filling out a form on a website, and it feels like you’re jumping through hoops, or adding the wrong information and having to keep going back to re-submit.</p><p>This can be an even more laborious process for those who use screen readers. When designing your forms, you should ensure each field has a well-positioned, descriptive label. For example, if you need the customer to fill out their name, on the field it should read Full Name or have two separate fields for First Name and Last Name.</p><p>To do this, you can use the &lt;label&gt; tag or an ARIA property to associate the label text with the form field.</p><p>For keyboard only users, make it possible for people to tab through each field or section of the form easily.</p><p>It’s also worth grouping related or similar fields in the form together to make the data more organised for screen readers to keep track of progress.</p><p>If you have required fields, make sure you label them as such, and configure them to alert the user to this. If you have already added visual indications such as asterisks this is perfect for sighted users, however, some screen readers won’t acknowledge them.</p><p>To indicate that a field is required to a screen reader, add ARIA required=”true” and ARIA required=”false” for optional fields.</p><p>Once the user has reached the end and clicked to submit their form, they should be alerted to submission confirmation. If error counts are included in the page title after they have submitted, the user will be informed straight away and will be able to rectify them quicker.</p><p>When a user submits a form with errors or omissions, re-displaying the form and only indicating the fields in error is insufficient for some users to perceive that an error has occurred.</p><p>The best practice, suggested by the <a href="https://www.w3.org/WAI/WCAG21/Techniques/general/G83.html">Web Accessibility Initiative</a>, is to include a message or alert that the form is not functioning correctly. It is also suggested to include an error notification in the page title, since a screen reader user is likely to believe the page was submitted correctly and will continue to navigate to another page as soon as the new page is returned instead of reading the main content area of the page again.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/15-website-accessibility-tips-solutions/Website-form.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/15-website-accessibility-tips-solutions/Website-form.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/15-website-accessibility-tips-solutions/Website-form.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/15-website-accessibility-tips-solutions/Website-form.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/15-website-accessibility-tips-solutions/Website-form.png"
+		alt="Website form"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							7. Use tables for tabular data, not for layout
+					</h2>
+	
+	
+			<p>When a screen reader encounters a table, it lets the user know how many rows and columns there are, this can distract the user from the content. They are also known to read content in the incorrect order - pesky little screen readers!</p><p>Our best practice suggestion is to use CSS for presentation. If a table <i><strong>has</strong></i> to be used for displaying data, use headers for rows and columns to provide context of the relationship between them. You can also add HTML5 table captions to give more information.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							8. Make content accessible by the keyboard alone
+					</h2>
+	
+	
+			<p>Some people are unable to use a mouse or a trackpad, and will have to use the keyboard tab and arrow keys to access the content of a webpage.</p><p>This means that content needs to be structured logically as mentioned in tip #2, so that the tab order reflects the visual order.</p><p>If you have pages which are very long and contain lots of content, they should be broken up with jump lists or anchor links, plus an option to skip to main content should be available at the top of each page.</p><p>To test how easily accessible your pages are to keyboard only users, have a go at navigating your site without the mouse or trackpad.</p><p>A further point to consider is to avoid using elements that only activate when a user hovers over items with a mouse, as keyboard-only or screen readers users will not be able to activate them.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							9. ARIA roles: when are they necessary?
+					</h2>
+	
+	
+			<p>You might remember from tip #6 about web form accessibility that ARIA or (Accessible Rich Internet Applications) can be used to add accessibility information to elements that are not natively accessible.</p><p>While ARIA can be incredibly useful, we should add a caveat here with a few extra notes:</p><ol><li><strong>You should always use native HTML elements when they are available.</strong></li><li>As a general rule, the Web Accessibility Initiative states that “<a href="https://www.w3.org/WAI/ARIA/apg/practices/read-me-first/">no ARIA is better than bad ARIA</a> [and] incorrect ARIA misrepresents visual experiences, with potentially devastating effects on their corresponding non-visual experiences.”</li><li>Many functions that used to require ARIA attributes are now implemented in HTML5. For example:<ul><li>Use the native HTML button tag instead of the ARIA role of button.</li><li>Use the HTML label tag instead of aria-label or aria-labeledby.</li><li>Use the HTML 5 nav tag instead of the ARIA role of navigation.</li></ul></li></ol><p>It is not sufficient to only add ARIA attributes in order to make complex widgets accessible, as it only affects people using assistive technology not those who only use a keyboard. In which case, you still need to set up your interactions and behaviours using JavaScript.</p><p>Two effective and appropriate uses for ARIA include, adding an alert to let screen readers know about any dynamic page changes, such as stock tickers and search filters; and making widgets such as date pickers accessible to screen reader users.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							10. Dealing with dynamic content
+					</h2>
+	
+	
+			<p>Dynamic or adaptive content refers to the content that changes on the page depending on user behaviour, preferences and interests.</p><p>An example of this kind of content is when you are provided with suggested items on an ecommerce website based on your browsing history or recent purchases.</p><p>Some drawbacks for dynamic content for accessibility include how if the content on a page updates without the page being refreshed, screen readers may not be aware.</p><h4><strong>Keyboard traps</strong></h4><p>It’s also common for keyboard-only users to become trapped in a loop within page overlays of dynamic content. There should never be a keyboard trap that a user can’t get out of by pressing the ‘Esc’ key, with the focus returning to the previously focused element.</p><h4><strong>Video and audio content</strong></h4><p>If you have video or audio elements on your page, ensure that they don’t autoplay, as it can be alarming for those using screen readers and drown out the voice of the screen reader. These elements should also have options for closed captioning and transcripts available for the hearing impaired.</p><p>If there are slideshows, all the images should have alt text and be able to be navigated by using the keyboard.</p><h4><strong>Widgets</strong></h4><p>Widgets such as search bars and clock widgets should also be tested for accessibility, including the size of the text within it.</p><h4><strong>Flashing content</strong></h4><p>Flashing content can be triggering for users who suffer with seizures from photosensitivity, and images that move on the page can be difficult to process for some users.</p><p>To help with this issue, you should give users the chance to pause an animation that lasts longer than 5 seconds. The <a href="https://www.w3.org/WAI/standards-guidelines/wcag/#intro">WCAG also states</a> that elements shouldn’t flash more than 3 times every second.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							11. Identify language of text
+					</h2>
+	
+	
+			<p>Identifying the language of the entire web page or document, as well as its individual parts, helps to ensure that screen readers will correctly pronounce the content.</p><p>According to the <a href="https://www.w3.org/WAI/standards-guidelines/wcag/#intro">WCAG</a> it also “allows braille translation software to substitute control codes for accented characters, and insert control codes necessary to prevent erroneous creation of Grade 2 braille contractions.”</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							12. Avoid tiny fonts
+					</h2>
+	
+	
+			<p>It’s good practice to use a decent-sized font in case users are unaware they can increase the font size with browser hotkeys. The WCAG requires pages to be able to be zoomed in to 200% and be useable without any assistive technology. There’s no official number - but a generally accepted minimum font size for content is 16px.</p><p>It’s also worth noting that while some users will be accustomed to using CMD/CTRL and ‘+’ to enlarge the page, some will choose to resize just their text. To make sure line-height adjusts proportionately, and you retain readability, you need to define your CSS line-height using relative units or unit-less values.</p><p>According to the <a href="https://www.w3.org/TR/2008/REC-WCAG20-20081211/#visual-audio-contrast-visual-presentation:~:text=Line%20spacing%20(leading)%20is%20at%20least%20space-and-a-half%20within%20paragraphs%2C%20and%20paragraph%20spacing%20is%20at%20least%201.5%20times%20larger%20than%20the%20line%20spacing.">accessibility guidelines</a>, while the default line height in browsers is 1.2, it should actually be 1.5 within paragraphs in blocks of text.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							13. White space
+					</h2>
+	
+	
+			<p>White space, or negative space as it is sometimes called, reduces clutter and provides definition to the content. While it may be used by designers to enhance page elements, it can also help users navigate the page.</p><p>As the WCAG mentions, white space has been shown to ease reading difficulties and improve understanding of content for those with cognitive and learning disabilities. This is supported by the <a href="https://www.smashingmagazine.com/2014/03/design-principles-visual-perception-and-the-principles-of-gestalt/">Principles of Gestalt</a>:</p><p><i>“Elements are perceived as part of a group if they are located within the same closed region… Objects that are closer together are perceived as more related than objects that are further apart.”</i></p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							14. Provide a transcript
+					</h2>
+	
+	
+			<p>We mentioned providing a transcript within tip #10, but it’s more than just making audio content accessible for users who are deaf-blind. You are also ensuring those who have low Internet bandwidth can access the content without having to play the video.</p><p>Remember that a transcript’s purpose is to provide information to users who can’t get it from the video or audio file alone. Consider adding headings, an overview or links if appropriate.</p><p>According to the <a href="https://www.nhs.uk/conditions/vision-loss/">NHS</a>, “in the UK, more than 2 million people are living with sight loss. Of these, around 340,000 are registered as blind or partially sighted.” This is a great argument for you to spend the time creating a transcript, ensuring those who are using screen readers can access the content.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							15. Testing, testing, testing!
+					</h2>
+	
+	
+			<p>If you’re starting your mission to make your website as accessible as possible, what better way is there to see the progress you’re making than testing for yourself?</p><p>Think about all the tips we’ve mentioned in this article and work through it as a checklist! Do your images have alt tags, is the content structured well?</p><p>Ask yourself, can I access all the elements on my site with a keyboard? Try navigating popular user journeys, are there any rollover menus which would be missed using a keyboard? Can you close dialogue boxes using the ‘Esc’ key?</p><p>Test your site with a screen reader to find any issues with dynamic content, reading order or spellings.</p><p>It’s important to note that - much like the difference between different desktop browsers - different assistive technologies have their own limitations, quirks and differences.</p>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Tools to use to help you access and improve your website’s accessibility
+					</h2>
+	
+	
+			<p>If you’re ready to start checking your website and how it stacks up against the guidelines, check out the following web accessibility tools to get you started!</p><ul><li><a href="https://webaim.org/resources/contrastchecker/">Contrast Checker</a>: You can enter a foreground and background colour in RGB hexadecimal format, or choose a colour using the colour picker, and it will tell you your contrast ratio.</li><li><a href="https://wave.webaim.org/">Web Accessibility Evaluation Tool</a>: An automated checker for web accessibility that also includes human evaluation of web content.</li><li><a href="https://chrome.google.com/webstore/detail/lighthouse/blipmdconlkpinefehnmjammfjpmpbjk?hl=en">Lighthouse</a>: A Google extension which can be used for improving the performance, quality, and correctness of your website &amp; apps. While not conclusive, it highlights the overall accessibility rating of your website out of 100.</li></ul>
+	
+	
+	
+	
+		
+	</section>
+		
+			<div>
+	
+	
+
+	
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=2280,height=1283/engage-website/production/Blog/15-website-accessibility-tips-solutions/Lighthouse-Accessibility.png"
+			 media="(min-width: 1440px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1920,height=1080/engage-website/production/Blog/15-website-accessibility-tips-solutions/Lighthouse-Accessibility.png"
+			 media="(min-width: 1280px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1350,height=759/engage-website/production/Blog/15-website-accessibility-tips-solutions/Lighthouse-Accessibility.png"
+			 media="(min-width: 1024px)" 		>
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=1000,height=563/engage-website/production/Blog/15-website-accessibility-tips-solutions/Lighthouse-Accessibility.png"
+			 media="(min-width: 768px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=338/engage-website/production/Blog/15-website-accessibility-tips-solutions/Lighthouse-Accessibility.png"
+		alt="Lighthouse Accessibility"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+	
+	
+		
+	</div>
+		
+			<section>
+	
+	
+
+			<h2>
+							WCAG 2.0 vs. WCAG 2.1: Mobile accessibility highlights
+					</h2>
+	
+	
+			<p>WCAG 2.0 was published as a final W3C Recommendation Web Standard on 11th December 2008. The web, as you can imagine, has come a long way since then. On 5th June 2018, WCAG released an updated version of the specification, specifically to include new requirements geared towards mobile.</p><p>The updated version included, but not limited to:</p><ul><li>Speech input, including key shortcuts.</li><li>Pointer, gestures, click/target sizes (tapping things with your finger has less precision than a mouse pointer).</li><li>Input methods (so the appropriate keyboard is presented, depending on input type, e.g. telephone numbers, names, email addresses, URLs etc.)</li><li>Device settings (portrait vs. landscape).</li><li>Other standards such as reflow, text spacing, hover/focus states were also updated.</li></ul>
+	
+	
+	
+	
+		
+	</section>
+		
+			<section>
+	
+	
+
+			<h2>
+							Finally…
+					</h2>
+	
+	
+			<p>Ultimately, if you take nothing else away from this article - you’ve learnt how important website accessibility is, for your customers, but also for your business and the effectiveness of your website.</p><p>Guidelines and solutions to website accessibility are being updated and streamlined regularly, which is why we’d suggest it becomes part of all website owners’ review processes. We haven’t explored all the technical solutions to getting that AAA standard in website accessibility here (this blog would be enormous if we did!) but give us a shout if you do have questions that haven’t been answered - we’d love to hear from you.</p><p>At Engage, we’re passionate about creating, maintaining and growing websites for our clients that are accessible to all. If you have a project, don’t hesitate to get in touch.</p>
+	
+	
+	
+	
+		
+	</section>
+	
+	
+			<section>
+	
+	
+
+			<h2>
+							Keep reading
+					</h2>
+	
+	
+	
+	
+	
+	
+		
+						<article>
+	
+	
+
+			<h3>
+							Engage named among the world’s top independent agencies by The Drum
+					</h3>
+	
+			<p>14th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-named-among-the-world’s-top-independent-agencies-by-The-Drum/Engage_Blog_Hero_09.14_CB_V1-3.png"
+		alt="Engage Blog Hero 09 14 CB V1 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-named-in-the-worlds-top-independent-agencies-by-the-drum.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Best CMS for enterprise marketing teams: Why Craft CMS stands out in 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Best-CMS-for-enterprise-marketing-teams-why-Craft-CMS-stands-out-in-2026/Engage_Blog_Hero_06.18_CB_V1-6.png"
+		alt="Engage Blog Hero 06 18 CB V1 6"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="best-cms-for-enterprise-marketing-teams-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Digital marketing news and trends: September 2026
+					</h3>
+	
+			<p>9th September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/MMM-September-2026/Engage_MMM_Blog-3.png"
+		alt="Engage MMM Blog 3"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="digital-marketing-news-september-2026.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+					<article>
+	
+	
+
+			<h3>
+							Engage achieves ISO/IEC 27001 certification
+					</h3>
+	
+			<p>2nd September 2026</p>
+	
+	
+			<figure>
+							<picture>
+	
+			<source
+			srcset="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=600,height=600/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+			 media="(min-width: 1024px)" 		>
+	
+	<img
+		src="https://images.engagecdn.net/cdn-cgi/image/fit=cover,quality=65,slow-connection-quality=50,sharpen=0.5,format=auto,gravity=0.5x0.5,metadata=none,dpr=1,width=500,height=500/engage-website/production/Blog/Engage-achieves-ISOIEC-27001-certification/Engage_Blog_Hero_08.28_CB_V4.png"
+		alt="Engage Blog Hero 08 28 CB V4"
+		loading="lazy"
+			>
+</picture>
+			
+					</figure>
+	
+			<a
+	href="engage-achieves-iso-iec-27001-certification.html"
+	>
+	Read more
+</a>
+	
+	
+		
+	</article>
+			</section>
+		</main>
+
+<footer>
+	
+	
+
+	
+			<nav>
+							<section>
+											<h2>
+															<a
+	href="../services.html"
+	>
+	Services
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../work.html"
+	>
+	Work
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../about-us.html"
+	>
+	About
+</a>
+													</h2>
+					
+									</section>
+							<section>
+											<h2>
+															<a
+	href="../blog.html"
+	>
+	Blog
+</a>
+													</h2>
+					
+									</section>
+					</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="../privacy-policy.html"
+	>
+	Privacy policy
+</a>
+					</li>
+									<li>
+						<a
+	href="../cookie-policy.html"
+	>
+	Cookie policy
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+			<nav>
+			<ul>
+									<li>
+						<a
+	href="https://www.linkedin.com/company/engage-interactive"
+	 rel="external" >
+	LinkedIn
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.instagram.com/engageinteractive"
+	 rel="external" >
+	Instagram
+</a>
+					</li>
+									<li>
+						<a
+	href="https://www.tiktok.com/@engageinteractive.agency"
+	 rel="external" >
+	TikTok
+</a>
+					</li>
+							</ul>
+		</nav>
+	
+	<section>
+	
+	
+
+			<h2>
+							Need some expert attention?
+					</h2>
+	
+	
+	
+	
+			<a
+	href="../contact.html"
+	>
+	Start your project
+</a>
+	
+	
+		
+	</section>
+
+			<p>Munro House, Duke St, Leeds LS9 8AG</p>
+	
+			<a
+	href="tel:01134574090"
+	 rel="external" >
+	T. 0113 457 4090
+</a>
+	
+			<small>&copy; Engage 2026</small>
+	
+	<a
+	href="https://engageinteractive.co.uk/"
+	 rel="external" >
+	Site by Engage
+</a>
+</footer>
+	</div>
+
+			
+
+			<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a403c1f16f16c479',t:'MTc5MDI3MzU0OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
