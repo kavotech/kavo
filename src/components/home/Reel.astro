@@ -1,0 +1,49 @@
+---
+import ProjectVisual from '../ProjectVisual.astro';
+import { getProject } from '../../data/projects';
+const phone = getProject('breezyee-go')!;
+const dash = getProject('oasis-school-management')!;
+const shop = getProject('rm-mangoes')!;
+const words = ['Websites', 'Apps', 'Platforms', 'Growth'];
+---
+<section class="reel" id="reel" data-reel aria-label="Kavo Technologies at a glance">
+  <div class="reel__frame theme-dark" data-reel-frame data-theme="dark">
+    <div class="reel__bg" aria-hidden="true"></div>
+    <div class="reel__layers" aria-hidden="true">
+      <div class="reel__card reel__card--a" data-reel-layer="1.4"><ProjectVisual project={dash} shape="wide" eager /></div>
+      <div class="reel__card reel__card--b" data-reel-layer="0.6"><ProjectVisual project={phone} shape="tall" eager /></div>
+      <div class="reel__card reel__card--c" data-reel-layer="1"><ProjectVisual project={shop} shape="square" eager /></div>
+    </div>
+    <div class="container reel__copy">
+      <p class="reel__words">
+        {words.map((w, i) => <span style={`--i:${i}`}>{w}<em>.</em></span>)}
+      </p>
+      <p class="reel__caption">Strategy, design and engineering for businesses that want more from digital.</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .reel { position: relative; background: var(--c-white); }
+  .reel__frame { position: relative; overflow: hidden; height: min(100svh, 62rem); min-height: 36rem; clip-path: inset(0 var(--gutter) 0 var(--gutter) round 32px); }
+  .reel__bg { position: absolute; inset: 0; background:
+    radial-gradient(60% 70% at 85% 10%, rgba(42,54,255,.55), transparent 60%),
+    radial-gradient(50% 60% at 0% 100%, rgba(216,255,62,.28), transparent 60%),
+    var(--c-ink); }
+  .reel__layers { position: absolute; inset: 0; }
+  .reel__card { position: absolute; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 40px 80px -30px rgba(0,0,0,.6); }
+  .reel__card--a { width: 46%; aspect-ratio: 16/10; right: 4%; top: 9%; transform: rotate(3deg); }
+  .reel__card--b { width: 22%; aspect-ratio: 4/5; left: 6%; top: 14%; transform: rotate(-5deg); }
+  .reel__card--c { width: 17%; aspect-ratio: 1; left: 32%; top: 24%; transform: rotate(-2deg); }
+  .reel__copy { position: absolute; inset: auto 0 0 0; z-index: 2; padding-bottom: clamp(1.5rem, 4vw, 3.5rem); display: grid; gap: 1rem; pointer-events: none; }
+  .reel__words { display: flex; flex-wrap: wrap; column-gap: .3em; font-size: var(--fs-h1); line-height: .9; letter-spacing: var(--tracking-display); font-weight: 600; }
+  .reel__words em { font-style: normal; color: var(--c-volt); }
+  .reel__caption { max-width: 32ch; font-size: var(--fs-lead); line-height: 1.3; color: var(--c-muted-dark); }
+  @media (max-width: 767px) {
+    .reel__frame { height: 38rem; min-height: 0; }
+    .reel__card--a { width: 78%; right: -10%; top: 5%; }
+    .reel__card--b { width: 42%; left: 5%; top: 22%; }
+    .reel__card--c { display: none; }
+  }
+  :global(.reduce-motion) .reel__frame, :global(html:not(.js)) .reel__frame { clip-path: inset(0 var(--gutter) 0 var(--gutter) round 32px); }
+</style>

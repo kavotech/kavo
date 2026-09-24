@@ -1,0 +1,154 @@
+---
+import '../styles/global.css';
+import fontLatin from '@fontsource-variable/inter-tight/files/inter-tight-latin-wght-normal.woff2?url';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import KavoMark from '../components/KavoMark.astro';
+import { site } from '../data/site';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Pass a full title to skip the " | Kavo Technologies" suffix */
+  fullTitle?: boolean;
+  image?: string;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  schema?: Record<string, unknown> | Record<string, unknown>[];
+  /** Theme of the first section, so the header starts with the right colour */
+  headerTheme?: 'light' | 'dark';
+}
+
+const {
+  title,
+  description = site.description,
+  fullTitle = false,
+  image = site.ogImage,
+  type = 'website',
+  noindex = false,
+  schema,
+  headerTheme = 'light',
+} = Astro.props;
+
+const pageTitle = fullTitle ? title : `${title} | Kavo Technologies`;
+const cleanPath = Astro.url.pathname === '/' ? '/' : Astro.url.pathname.replace(/\/$/, '');
+const canonical = `${site.url}${cleanPath}`;
+const ogImage = new URL(image, site.url).href;
+
+const orgSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfessionalService',
+  '@id': `${site.url}/#organization`,
+  name: site.name,
+  alternateName: 'Kavo Tech',
+  url: site.url,
+  logo: `${site.url}/public/kavologo.png`,
+  image: `${site.url}/public/kavologo.png`,
+  description: site.description,
+  email: site.email,
+  telephone: '+447418356179',
+  areaServed: ['GB', 'UG'],
+  address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'GB' },
+  sameAs: site.socials.filter((s) => s.label !== 'WhatsApp').map((s) => s.href),
+};
+const schemas = [orgSchema, ...(schema ? (Array.isArray(schema) ? schema : [schema]) : [])];
+---
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'} />
+    <meta name="theme-color" content="#0d0d0f" />
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:alt" content="Kavo Technologies" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/public/kavologo.png" type="image/png" sizes="500x500" />
+    <link rel="apple-touch-icon" href="/public/kavologo.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="preload" href={fontLatin} as="font" type="font/woff2" crossorigin />
+    <slot name="head" />
+    {schemas.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('reduce-motion');
+        try { if (sessionStorage.getItem('kavo:transition') === '1') d.classList.add('is-arriving'); } catch (e) {}
+        // Never leave content hidden if scripts fail to load.
+        setTimeout(function () { if (!window.__kavoReady) { d.classList.remove('js', 'is-arriving'); } }, 3500);
+      })();
+    </script>
+  </head>
+  <body data-header-theme={headerTheme}>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+
+    <div class="curtain" aria-hidden="true" data-curtain>
+      <KavoMark class="curtain__mark" />
+    </div>
+    <div class="cursor" aria-hidden="true" data-cursor-el><span class="cursor__label" data-cursor-label></span></div>
+
+    <script>
+      import { initSite } from '../scripts/main';
+      initSite();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  main:focus { outline: none; }
+  .curtain {
+    position: fixed; inset: 0; z-index: 200; pointer-events: none;
+    display: grid; place-items: center;
+    background: var(--c-ink); color: var(--c-volt);
+    transform: translateY(100%);
+    visibility: hidden;
+  }
+  html.is-arriving .curtain { visibility: visible; }
+  .curtain__mark { width: clamp(3rem, 6vw, 5rem); opacity: 0; }
+  html.is-arriving .curtain { transform: translateY(0); }
+  html.is-arriving .curtain__mark { opacity: 1; }
+
+  .cursor {
+    position: fixed; left: 0; top: 0; z-index: 150; pointer-events: none;
+    width: 0; height: 0; opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .cursor::before {
+    content: ''; position: absolute; left: 0; top: 0;
+    width: .7rem; height: .7rem; margin: -.35rem 0 0 -.35rem; border-radius: 50%;
+    background: var(--c-ink); mix-blend-mode: difference; background: #fff;
+    transition: transform .45s var(--ease-out), opacity .3s;
+  }
+  .cursor.is-active { opacity: 1; }
+  .cursor.is-hidden::before { transform: scale(0); }
+  .cursor__label {
+    position: absolute; left: 0; top: 0;
+    display: grid; place-items: center;
+    width: 6.5rem; height: 6.5rem; margin: -3.25rem 0 0 -3.25rem; border-radius: 50%;
+    background: var(--c-volt); color: var(--c-ink);
+    font-size: .95rem; font-weight: 650; letter-spacing: -0.01em;
+    transform: scale(0); transition: transform .5s var(--ease-out);
+  }
+  .cursor.has-label::before { transform: scale(0); }
+  .cursor.has-label .cursor__label { transform: scale(1); }
+  @media (hover: none), (pointer: coarse) { .cursor { display: none; } }
+</style>

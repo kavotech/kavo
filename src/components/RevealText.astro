@@ -1,0 +1,16 @@
+---
+/**
+ * Line-masked heading reveal. Text is split into lines client-side and each
+ * line slides up from behind an overflow mask as it enters the viewport.
+ */
+interface Props {
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'span' | 'div';
+  class?: string;
+  /** 'scroll' reveals on enter; 'load' reveals as part of the page intro */
+  trigger?: 'scroll' | 'load';
+  delay?: number;
+  id?: string;
+}
+const { as: Tag = 'h2', class: className, trigger = 'scroll', delay = 0, id } = Astro.props;
+---
+<Tag class={className} id={id} data-split={trigger} data-delay={delay || undefined}><slot /></Tag>

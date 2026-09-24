@@ -1,0 +1,253 @@
+---
+/**
+ * Cinematic, art-directed project frame built from HTML/CSS so every project
+ * has a crisp, lightweight visual without stock or third-party imagery.
+ * Swap in real screenshots later by passing an <img> into the default slot.
+ */
+import { Image } from 'astro:assets';
+import type { Project } from '../data/projects';
+
+interface Props {
+  project: Project;
+  class?: string;
+  /** Hints layout of the mock for the frame proportion */
+  shape?: 'wide' | 'tall' | 'square';
+  eager?: boolean;
+}
+const { project, class: className, shape = 'wide', eager = false } = Astro.props;
+const v = project.visual;
+const word = project.name.split(' ')[0];
+const style = `--pv-bg:${v.bg};--pv-accent:${v.accent};--pv-tone:${v.tone};--pv-ink:${v.ink};`;
+const hasSlot = Astro.slots.has('default');
+---
+<div class:list={['pv', `pv--${v.kind}`, `pv--${shape}`, className]} style={style} role="img" aria-label={`${project.name} — ${project.category} interface visual`}>
+  {hasSlot ? <slot /> : (
+    <>
+      <span class="pv__glow" aria-hidden="true"></span>
+      <span class="pv__word" aria-hidden="true">{word}</span>
+      <div class="pv__stage" data-pv-stage aria-hidden="true">
+        {v.kind === 'phone' && (
+          <div class="pv-phones">
+            <div class="pv-phone pv-phone--back">
+              <div class="pv-phone__screen">
+                <div class="pv-map">
+                  <svg viewBox="0 0 200 300" preserveAspectRatio="none"><path d="M20 260 C 60 220, 40 160, 100 150 S 160 80, 180 30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 12" /></svg>
+                  <span class="pv-map__pin"></span>
+                </div>
+                <div class="pv-sheet">
+                  <span class="pv-chip">On the way</span>
+                  <span class="pv-line pv-line--lg"></span>
+                  <span class="pv-line"></span>
+                </div>
+              </div>
+            </div>
+            <div class="pv-phone pv-phone--front">
+              <div class="pv-phone__screen">
+                <div class="pv-app-top">
+                  {v.logo ? <Image src={v.logo} alt="" width={120} class="pv-app-logo" loading={eager ? 'eager' : 'lazy'} /> : <span class="pv-dot" />}
+                  <span class="pv-avatar"></span>
+                </div>
+                <p class="pv-app-title">{v.strap}</p>
+                <div class="pv-cards">
+                  {[0, 1, 2].map((i) => (
+                    <div class="pv-card">
+                      <span class="pv-card__icon" style={`--i:${i}`}></span>
+                      <span class="pv-card__lines"><span class="pv-line pv-line--md"></span><span class="pv-line pv-line--sm"></span></span>
+                    </div>
+                  ))}
+                </div>
+                <span class="pv-cta-bar">Post a job</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {v.kind !== 'phone' && (
+          <div class="pv-browser">
+            <div class="pv-browser__bar"><i></i><i></i><i></i><span class="pv-browser__url"></span></div>
+            <div class="pv-browser__body">
+              {v.kind === 'dashboard' ? (
+                <div class="pv-dash">
+                  <aside class="pv-dash__side">
+                    <span class="pv-dash__brand">{word}</span>
+                    {[0, 1, 2, 3, 4, 5].map((i) => <span class:list={['pv-dash__nav', { 'is-on': i === 1 }]}></span>)}
+                  </aside>
+                  <div class="pv-dash__main">
+                    <p class="pv-dash__title">{v.strap}</p>
+                    <div class="pv-dash__kpis">
+                      {[0, 1, 2].map((i) => <div class="pv-kpi"><span class="pv-line pv-line--sm"></span><span class="pv-kpi__bar" style={`--w:${[72, 54, 88][i]}%`}></span></div>)}
+                    </div>
+                    <div class="pv-dash__chart">
+                      <svg viewBox="0 0 300 100" preserveAspectRatio="none"><path d="M0 80 C 30 70, 50 40, 80 48 S 130 78, 160 50 S 220 10, 250 26 S 290 20, 300 12" fill="none" stroke="currentColor" stroke-width="3" /><path d="M0 80 C 30 70, 50 40, 80 48 S 130 78, 160 50 S 220 10, 250 26 S 290 20, 300 12 V100 H0Z" fill="currentColor" opacity=".12" /></svg>
+                    </div>
+                    <div class="pv-dash__rows">{[0, 1, 2].map(() => <span class="pv-row"><span class="pv-dot"></span><span class="pv-line"></span><span class="pv-chip pv-chip--sm">Present</span></span>)}</div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div class="pv-nav"><span class="pv-nav__brand">{project.name}</span><span class="pv-nav__links"><i></i><i></i><i></i></span><span class="pv-nav__btn"></span></div>
+                  {v.kind === 'shop' ? (
+                    <div class="pv-shop">
+                      <p class="pv-hero-title">{v.strap}</p>
+                      <div class="pv-shop__grid">
+                        {[0, 1, 2, 3].map((i) => (
+                          <div class="pv-product"><span class="pv-product__img" style={`--i:${i}`}><span></span></span><span class="pv-line pv-line--md"></span><span class="pv-product__row"><span class="pv-line pv-line--sm"></span><span class="pv-product__add">+</span></span></div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : v.kind === 'editorial' ? (
+                    <div class="pv-editorial">
+                      <p class="pv-hero-title pv-hero-title--xl">{v.strap}</p>
+                      <div class="pv-editorial__band"><span></span><span></span><span></span></div>
+                      <div class="pv-editorial__cols">{[0, 1, 2].map(() => <div><span class="pv-line pv-line--md"></span><span class="pv-line"></span><span class="pv-line pv-line--sm"></span></div>)}</div>
+                    </div>
+                  ) : (
+                    <div class="pv-site">
+                      <div class="pv-site__hero">
+                        <div><p class="pv-hero-title">{v.strap}</p><span class="pv-line pv-line--md"></span><span class="pv-line pv-line--sm"></span><span class="pv-site__btn"></span></div>
+                        <div class="pv-site__media"><span></span></div>
+                      </div>
+                      <div class="pv-site__cards">{[0, 1, 2].map((i) => <div class="pv-site__card" style={`--i:${i}`}><span></span><span class="pv-line pv-line--md"></span></div>)}</div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  )}
+</div>
+
+<style>
+  .pv {
+    position: relative; overflow: hidden; isolation: isolate;
+    width: 100%; height: 100%;
+    background: var(--pv-bg); color: var(--pv-ink);
+    container-type: inline-size;
+  }
+  .pv__glow {
+    position: absolute; inset: -20%; z-index: -1;
+    background:
+      radial-gradient(40% 50% at 75% 20%, color-mix(in srgb, var(--pv-tone) 45%, transparent), transparent 70%),
+      radial-gradient(50% 60% at 10% 100%, color-mix(in srgb, var(--pv-accent) 35%, transparent), transparent 70%);
+  }
+  .pv__word {
+    position: absolute; left: -.04em; bottom: -.2em; z-index: -1;
+    font-size: 34cqi; font-weight: 700; letter-spacing: -.07em; line-height: 1;
+    color: var(--pv-ink); opacity: .09; white-space: nowrap;
+  }
+  .pv__stage { position: absolute; inset: 0; font-size: 1.35cqi; display: grid; place-items: center; }
+  .pv--tall .pv__stage { font-size: 2.3cqi; }
+  .pv--square .pv__stage { font-size: 1.85cqi; }
+
+  /* shared atoms */
+  .pv-line { display: block; height: .7em; border-radius: 1em; background: currentColor; opacity: .16; width: 80%; }
+  .pv-line--lg { width: 70%; height: 1em; opacity: .5; }
+  .pv-line--md { width: 60%; opacity: .32; }
+  .pv-line--sm { width: 38%; }
+  .pv-dot { width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--pv-accent); flex: none; }
+  .pv-chip { display: inline-block; padding: .45em 1em; border-radius: 1em; background: var(--pv-accent); color: var(--pv-tone); font-size: .9em; font-weight: 650; width: max-content; }
+  .pv-chip--sm { font-size: .7em; margin-left: auto; }
+
+  /* browser */
+  .pv-browser {
+    position: absolute; left: 11%; right: 11%; top: 14%; bottom: -6%;
+    border-radius: 1.4em 1.4em 0 0; overflow: hidden;
+    background: var(--pv-tone); color: #0d0d0f;
+    box-shadow: 0 3em 6em -2em rgba(0,0,0,.45), 0 0 0 .08em rgba(0,0,0,.08);
+    transition: transform 1.2s var(--ease-out);
+  }
+  .pv--tall .pv-browser { left: 8%; right: -30%; top: 18%; }
+  .pv-browser__bar { display: flex; align-items: center; gap: .5em; height: 2.6em; padding: 0 1.2em; background: color-mix(in srgb, var(--pv-tone) 80%, #000 6%); }
+  .pv-browser__bar i { width: .8em; height: .8em; border-radius: 50%; background: rgba(0,0,0,.18); }
+  .pv-browser__url { margin-left: 1.5em; width: 30%; height: 1.2em; border-radius: 1em; background: rgba(0,0,0,.08); }
+  .pv-browser__body { padding: 2em 2.6em; height: 100%; }
+  .pv-nav { display: flex; align-items: center; gap: 2em; margin-bottom: 3em; }
+  .pv-nav__brand { font-weight: 700; font-size: 1.3em; letter-spacing: -.03em; white-space: nowrap; }
+  .pv-nav__links { display: flex; gap: 1.2em; margin-left: auto; }
+  .pv-nav__links i { width: 3.2em; height: .6em; border-radius: 1em; background: currentColor; opacity: .2; }
+  .pv-nav__btn { width: 6em; height: 2em; border-radius: 1em; background: var(--pv-accent); }
+  .pv-hero-title { font-size: 4.2em; line-height: .95; font-weight: 700; letter-spacing: -.05em; margin-bottom: .45em; max-width: 9ch; color: #0d0d0f; }
+  .pv-hero-title--xl { font-size: 5.6em; max-width: 12ch; }
+  :global(.pv--editorial) .pv-browser { background: #fbfaf7; }
+
+  .pv-site__hero { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5em; align-items: center; }
+  .pv-site__hero .pv-line { margin-bottom: .8em; }
+  .pv-site__btn { display: block; width: 9em; height: 2.6em; border-radius: 2em; background: var(--pv-accent); margin-top: 1.6em; }
+  .pv-site__media { aspect-ratio: 4/3.4; border-radius: 1.2em; background: var(--pv-bg); position: relative; overflow: hidden; }
+  .pv-site__media span { position: absolute; inset: 22% 18% -30% 18%; border-radius: 50% 50% 0 0; background: var(--pv-accent); opacity: .85; }
+  .pv-site__cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2em; margin-top: 2.6em; }
+  .pv-site__card { display: grid; gap: .8em; }
+  .pv-site__card > span:first-child { aspect-ratio: 16/10; border-radius: .9em; background: color-mix(in srgb, var(--pv-bg) calc(40% + var(--i) * 20%), var(--pv-tone)); }
+
+  .pv-shop__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2em; margin-top: 1.4em; }
+  .pv-product { display: grid; gap: .8em; }
+  .pv-product__img { aspect-ratio: 1; border-radius: 1em; background: color-mix(in srgb, var(--pv-bg) 22%, #fff); display: grid; place-items: center; }
+  .pv-product__img span { width: 58%; aspect-ratio: 1/1.15; border-radius: 55% 45% 50% 50%; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--pv-bg) 50%, #fff), var(--pv-bg) 60%, color-mix(in srgb, var(--pv-bg) 70%, var(--pv-accent))); transform: rotate(calc(var(--i) * 25deg - 20deg)); box-shadow: 0 1em 1.5em -1em rgba(0,0,0,.4); }
+  .pv-product__row { display: flex; align-items: center; justify-content: space-between; }
+  .pv-product__add { width: 1.9em; height: 1.9em; border-radius: 50%; display: grid; place-items: center; background: var(--pv-accent); color: var(--pv-tone); font-weight: 700; line-height: 1; }
+
+  .pv-editorial__band { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1em; height: 13em; margin: 1.6em 0 2em; }
+  .pv-editorial__band span { border-radius: 1em; background: var(--pv-bg); position: relative; overflow: hidden; }
+  .pv-editorial__band span:nth-child(1) { background: linear-gradient(160deg, var(--pv-bg), color-mix(in srgb, var(--pv-bg) 60%, var(--pv-accent))); }
+  .pv-editorial__band span:nth-child(2) { background: var(--pv-accent); }
+  .pv-editorial__band span:nth-child(3)::after { content: ''; position: absolute; inset: 30% 20% -20%; border-radius: 50% 50% 0 0; background: var(--pv-accent); opacity: .8; }
+  .pv-editorial__cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2em; }
+  .pv-editorial__cols > div { display: grid; gap: .7em; }
+
+  .pv-dash { display: grid; grid-template-columns: 11em 1fr; gap: 2em; height: 100%; margin: -2em -2.6em; padding: 0; }
+  .pv-dash__side { background: var(--pv-bg); color: #fff; padding: 2em 1.4em; display: grid; align-content: start; gap: 1.1em; }
+  .pv-dash__brand { font-weight: 700; font-size: 1.3em; margin-bottom: 1em; }
+  .pv-dash__nav { height: 1.8em; border-radius: .6em; background: rgba(255,255,255,.1); }
+  .pv-dash__nav.is-on { background: var(--pv-accent); }
+  .pv-dash__main { padding: 2em 2em 0 0; display: grid; align-content: start; gap: 1.5em; }
+  .pv-dash__title { font-size: 2.6em; line-height: 1; font-weight: 700; letter-spacing: -.04em; }
+  .pv-dash__kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; }
+  .pv-kpi { background: #fff; border-radius: 1em; padding: 1.2em; display: grid; gap: 1em; box-shadow: 0 .2em .8em rgba(0,0,0,.05); }
+  .pv-kpi__bar { display: block; height: .8em; border-radius: 1em; width: var(--w); background: var(--pv-bg); }
+  .pv-dash__chart { background: #fff; border-radius: 1em; padding: 1.2em; height: 11em; color: var(--pv-bg); }
+  .pv-dash__chart svg { width: 100%; height: 100%; }
+  .pv-dash__rows { display: grid; gap: .8em; }
+  .pv-row { display: flex; align-items: center; gap: 1em; background: #fff; border-radius: .8em; padding: .8em 1em; }
+  .pv-row .pv-line { width: 40%; }
+  .pv--dashboard .pv-chip { background: var(--pv-bg); color: #fff; }
+
+  /* phones */
+  .pv-phones { position: relative; width: 60em; height: 56em; }
+  .pv--tall .pv-phones { width: 40em; height: 60em; }
+  .pv-phone {
+    position: absolute; width: 24em; aspect-ratio: 9 / 19; border-radius: 3.6em; padding: .9em;
+    background: #0d0d0f; box-shadow: 0 4em 6em -2em rgba(0,0,0,.45);
+    transition: transform 1.2s var(--ease-out);
+  }
+  .pv-phone__screen { position: relative; height: 100%; border-radius: 2.8em; overflow: hidden; background: var(--pv-tone); color: #0d0d0f; padding: 3.4em 1.8em 1.8em; display: flex; flex-direction: column; gap: 1.4em; }
+  .pv-phone--front { left: 50%; top: 2%; transform: translateX(-12%) rotate(4deg); z-index: 2; }
+  .pv-phone--back { left: 50%; top: 10%; transform: translateX(-92%) rotate(-7deg); }
+  .pv--tall .pv-phone--front { transform: translateX(-30%) rotate(4deg); }
+  .pv--tall .pv-phone--back { transform: translateX(-85%) rotate(-7deg); top: 18%; }
+  .pv-app-top { display: flex; align-items: center; justify-content: space-between; }
+  .pv-app-logo { width: 7em; height: auto; }
+  .pv-avatar { width: 2.6em; height: 2.6em; border-radius: 50%; background: var(--pv-accent); }
+  .pv-app-title { font-size: 2.6em; line-height: .98; font-weight: 700; letter-spacing: -.045em; }
+  .pv-cards { display: grid; gap: .9em; }
+  .pv-card { display: flex; align-items: center; gap: 1em; padding: 1em; border-radius: 1.2em; background: #fff; box-shadow: 0 .3em 1em rgba(0,0,0,.06); }
+  .pv-card__icon { width: 3em; height: 3em; border-radius: .9em; flex: none; background: color-mix(in srgb, var(--pv-bg) calc(100% - var(--i) * 30%), var(--pv-accent)); }
+  .pv-card__lines { flex: 1; display: grid; gap: .5em; }
+  .pv-card__lines .pv-line--md { width: 80%; }
+  .pv-cta-bar { margin-top: auto; display: grid; place-items: center; height: 3.6em; border-radius: 2em; background: var(--pv-accent); color: #fff; font-weight: 650; font-size: 1.1em; }
+  .pv-map { position: absolute; inset: 0; background:
+      linear-gradient(90deg, rgba(0,0,0,.05) 1px, transparent 1px) 0 0 / 3em 3em,
+      linear-gradient(rgba(0,0,0,.05) 1px, transparent 1px) 0 0 / 3em 3em,
+      color-mix(in srgb, var(--pv-bg) 25%, #fff); color: var(--pv-accent); }
+  .pv-map svg { width: 100%; height: 70%; }
+  .pv-map__pin { position: absolute; left: 44%; top: 42%; width: 2.4em; height: 2.4em; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--pv-accent); box-shadow: 0 0 0 .8em color-mix(in srgb, var(--pv-accent) 25%, transparent); }
+  .pv-sheet { position: absolute; left: .9em; right: .9em; bottom: .9em; padding: 1.6em; border-radius: 2em; background: #fff; display: grid; gap: .9em; }
+
+  @media (hover: hover) {
+    :global(.is-hoverable:hover) .pv-browser { transform: translateY(-3%); }
+    :global(.is-hoverable:hover) .pv-phone--front { transform: translateX(-8%) rotate(1deg) translateY(-3%); }
+    :global(.is-hoverable:hover) .pv-phone--back { transform: translateX(-98%) rotate(-10deg); }
+  }
+</style>

@@ -1,0 +1,214 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RevealText from '../../components/RevealText.astro';
+import RevealImage from '../../components/RevealImage.astro';
+import ProjectVisual from '../../components/ProjectVisual.astro';
+import Arrow from '../../components/Arrow.astro';
+import Button from '../../components/Button.astro';
+import { projects, type Project } from '../../data/projects';
+import { getService } from '../../data/services';
+import { site } from '../../data/site';
+
+export const getStaticPaths = (() =>
+  projects.map((project, i) => ({
+    params: { slug: project.slug },
+    props: { project, next: projects[(i + 1) % projects.length] },
+  }))) satisfies GetStaticPaths;
+
+interface Props { project: Project; next: Project }
+const { project, next } = Astro.props;
+const svc = project.services.map((s) => getService(s)).filter((s): s is NonNullable<typeof s> => Boolean(s));
+const sections = [
+  { key: 'Challenge', text: project.challenge },
+  { key: 'Approach', text: project.approach },
+  { key: 'Solution', text: project.solution },
+];
+const onDark = project.visual.ink === '#ffffff';
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: project.name,
+  about: project.summary,
+  creator: { '@id': `${site.url}/#organization` },
+  url: `${site.url}/work/${project.slug}`,
+  keywords: project.tags.join(', '),
+};
+---
+<BaseLayout title={`${project.name} — ${project.category} Case Study`} description={`${project.summary} ${project.overview}`.slice(0, 158)} schema={schema}>
+  <section class="cs-hero theme-light" data-theme="light" data-hero>
+    <div class="container cs-hero__inner">
+      <p class="cs-hero__meta" data-hero-fade>
+        <a href="/work" class="link-line">Work</a>
+        <span>{project.category}</span>
+        {project.location && <span>{project.location}</span>}
+        {project.year && <span>{project.year}</span>}
+      </p>
+      <RevealText as="h1" trigger="load" class="t-display cs-hero__title">{project.name}</RevealText>
+      <div class="cs-hero__foot">
+        <p class="t-lead" data-hero-fade>{project.summary}</p>
+        <ul class="tag-list" role="list" data-hero-fade>{project.tags.map((t) => <li class="tag">{t}</li>)}</ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="cs-media" data-hero-visual>
+    <div class="container">
+      <RevealImage parallax class="cs-media__frame"><ProjectVisual project={project} shape="wide" eager /></RevealImage>
+    </div>
+  </div>
+
+  <section class="theme-light section cs-overview" data-theme="light">
+    <div class="container cs-overview__grid">
+      <aside class="cs-facts" aria-label="Project details">
+        <dl>
+          <div data-reveal><dt>Client</dt><dd>{project.name}</dd></div>
+          <div data-reveal><dt>Discipline</dt><dd>{project.category}</dd></div>
+          {project.location && <div data-reveal><dt>Location</dt><dd>{project.location}</dd></div>}
+          {project.year && <div data-reveal><dt>Year</dt><dd>{project.year}</dd></div>}
+          <div data-reveal><dt>Services</dt><dd><ul role="list">{svc.map((s) => <li><a href={`/services/${s.slug}`} class="link-line link-line--static">{s.name}</a></li>)}</ul></dd></div>
+        </dl>
+      </aside>
+      <div class="cs-overview__body">
+        <p class="eyebrow" data-reveal>Overview</p>
+        <RevealText as="p" class="t-h3">{project.overview}</RevealText>
+      </div>
+    </div>
+  </section>
+
+  <section class="theme-bone section cs-story" data-theme="light">
+    <div class="container">
+      {sections.map((s, i) => (
+        <article class="cs-story__row">
+          <div class="cs-story__label">
+            <span class="cs-story__num" data-reveal>0{i + 1}</span>
+            <RevealText as="h2" class="t-h2">{s.key}</RevealText>
+          </div>
+          <p class="t-lead cs-story__text" data-reveal>{s.text}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="theme-dark section" data-theme="dark">
+    <div class="container">
+      <div class="cs-features__head">
+        <p class="eyebrow" data-reveal>Key features</p>
+        <RevealText as="h2" class="t-h2">What we built</RevealText>
+      </div>
+      <ul class="cs-features" role="list">
+        {project.features.map((f, i) => (
+          <li class="cs-feature" data-reveal>
+            <span class="cs-feature__num">0{i + 1}</span>
+            <h3 class="t-h4">{f.title}</h3>
+            <p class="t-muted">{f.text}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="cs-screens theme-light" data-theme="light" aria-label="Interface visuals">
+    <div class="container cs-screens__grid">
+      <RevealImage class="cs-screens__a"><ProjectVisual project={project} shape="tall" /></RevealImage>
+      <RevealImage class="cs-screens__b"><ProjectVisual project={project} shape="square" /></RevealImage>
+    </div>
+  </section>
+
+  <section class="theme-light section section--tight cs-tech" data-theme="light">
+    <div class="container cs-tech__grid">
+      <p class="eyebrow" data-reveal>Technologies used</p>
+      <ul class="cs-tech__list" role="list">
+        {project.technologies.map((t) => <li data-reveal>{t}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  <section class="theme-volt section cs-outcome" data-theme="light">
+    <div class="container cs-outcome__grid">
+      <p class="eyebrow" data-reveal>Outcome</p>
+      <RevealText as="p" class="t-h2 cs-outcome__text">{project.outcome}</RevealText>
+      <div data-reveal><Button href="/contact" label="Start a similar project" /></div>
+    </div>
+  </section>
+
+  <section class="cs-next" data-theme={onDark ? 'dark' : 'light'} style={`--next-bg:${next.visual.bg};--next-ink:${next.visual.ink}`}>
+    <a href={`/work/${next.slug}`} class="cs-next__link" data-cursor="Next">
+      <span class="container cs-next__inner">
+        <span class="eyebrow cs-next__eyebrow">Next project</span>
+        <span class="cs-next__title">{next.name}</span>
+        <span class="cs-next__meta">{next.category} <Arrow /></span>
+      </span>
+    </a>
+  </section>
+</BaseLayout>
+
+<style>
+  .cs-hero { padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 7rem)); padding-bottom: var(--space-lg); }
+  .cs-hero__inner { display: grid; gap: var(--space-lg); }
+  .cs-hero__meta { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; font-size: .85rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--color-muted); }
+  .cs-hero__meta a { color: var(--color-text); }
+  .cs-hero__title { max-width: 14ch; }
+  .cs-hero__foot { display: grid; gap: 1.5rem; }
+  .cs-hero__foot .t-lead { max-width: 34ch; }
+  @media (min-width: 1024px) { .cs-hero__foot { grid-template-columns: 1fr 1fr; align-items: end; } .cs-hero__foot .tag-list { justify-self: end; } }
+
+  .cs-media :global(.cs-media__frame) { aspect-ratio: 16 / 8.5; border-radius: var(--radius-lg); }
+  @media (max-width: 767px) { .cs-media :global(.cs-media__frame) { aspect-ratio: 4 / 3.6; } }
+
+  .cs-overview__grid { display: grid; gap: var(--space-xl); }
+  .cs-overview__body { display: grid; gap: var(--space-md); align-content: start; }
+  .cs-facts dl { margin: 0; display: grid; border-top: 1px solid var(--color-line); }
+  .cs-facts dl > div { display: grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--color-line); }
+  .cs-facts dt { font-size: .78rem; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--color-muted); padding-top: .2em; }
+  .cs-facts dd { margin: 0; font-weight: 550; }
+  .cs-facts ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
+  @media (min-width: 1024px) {
+    .cs-overview__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+    .cs-facts { position: sticky; top: calc(var(--header-h) + 2rem); align-self: start; }
+  }
+
+  .cs-story .container { display: grid; gap: var(--space-2xl); }
+  .cs-story__row { display: grid; gap: var(--space-md); }
+  .cs-story__label { display: grid; gap: .75rem; }
+  .cs-story__num { font-size: .9rem; font-weight: 650; color: var(--color-muted); }
+  .cs-story__text { max-width: 44ch; }
+  @media (min-width: 1024px) {
+    .cs-story__row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+    .cs-story__row:nth-child(even) .cs-story__label { order: 2; }
+    .cs-story__label { position: sticky; top: calc(var(--header-h) + 2rem); }
+  }
+
+  .cs-features__head { display: grid; gap: var(--space-md); margin-bottom: var(--space-xl); }
+  .cs-features { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  .cs-feature { display: grid; gap: .8rem; align-content: start; padding: clamp(1.5rem, 2.5vw, 2.5rem); border-radius: var(--radius-lg); background: var(--c-ink-2); box-shadow: inset 0 0 0 1px var(--color-line); min-height: 15rem; transition: background .5s, transform .6s var(--ease-out); }
+  .cs-feature__num { font-weight: 650; color: var(--c-volt); margin-bottom: 2.5rem; }
+  @media (hover: hover) { .cs-feature:hover { background: var(--c-ink-3); transform: translateY(-4px); } }
+  @media (min-width: 768px) { .cs-features { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .cs-screens { padding-top: var(--space-2xl); }
+  .cs-screens__grid { display: grid; gap: var(--gutter); }
+  .cs-screens :global(.cs-screens__a) { aspect-ratio: 4 / 5; border-radius: var(--radius-lg); }
+  .cs-screens :global(.cs-screens__b) { aspect-ratio: 1; border-radius: var(--radius-lg); }
+  @media (min-width: 768px) {
+    .cs-screens__grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: end; }
+  }
+
+  .cs-tech__grid { display: grid; gap: var(--space-md); }
+  .cs-tech__list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .1em .6em; font-size: var(--fs-h3); font-weight: 600; letter-spacing: -0.045em; line-height: 1.1; }
+  .cs-tech__list li:not(:last-child)::after { content: ' /'; color: var(--color-muted); font-weight: 400; }
+
+  .cs-outcome__grid { display: grid; gap: var(--space-lg); }
+  .cs-outcome__text { max-width: 20ch; }
+
+  .cs-next__link { display: block; background: var(--next-bg); color: var(--next-ink); padding-block: clamp(4rem, 10vw, 10rem); overflow: hidden; }
+  .cs-next__inner { display: grid; gap: 1rem; }
+  .cs-next__eyebrow { color: inherit; }
+  .cs-next__title { font-size: var(--fs-h1); line-height: .9; letter-spacing: var(--tracking-display); font-weight: 600; transition: transform 1s var(--ease-out); max-width: 14ch; }
+  .cs-next__meta { display: inline-flex; align-items: center; gap: .6rem; font-weight: 600; font-size: 1.1rem; }
+  .cs-next__meta :global(svg) { width: 1.3rem; transition: transform .6s var(--ease-out); }
+  @media (hover: hover) {
+    .cs-next__link:hover .cs-next__title { transform: translateX(2rem); }
+    .cs-next__link:hover .cs-next__meta :global(svg) { transform: translateX(.5rem); }
+  }
+</style>

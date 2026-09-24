@@ -1,0 +1,146 @@
+---
+import KavoMark from './KavoMark.astro';
+import Button from './Button.astro';
+import MegaMenu from './MegaMenu.astro';
+import MobileMenu from './MobileMenu.astro';
+import { mainNav } from '../data/site';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href: string) => path === href || path.startsWith(`${href}/`);
+---
+<header class="site-header" data-header>
+  <div class="container site-header__bar">
+    <a class="site-header__logo" href="/" aria-label="Kavo Technologies — home" data-cursor="none">
+      <KavoMark class="site-header__mark" />
+      <span class="site-header__wordmark">Kavo<span class="site-header__wordmark-rest"> Technologies</span></span>
+    </a>
+
+    <nav class="site-nav" aria-label="Primary">
+      <ul class="site-nav__list" role="list">
+        {mainNav.map((item) => (
+          <li>
+            {'mega' in item && item.mega ? (
+              <button
+                class:list={['site-nav__link', { 'is-active': isActive(item.href) }]}
+                type="button"
+                aria-expanded="false"
+                aria-controls="mega-services"
+                data-mega-trigger
+              >
+                <span class="site-nav__text">{item.label}</span>
+                <svg class="site-nav__chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+              </button>
+            ) : (
+              <a
+                class:list={['site-nav__link', { 'is-active': isActive(item.href) }]}
+                href={item.href}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+              >
+                <span class="site-nav__text">{item.label}</span>
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="site-header__actions">
+      <Button href="/contact" label="Contact" size="sm" class="site-header__cta" aria-current={isActive('/contact') ? 'page' : undefined} />
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" data-menu-toggle>
+        <span class="menu-toggle__label" aria-hidden="true"><span>Menu</span><span>Close</span></span>
+        <span class="visually-hidden" data-menu-toggle-sr>Open menu</span>
+        <span class="menu-toggle__lines" aria-hidden="true"><i></i><i></i></span>
+      </button>
+    </div>
+  </div>
+  <MegaMenu />
+</header>
+<div class="mega-overlay" data-mega-overlay aria-hidden="true"></div>
+<MobileMenu />
+
+<style is:global>
+  .site-header {
+    --hdr-fg: var(--c-ink);
+    --hdr-bg: var(--c-white);
+    position: fixed; inset: 0 0 auto; z-index: 100;
+    color: var(--hdr-fg);
+    transition: transform .6s var(--ease-out), color .35s ease;
+  }
+  .site-header.is-dark { --hdr-fg: var(--c-white); --hdr-bg: var(--c-ink); }
+  .site-header::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: var(--hdr-bg);
+    opacity: 0; transition: opacity .35s ease, background-color .35s ease;
+  }
+  .site-header.is-solid::before { opacity: 1; }
+  .site-header.is-hidden { transform: translateY(-100%); }
+  .site-header.is-mega-open { --hdr-fg: var(--c-ink); --hdr-bg: var(--c-white); transform: none; }
+  .site-header.is-mega-open::before { opacity: 1; }
+  .site-header.is-menu-open { --hdr-fg: var(--c-white); transform: none; }
+  .site-header.is-menu-open::before { opacity: 0; }
+
+  .site-header__bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 2rem;
+    height: var(--header-h);
+  }
+  .site-header__logo { display: inline-flex; align-items: center; gap: .7rem; font-weight: 650; letter-spacing: -0.03em; font-size: 1.2rem; line-height: 1; }
+  .site-header__mark { width: 1.9rem; height: 1.9rem; transition: transform .6s var(--ease-out); }
+  @media (hover: hover) { .site-header__logo:hover .site-header__mark { transform: rotate(-90deg); } }
+  @media (max-width: 380px) { .site-header__wordmark-rest { display: none; } }
+
+  .site-nav { margin-left: auto; }
+  .site-nav__list { display: flex; align-items: center; gap: clamp(1.25rem, 2.4vw, 2.75rem); margin: 0; padding: 0; list-style: none; }
+  .site-nav__link {
+    position: relative; display: inline-flex; align-items: center; gap: .35rem;
+    padding: .5rem 0; font-size: 1.02rem; font-weight: 550; letter-spacing: -0.01em;
+  }
+  .site-nav__text { position: relative; }
+  .site-nav__text::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -.2rem; height: 1.5px;
+    background: currentColor; transform: scaleX(0); transform-origin: right;
+    transition: transform .5s var(--ease-out);
+  }
+  .site-nav__link.is-active .site-nav__text::after,
+  .site-nav__link[aria-expanded='true'] .site-nav__text::after { transform: scaleX(1); transform-origin: left; }
+  @media (hover: hover) { .site-nav__link:hover .site-nav__text::after { transform: scaleX(1); transform-origin: left; } }
+  .site-nav__chev { width: .7rem; height: .7rem; transition: transform .4s var(--ease-out); }
+  .site-nav__link[aria-expanded='true'] .site-nav__chev { transform: rotate(180deg); }
+
+  .site-header__actions { display: flex; align-items: center; gap: 1rem; }
+  .site-header .site-header__cta {
+    --color-btn-bg: var(--hdr-fg); --color-btn-text: var(--hdr-bg);
+    --color-btn-hover-bg: var(--c-volt); --color-btn-hover-text: var(--c-ink);
+    --color-bg: var(--hdr-bg); --color-text: var(--hdr-fg);
+  }
+  .site-header.is-dark:not(.is-mega-open) .site-header__cta { --color-btn-bg: var(--c-volt); --color-btn-text: var(--c-ink); --color-btn-hover-bg: var(--c-white); }
+
+  .menu-toggle { display: none; align-items: center; gap: .75rem; height: 2.75rem; padding: 0 0 0 .25rem; font-weight: 600; font-size: .98rem; }
+  .menu-toggle__label { position: relative; display: inline-block; overflow: hidden; height: 1.3em; line-height: 1.3; }
+  .menu-toggle__label span { display: block; transition: transform .6s var(--ease-out); }
+  .menu-toggle[aria-expanded='true'] .menu-toggle__label span { transform: translateY(-100%); }
+  .menu-toggle__lines {
+    position: relative; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%;
+    background: var(--hdr-fg); color: var(--hdr-bg); transition: background .35s, color .35s;
+  }
+  .site-header.is-menu-open .menu-toggle__lines { background: var(--c-volt); color: var(--c-ink); }
+  .menu-toggle__lines i {
+    position: absolute; width: 1.05rem; height: 1.6px; background: currentColor; border-radius: 2px;
+    transition: transform .6s var(--ease-out);
+  }
+  .menu-toggle__lines i:first-child { transform: translateY(-3.5px); }
+  .menu-toggle__lines i:last-child { transform: translateY(3.5px); }
+  .menu-toggle[aria-expanded='true'] .menu-toggle__lines i:first-child { transform: rotate(45deg); }
+  .menu-toggle[aria-expanded='true'] .menu-toggle__lines i:last-child { transform: rotate(-45deg); }
+
+  @media (max-width: 1023px) {
+    .site-nav, .site-header__cta { display: none !important; }
+    .menu-toggle { display: inline-flex; }
+  }
+
+  .mega-overlay {
+    position: fixed; inset: 0; z-index: 90; background: rgba(13,13,15,.45);
+    opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility .45s;
+    backdrop-filter: blur(2px);
+  }
+  .mega-overlay.is-visible { opacity: 1; visibility: visible; }
+</style>

@@ -1,0 +1,136 @@
+---
+/**
+ * Interactive capabilities list. Desktop: hovering a row reveals a floating
+ * preview panel that follows the pointer. Mobile: rows become an accordion.
+ */
+import Arrow from './Arrow.astro';
+import { services, getCategory } from '../data/services';
+
+interface Props { slugs?: string[] }
+const order = [
+  'web-design', 'web-development', 'mobile-app-development', 'ui-ux', 'business-dashboards', 'booking-systems',
+  'school-management-systems', 'ecommerce', 'seo', 'google-business', 'google-ads', 'social-media', 'digital-strategy',
+];
+const { slugs = order } = Astro.props;
+const items = slugs.map((s) => services.find((x) => x.slug === s)!).filter(Boolean);
+---
+<div class="caps" data-caps>
+  <ul class="caps__list" role="list">
+    {items.map((s, i) => {
+      const cat = getCategory(s.category);
+      return (
+        <li class="caps__item" data-caps-item data-accent={cat.accent} data-cat={cat.name} data-short={s.short} data-reveal>
+          <div class="caps__row">
+            <a class="caps__link" href={`/services/${s.slug}`} data-cursor="none">
+              <span class="caps__index">{String(i + 1).padStart(2, '0')}</span>
+              <span class="caps__name">{s.name.replace(' & Custom Platforms', '')}</span>
+              <span class="caps__cat">{cat.name}</span>
+              <span class="caps__arrow" aria-hidden="true"><Arrow /></span>
+            </a>
+            <button class="caps__toggle" type="button" aria-expanded="false" aria-controls={`caps-${s.slug}`} aria-label={`More about ${s.name}`}><span></span></button>
+          </div>
+          <div class="caps__panel" id={`caps-${s.slug}`} hidden>
+            <p>{s.intro}</p>
+            <a href={`/services/${s.slug}`} class="arrow-link">Explore {s.name.replace(' & Custom Platforms', '')} <Arrow /></a>
+          </div>
+        </li>
+      );
+    })}
+  </ul>
+  <div class="caps__preview" aria-hidden="true" data-caps-preview>
+    <div class="caps__preview-inner">
+      <span class="caps__preview-cat" data-caps-preview-cat></span>
+      <span class="caps__preview-text" data-caps-preview-text></span>
+      <span class="caps__preview-mark"><Arrow /></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { gsap } from 'gsap';
+  const root = document.querySelector<HTMLElement>('[data-caps]');
+  if (root) {
+    const preview = root.querySelector<HTMLElement>('[data-caps-preview]')!;
+    const cat = root.querySelector<HTMLElement>('[data-caps-preview-cat]')!;
+    const text = root.querySelector<HTMLElement>('[data-caps-preview-text]')!;
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 1024px)');
+    const xTo = gsap.quickTo(preview, 'x', { duration: 0.6, ease: 'power3' });
+    const yTo = gsap.quickTo(preview, 'y', { duration: 0.6, ease: 'power3' });
+    const rTo = gsap.quickTo(preview, 'rotation', { duration: 0.8, ease: 'power3' });
+    let lastX = 0;
+    root.addEventListener('pointermove', (e) => {
+      if (!fine.matches) return;
+      const r = root.getBoundingClientRect();
+      xTo(e.clientX - r.left);
+      yTo(e.clientY - r.top);
+      rTo(Math.max(-8, Math.min(8, (e.clientX - lastX) * 0.6)));
+      lastX = e.clientX;
+    });
+    root.querySelectorAll<HTMLElement>('[data-caps-item]').forEach((item) => {
+      item.addEventListener('pointerenter', () => {
+        if (!fine.matches) return;
+        preview.style.setProperty('--accent', item.dataset.accent || '#d8ff3e');
+        preview.classList.toggle('is-light-text', item.dataset.cat === 'Software');
+        cat.textContent = item.dataset.cat || '';
+        text.textContent = item.dataset.short || '';
+        preview.classList.add('is-visible');
+      });
+    });
+    root.addEventListener('pointerleave', () => preview.classList.remove('is-visible'));
+
+    root.querySelectorAll<HTMLButtonElement>('.caps__toggle').forEach((btn) => {
+      const panel = document.getElementById(btn.getAttribute('aria-controls') || '');
+      btn.addEventListener('click', () => {
+        const open = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!open));
+        if (panel) panel.hidden = open;
+      });
+    });
+  }
+</script>
+
+<style>
+  .caps { position: relative; }
+  .caps__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-line); }
+  .caps__item { border-bottom: 1px solid var(--color-line); }
+  .caps__row { display: flex; align-items: center; }
+  .caps__link {
+    flex: 1; display: grid; grid-template-columns: 2.5rem 1fr auto; align-items: center; gap: 1rem;
+    padding: clamp(1rem, 1.8vw, 1.6rem) 0; min-width: 0;
+  }
+  .caps__index { font-size: .8rem; font-weight: 600; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+  .caps__name { font-size: var(--fs-h3); line-height: 1; letter-spacing: -0.045em; font-weight: 580; transition: transform .6s var(--ease-out), opacity .4s; }
+  .caps__cat { display: none; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: var(--color-muted); }
+  .caps__arrow { display: none; width: 1.5rem; transition: transform .6s var(--ease-out), opacity .4s; opacity: 0; transform: translateX(-1rem) rotate(-45deg); }
+  .caps__toggle { flex: none; position: relative; width: 2.75rem; height: 2.75rem; }
+  .caps__toggle span::before, .caps__toggle span::after { content: ''; position: absolute; left: 50%; top: 50%; width: 1rem; height: 1.5px; background: currentColor; transform: translate(-50%, -50%); transition: transform .4s var(--ease-out); }
+  .caps__toggle span::after { transform: translate(-50%, -50%) rotate(90deg); }
+  .caps__toggle[aria-expanded='true'] span::after { transform: translate(-50%, -50%) rotate(0); }
+  .caps__panel { padding: 0 0 1.5rem 3.5rem; display: grid; gap: 1rem; color: var(--color-muted); max-width: 44rem; }
+  .caps__panel .arrow-link { color: var(--color-text); }
+  .caps__preview { display: none; }
+
+  @media (min-width: 1024px) {
+    .caps__link { grid-template-columns: 4rem 1fr auto 2rem; }
+    .caps__cat, .caps__arrow { display: block; }
+    .caps__toggle, .caps__panel { display: none !important; }
+    .caps__list:hover .caps__name { opacity: .35; }
+    .caps__item:hover .caps__name { opacity: 1; transform: translateX(1.25rem); }
+    .caps__item:hover .caps__arrow { opacity: 1; transform: none; }
+    .caps__preview {
+      display: block; position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none;
+      width: 17rem; margin: -8.5rem 0 0 2rem;
+    }
+    .caps__preview-inner {
+      display: grid; gap: 1.25rem; padding: 1.5rem; border-radius: var(--radius-md); aspect-ratio: 1;
+      background: var(--accent, var(--c-volt)); color: var(--c-ink);
+      transform: scale(.4); opacity: 0; transition: transform .5s var(--ease-out), opacity .35s, background .4s;
+      align-content: space-between;
+    }
+    .caps__preview.is-light-text .caps__preview-inner { color: var(--c-white); }
+    .caps__preview.is-visible .caps__preview-inner { transform: scale(1); opacity: 1; }
+    .caps__preview-cat { font-size: .75rem; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+    .caps__preview-text { font-size: 1.6rem; line-height: 1.02; letter-spacing: -0.04em; font-weight: 600; }
+    .caps__preview-mark { width: 2rem; transform: rotate(-45deg); }
+  }
+</style>

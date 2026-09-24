@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import RevealText from '../components/RevealText.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import KavoMark from '../components/KavoMark.astro';
+import ServiceList from '../components/ServiceList.astro';
+import Process from '../components/Process.astro';
+import TechStack from '../components/TechStack.astro';
+import ClientLogos from '../components/ClientLogos.astro';
+import CTA from '../components/CTA.astro';
+
+const beliefs = [
+  { title: 'Simple beats clever', text: 'The best digital products feel obvious. We remove complexity rather than decorate it.' },
+  { title: 'Design and engineering together', text: 'Designers and developers work side by side from day one, so ideas survive contact with reality.' },
+  { title: 'Built to last', text: 'Clean, documented, maintainable code — technology you can grow with rather than replace.' },
+  { title: 'Honest partnership', text: 'Clear scope, straight advice and regular visibility. No jargon, no surprises.' },
+];
+const markets = [
+  { name: 'United Kingdom', text: 'Our home base in London, working with businesses across the UK.' },
+  { name: 'Uganda', text: 'Building platforms for schools, firms and growing businesses in Uganda.' },
+  { name: 'Beyond', text: 'Remote-first collaboration with ambitious teams wherever they are.' },
+];
+---
+<BaseLayout title="About Kavo Technologies" description="Kavo Technologies is a digital technology company building websites, applications and digital platforms for businesses across the UK, Uganda and beyond.">
+  <PageHero eyebrow="About" title="We build digital things that make businesses work better." size="h1" />
+
+  <section class="theme-light section section--flush-top" data-theme="light">
+    <div class="container who">
+      <div class="who__visual theme-volt" data-reveal aria-hidden="true">
+        <KavoMark class="who__mark" />
+        <span class="who__label">Kavo Technologies</span>
+      </div>
+      <div class="who__body">
+        <p class="eyebrow" data-reveal>Who we are</p>
+        <RevealText as="h2" class="t-h3">A digital technology company for businesses that want more from the web.</RevealText>
+        <p class="t-lead t-muted" data-reveal>Kavo Technologies designs and builds websites, mobile apps, business platforms and growth campaigns. We work with start-ups, schools, professional firms and established businesses across the UK, Uganda and beyond.</p>
+        <p class="t-muted" data-reveal>We are deliberately a small, senior team. The people you meet at the start are the people who design, build and support your product — which keeps communication clear and quality high.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="theme-dark section" data-theme="dark">
+    <div class="container">
+      <SectionHeading eyebrow="What we believe" title="Principles we build by" />
+      <ol class="beliefs" role="list">
+        {beliefs.map((b, i) => (
+          <li class="belief" data-reveal>
+            <span class="belief__num">0{i + 1}</span>
+            <h3 class="belief__title">{b.title}</h3>
+            <p class="belief__text">{b.text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <Process title="How we work" theme="theme-bone" />
+
+  <section class="theme-dark section" data-theme="dark">
+    <div class="container">
+      <SectionHeading eyebrow="Capabilities" title="What we can do for you" intro="Websites, software and growth — delivered by one joined-up team." />
+      <ServiceList />
+    </div>
+  </section>
+
+  <TechStack />
+
+  <section class="theme-light section" data-theme="light">
+    <div class="container">
+      <SectionHeading eyebrow="Locations & markets" title="Local roots, global reach" />
+      <ul class="markets" role="list">
+        {markets.map((m, i) => (
+          <li class="market" data-reveal>
+            <span class="market__num">0{i + 1}</span>
+            <h3 class="market__name">{m.name}</h3>
+            <p class="t-muted">{m.text}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <ClientLogos />
+  <CTA title="Let’s build something together." label="Start a project" />
+</BaseLayout>
+
+<style>
+  .who { display: grid; gap: var(--space-xl); }
+  .who__visual { position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3.2; border-radius: var(--radius-lg); overflow: hidden; }
+  .who__mark { width: 38%; color: var(--c-ink); animation: who-spin 18s var(--ease-in-out) infinite alternate; }
+  .who__label { position: absolute; left: 1.5rem; bottom: 1.25rem; font-weight: 650; letter-spacing: -0.02em; }
+  @keyframes who-spin { 0% { transform: rotate(0); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(-180deg); } }
+  .who__body { display: grid; gap: var(--space-md); align-content: center; max-width: 40rem; }
+  @media (min-width: 1024px) { .who { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; } }
+
+  .beliefs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-line); }
+  .belief { display: grid; grid-template-columns: 3rem 1fr; gap: .5rem 1rem; padding: clamp(1.5rem, 3vw, 2.75rem) 0; border-bottom: 1px solid var(--color-line); }
+  .belief__num { color: var(--c-volt); font-weight: 650; padding-top: .5em; }
+  .belief__title { font-size: var(--fs-h3); letter-spacing: -0.045em; }
+  .belief__text { grid-column: 2; color: var(--color-muted); max-width: 40ch; }
+  @media (min-width: 1024px) {
+    .belief { grid-template-columns: 5rem minmax(0, 1.4fr) minmax(0, 1fr); align-items: baseline; }
+    .belief__text { grid-column: 3; }
+  }
+
+  .markets { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  .market { display: grid; gap: .75rem; align-content: start; padding: clamp(1.5rem, 2.5vw, 2.25rem); border-radius: var(--radius-lg); background: var(--c-bone); min-height: 16rem; }
+  .market__num { font-weight: 650; color: var(--color-muted); margin-bottom: auto; }
+  .market__name { font-size: var(--fs-h3); letter-spacing: -0.045em; margin-top: 3rem; }
+  .market:nth-child(2) { background: var(--c-ink); color: var(--c-white); }
+  .market:nth-child(2) .t-muted { color: var(--c-muted-dark); }
+  .market:nth-child(3) { background: var(--c-cobalt); color: var(--c-white); }
+  .market:nth-child(3) .t-muted, .market:nth-child(3) .market__num { color: #d3d6ff; }
+  @media (min-width: 768px) { .markets { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>

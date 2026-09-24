@@ -1,0 +1,62 @@
+---
+import SectionHeading from '../SectionHeading.astro';
+import Arrow from '../Arrow.astro';
+import { categories, servicesByCategory } from '../../data/services';
+---
+<section class="wwd theme-light section" data-theme="light">
+  <div class="container">
+    <SectionHeading eyebrow="Expertise" title="What we do best" intro="Three disciplines, one team. We combine strategy, design and engineering to build digital products around real business goals." />
+    <ul class="wwd__list" role="list">
+      {categories.map((cat) => (
+        <li class="wwd__item" style={`--accent:${cat.accent}`} data-reveal>
+          <a href={`/services#${cat.key}`} class="wwd__link" data-cursor="Explore">
+            <span class="wwd__fill" aria-hidden="true"></span>
+            <span class="wwd__num">{cat.number}</span>
+            <span class="wwd__name">{cat.name}</span>
+            <span class="wwd__desc">
+              <span class="wwd__summary">{cat.summary}</span>
+              <span class="wwd__subs">{servicesByCategory(cat.key).map((s) => s.name.replace(' & Custom Platforms', '')).join(' · ')}</span>
+            </span>
+            <span class="wwd__arrow" aria-hidden="true"><Arrow /></span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .wwd__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-line); }
+  .wwd__item { border-bottom: 1px solid var(--color-line); }
+  .wwd__link {
+    position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .5rem 1.25rem;
+    padding: clamp(1.5rem, 3vw, 2.75rem) 0; isolation: isolate;
+  }
+  .wwd__fill { position: absolute; inset: 0 calc(var(--gutter) * -1); z-index: -1; background: var(--accent); transform: scaleY(0); transform-origin: bottom; transition: transform .7s var(--ease-out); }
+  .wwd__num { align-self: start; padding-top: .8em; font-size: .85rem; font-weight: 600; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+  .wwd__name { font-size: var(--fs-h1); line-height: .9; letter-spacing: var(--tracking-display); font-weight: 600; transition: transform .7s var(--ease-out), color .4s; }
+  .wwd__desc { grid-column: 2 / -1; display: grid; gap: .6rem; max-width: 40rem; }
+  .wwd__summary { font-size: var(--fs-lead); line-height: 1.3; letter-spacing: -0.02em; }
+  .wwd__subs { font-size: .95rem; color: var(--color-muted); transition: color .4s; }
+  .wwd__arrow { grid-row: 1; grid-column: 3; display: grid; place-items: center; width: clamp(3rem, 5vw, 5rem); aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--color-line); transition: background .4s, color .4s, transform .7s var(--ease-out); }
+  .wwd__arrow :global(svg) { width: 40%; transform: rotate(-45deg); transition: transform .6s var(--ease-out); }
+  @media (min-width: 1024px) {
+    .wwd__link { grid-template-columns: 4rem minmax(0, 1.3fr) minmax(0, 1fr) auto; column-gap: var(--gutter); }
+    .wwd__desc { grid-column: 3; }
+    .wwd__arrow { grid-column: 4; }
+  }
+  @media (hover: hover) {
+    .wwd__link:hover .wwd__fill { transform: scaleY(1); }
+    .wwd__link:hover .wwd__name { transform: translateX(1.5rem); color: var(--c-ink); }
+    .wwd__link:hover { color: var(--c-ink); }
+    .wwd__link:hover .wwd__subs, .wwd__link:hover .wwd__num { color: rgba(13,13,15,.7); }
+    .wwd__link:hover .wwd__arrow { background: var(--c-ink); color: var(--accent); box-shadow: none; }
+    .wwd__link:hover .wwd__arrow :global(svg) { transform: rotate(0); }
+  }
+  /* cobalt accent needs light text */
+  @media (hover: hover) {
+    .wwd__item:nth-child(2) .wwd__link:hover, .wwd__item:nth-child(2) .wwd__link:hover .wwd__name { color: var(--c-white); }
+    .wwd__item:nth-child(2) .wwd__link:hover .wwd__subs, .wwd__item:nth-child(2) .wwd__link:hover .wwd__num { color: rgba(255,255,255,.8); }
+    .wwd__item:nth-child(2) .wwd__link:hover .wwd__arrow { background: var(--c-white); color: var(--c-cobalt); }
+  }
+</style>

@@ -1,0 +1,65 @@
+---
+import RevealText from './RevealText.astro';
+import { processSteps } from '../data/site';
+interface Props { theme?: string; title?: string; intro?: string }
+const { theme = 'theme-light', title = 'How we work', intro = 'A clear, collaborative process that takes you from idea to launch — and keeps improving after.' } = Astro.props;
+---
+<section class:list={['process', theme]} data-theme={theme === 'theme-dark' ? 'dark' : 'light'} data-process>
+  <div class="container process__inner">
+    <div class="process__head">
+      <p class="eyebrow" data-reveal>Process</p>
+      <RevealText as="h2" class="t-h2">{title}</RevealText>
+      <p class="t-lead t-muted process__intro" data-reveal>{intro}</p>
+      <div class="process__progress" aria-hidden="true"><span data-process-bar></span></div>
+    </div>
+    <ol class="process__track" role="list" data-process-track>
+      {processSteps.map((step) => (
+        <li class="process__step" data-reveal>
+          <span class="process__num" aria-hidden="true">{step.number}</span>
+          <h3 class="process__title"><span class="visually-hidden">Step {step.number}: </span>{step.title}</h3>
+          <p class="process__text">{step.text}</p>
+          <ul class="process__points" role="list">{step.points.map((p) => <li>{p}</li>)}</ul>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .process { padding-block: var(--space-2xl); overflow: hidden; }
+  .process__inner { display: grid; gap: var(--space-xl); }
+  .process__head { display: grid; gap: var(--space-md); align-content: start; }
+  .process__intro { max-width: 30ch; }
+  .process__progress { height: 2px; background: var(--color-line); max-width: 20rem; margin-top: 1rem; overflow: hidden; }
+  .process__progress span { display: block; height: 100%; background: var(--color-text); transform: scaleX(0); transform-origin: left; }
+  .process__track { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  .process__step {
+    position: relative; display: grid; gap: 1rem; align-content: start;
+    padding: clamp(1.5rem, 2.5vw, 2.25rem); border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--color-text) 4%, var(--color-bg));
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    transition: background .5s, color .5s;
+  }
+  .process__num { font-size: clamp(4.5rem, 9vw, 9rem); line-height: .8; font-weight: 650; letter-spacing: -0.07em; color: transparent; -webkit-text-stroke: 1.5px var(--color-text); transition: color .5s; }
+  .process__title { font-size: var(--fs-h3); letter-spacing: -0.045em; margin-top: 1.5rem; }
+  .process__text { color: var(--color-muted); max-width: 34ch; }
+  .process__points { list-style: none; margin: .5rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem; }
+  .process__points li { font-size: .82rem; font-weight: 550; padding: .3rem .7rem; border-radius: var(--radius-pill); box-shadow: inset 0 0 0 1px var(--color-line); }
+  @media (hover: hover) {
+    .process__step:hover { background: var(--c-ink); color: var(--c-white); }
+    .process__step:hover .process__num { color: var(--c-volt); -webkit-text-stroke-color: var(--c-volt); }
+    .process__step:hover .process__text { color: var(--c-muted-dark); }
+    .process__step:hover .process__points li { box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .process__track { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 1024px) {
+    .process { min-height: 100vh; display: flex; align-items: center; }
+    .process__inner { grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); align-items: start; width: 100%; }
+    .process__track { display: flex; gap: 1.25rem; will-change: transform; }
+    .process__step { flex: 0 0 clamp(20rem, 27vw, 28rem); min-height: 32rem; }
+    .process__head { position: relative; z-index: 2; background: var(--color-bg); padding-right: 2rem; box-shadow: calc(-1 * var(--gutter)) 0 0 var(--color-bg), -100vw 0 0 var(--color-bg); height: 100%; }
+  }
+  :global(.reduce-motion) .process__track { flex-wrap: wrap; }
+</style>

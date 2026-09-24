@@ -1,0 +1,61 @@
+---
+import RevealText from './RevealText.astro';
+import KavoMark from './KavoMark.astro';
+import { technologies } from '../data/site';
+interface Props { theme?: string }
+const { theme = 'theme-cobalt' } = Astro.props;
+const names = technologies.map((t) => t.name);
+const rowA = names.slice(0, 5);
+const rowB = names.slice(5);
+---
+<section class:list={['tech', theme]} data-theme={theme === 'theme-cobalt' || theme === 'theme-dark' ? 'dark' : 'light'}>
+  <div class="container tech__head">
+    <p class="eyebrow" data-reveal>Technology</p>
+    <RevealText as="h2" class="t-h2 tech__title">Modern tools, chosen with care.</RevealText>
+    <p class="t-lead tech__intro" data-reveal>We build on proven, well-supported technology so your product is fast today and easy to evolve tomorrow.</p>
+  </div>
+
+  <div class="tech__rows" aria-hidden="true">
+    {[rowA, rowB].map((row, i) => (
+      <div class="tech__row" data-marquee={i % 2 ? 'right' : 'left'}>
+        {[...row, ...row, ...row].map((n) => (
+          <span class="tech__word">{n}<KavoMark class="tech__sep" /></span>
+        ))}
+      </div>
+    ))}
+  </div>
+
+  <div class="container">
+    <dl class="tech__grid">
+      {technologies.map((t) => (
+        <div class="tech__item" data-reveal>
+          <dt>{t.name}</dt>
+          <dd>{t.use}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</section>
+
+<style>
+  .tech { padding-block: var(--space-2xl); overflow: hidden; }
+  .tech__head { display: grid; gap: var(--space-md); margin-bottom: var(--space-xl); }
+  .tech__title { max-width: 14ch; }
+  .tech__intro { max-width: 34ch; color: var(--color-muted); }
+  @media (min-width: 1024px) {
+    .tech__head { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: end; }
+    .tech__head .eyebrow { grid-column: 1 / -1; }
+    .tech__intro { justify-self: end; }
+  }
+  .tech__rows { display: grid; gap: .1em; margin-bottom: var(--space-xl); font-size: clamp(3.5rem, 11vw, 12rem); line-height: 1; font-weight: 620; letter-spacing: -0.06em; white-space: nowrap; }
+  .tech__row { display: flex; width: max-content; }
+  .tech__row:nth-child(2) { color: transparent; -webkit-text-stroke: 1.5px currentColor; }
+  .tech__row:nth-child(2) .tech__word { color: transparent; -webkit-text-stroke: 1.5px var(--color-text); }
+  .tech__word { display: inline-flex; align-items: center; gap: .3em; padding-right: .3em; }
+  .tech__sep { width: .45em; height: .45em; color: var(--c-volt); flex: none; }
+  .tech__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; border-top: 1px solid var(--color-line); }
+  .tech__item { display: grid; gap: .25rem; padding: 1.25rem 1rem 1.25rem 0; border-bottom: 1px solid var(--color-line); }
+  .tech__item dt { font-size: var(--fs-h4); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
+  .tech__item dd { margin: 0; color: var(--color-muted); font-size: .95rem; }
+  @media (min-width: 768px) { .tech__grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+</style>

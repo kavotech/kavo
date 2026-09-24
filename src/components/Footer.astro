@@ -1,0 +1,97 @@
+---
+import Arrow from './Arrow.astro';
+import KavoMark from './KavoMark.astro';
+import { categories, servicesByCategory } from '../data/services';
+import { site } from '../data/site';
+const year = new Date().getFullYear();
+---
+<footer class="site-footer theme-dark" data-theme="dark">
+  <div class="container">
+    <div class="site-footer__top">
+      <div class="site-footer__intro">
+        <p class="site-footer__lede">Websites, apps and digital platforms for ambitious businesses in the UK, Uganda and beyond.</p>
+        <a class="arrow-link site-footer__mail" href={`mailto:${site.email}`}><span class="link-line link-line--static">{site.email}</span><Arrow direction="up-right" /></a>
+      </div>
+
+      <nav class="site-footer__cols" aria-label="Footer">
+        <div class="site-footer__col">
+          <p class="site-footer__heading">Services</p>
+          <ul role="list">
+            {categories.map((c) => (
+              <li><a href={`/services#${c.key}`} class="link-line">{c.name}</a></li>
+            ))}
+            {servicesByCategory('software').slice(0, 2).map((s) => (
+              <li><a href={`/services/${s.slug}`} class="link-line">{s.name.replace(' & Custom Platforms', '')}</a></li>
+            ))}
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <p class="site-footer__heading">Company</p>
+          <ul role="list">
+            <li><a href="/services" class="link-line">Services</a></li>
+            <li><a href="/work" class="link-line">Work</a></li>
+            <li><a href="/about" class="link-line">About</a></li>
+            <li><a href="/insights" class="link-line">Insights</a></li>
+            <li><a href="/contact" class="link-line">Contact</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <p class="site-footer__heading">Get in touch</p>
+          <ul role="list">
+            <li><a href={site.phoneHref} class="link-line">{site.phone}</a></li>
+            <li><a href={site.whatsapp} class="link-line" target="_blank" rel="noopener noreferrer">WhatsApp us</a></li>
+            <li class="t-muted">{site.hours}</li>
+            <li class="t-muted">{site.location}</li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <p class="site-footer__heading">Follow</p>
+          <ul role="list">
+            {site.socials.filter((s) => s.label !== 'WhatsApp').map((s) => (
+              <li><a href={s.href} class="link-line" target="_blank" rel="noopener noreferrer">{s.label}</a></li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <a href="/" class="site-footer__brand" aria-label="Kavo Technologies — home" data-footer-brand data-cursor="none">
+      <KavoMark class="site-footer__mark" />
+      <span class="site-footer__word" aria-hidden="true">Kavo</span>
+    </a>
+
+    <div class="site-footer__bottom">
+      <p>&copy; {year} Kavo Technologies. All rights reserved.</p>
+      <p>Made &amp; Designed by Kavo Technologies</p>
+      <button class="site-footer__top-btn arrow-link" type="button" data-back-to-top>Back to top <Arrow direction="up-right" /></button>
+    </div>
+  </div>
+</footer>
+
+<style is:global>
+  .site-footer { padding-top: var(--space-2xl); padding-bottom: 1.5rem; overflow: hidden; }
+  .site-footer__top { display: grid; gap: var(--space-xl); padding-bottom: var(--space-xl); }
+  .site-footer__lede { font-size: var(--fs-h4); line-height: 1.12; letter-spacing: -0.03em; font-weight: 550; max-width: 22ch; }
+  .site-footer__mail { margin-top: 1.75rem; font-size: clamp(1.15rem, 1.6vw, 1.6rem); font-weight: 560; color: var(--c-volt); }
+  .site-footer__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.25rem 1.5rem; }
+  .site-footer__heading { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 650; color: var(--color-muted); margin-bottom: 1rem; }
+  .site-footer__col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; font-size: 1.02rem; font-weight: 500; }
+  @media (min-width: 1024px) {
+    .site-footer__top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); }
+    .site-footer__cols { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  .site-footer__brand {
+    display: flex; align-items: flex-end; gap: 2.2vw;
+    padding-top: var(--space-lg); border-top: 1px solid var(--color-line);
+    line-height: .78; color: var(--c-white);
+  }
+  .site-footer__mark { width: 20vw; max-width: 22rem; height: auto; flex: none; color: var(--c-volt); transition: transform 1s var(--ease-out); }
+  .site-footer__word { font-size: min(31vw, 34rem); font-weight: 650; letter-spacing: -0.075em; margin-bottom: -.06em; }
+  @media (hover: hover) { .site-footer__brand:hover .site-footer__mark { transform: rotate(-90deg); } }
+  .site-footer__bottom {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem 2rem;
+    margin-top: var(--space-lg); padding-top: 1.25rem; border-top: 1px solid var(--color-line);
+    font-size: .9rem; color: var(--color-muted);
+  }
+  .site-footer__top-btn { color: var(--c-white); font-size: .9rem; }
+</style>

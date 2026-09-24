@@ -1,0 +1,45 @@
+---
+import { Image } from 'astro:assets';
+import l1 from '../assets/clients/logo1.png';
+import l2 from '../assets/clients/logo2.png';
+import l3 from '../assets/clients/logo3.png';
+import l4 from '../assets/clients/logo4.png';
+import l5 from '../assets/clients/logo5.png';
+import l6 from '../assets/clients/logo6.png';
+import RevealText from './RevealText.astro';
+
+const logos = [
+  { src: l1, alt: 'KRB Facilities Management' },
+  { src: l2, alt: 'M.H. Detailz' },
+  { src: l3, alt: 'Axis Intl.' },
+  { src: l4, alt: 'BreeZyee Moves' },
+  { src: l5, alt: 'CF Hub Home Maintenance' },
+  { src: l6, alt: 'Triport Agro International' },
+];
+---
+<section class="clients theme-light section section--tight" data-theme="light">
+  <div class="container clients__inner">
+    <div class="clients__head">
+      <p class="eyebrow" data-reveal>Clients</p>
+      <RevealText as="h2" class="t-h3">Trusted by businesses we’re proud to build with.</RevealText>
+    </div>
+    <ul class="clients__grid" role="list">
+      {logos.map((l) => (
+        <li class="clients__item" data-reveal>
+          <Image src={l.src} alt={l.alt} widths={[240, 400]} sizes="(min-width: 1024px) 14vw, 40vw" class="clients__img" loading="lazy" />
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .clients__inner { display: grid; gap: var(--space-xl); }
+  .clients__head { display: grid; gap: var(--space-md); max-width: 24ch; }
+  .clients__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--color-line); border-left: 1px solid var(--color-line); }
+  .clients__item { position: relative; aspect-ratio: 3 / 2; border-right: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); overflow: hidden; }
+  .clients__img { position: absolute; inset: 16%; width: 68%; height: 68%; object-fit: contain; mix-blend-mode: multiply; filter: grayscale(1) contrast(1.1); opacity: .8; transition: filter .5s, opacity .5s, transform .6s var(--ease-out); }
+  @media (hover: hover) { .clients__item:hover .clients__img { filter: none; opacity: 1; transform: scale(1.06); } }
+  @media (min-width: 768px) { .clients__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1280px) { .clients__grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+</style>

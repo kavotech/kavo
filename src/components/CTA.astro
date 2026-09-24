@@ -1,0 +1,61 @@
+---
+import Arrow from './Arrow.astro';
+import RevealText from './RevealText.astro';
+import { site } from '../data/site';
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  label?: string;
+  href?: string;
+  theme?: 'theme-volt' | 'theme-cobalt' | 'theme-coral' | 'theme-dark';
+}
+const {
+  eyebrow = 'Start a project',
+  title = 'Have something ambitious in mind?',
+  label = 'Let’s build it',
+  href = '/contact',
+  theme = 'theme-volt',
+} = Astro.props;
+const dark = theme === 'theme-cobalt' || theme === 'theme-dark';
+---
+<section class:list={['cta', theme]} data-theme={dark ? 'dark' : 'light'}>
+  <div class="container cta__inner">
+    <p class="eyebrow" data-reveal>{eyebrow}</p>
+    <RevealText as="h2" class="cta__title t-display">{title}</RevealText>
+    <div class="cta__row">
+      <div class="cta__contact" data-reveal>
+        <a href={`mailto:${site.email}`} class="link-line link-line--static">{site.email}</a>
+        <a href={site.phoneHref} class="link-line link-line--static">{site.phone}</a>
+      </div>
+      <a href={href} class="cta__button" data-magnetic data-cursor="none">
+        <span class="cta__button-bg" aria-hidden="true"></span>
+        <span class="cta__button-label">{label}</span>
+        <Arrow class="cta__button-arrow" />
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta { padding-block: var(--space-2xl); overflow: hidden; }
+  .cta__inner { display: grid; gap: var(--space-lg); }
+  .cta__title { max-width: 12ch; }
+  .cta__row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-top: var(--space-md); }
+  .cta__contact { display: grid; gap: .35rem; font-size: var(--fs-lead); font-weight: 520; letter-spacing: -0.02em; }
+  .cta__button {
+    --size: clamp(9.5rem, 16vw, 15rem);
+    position: relative; display: grid; place-items: center; align-content: center; gap: .6rem;
+    width: var(--size); height: var(--size); border-radius: 50%;
+    background: var(--color-btn-bg); color: var(--color-btn-text);
+    font-weight: 620; font-size: clamp(1.05rem, 1.4vw, 1.35rem); letter-spacing: -0.02em;
+    isolation: isolate; overflow: hidden; text-align: center;
+  }
+  .cta__button-bg { position: absolute; inset: 0; z-index: -1; background: var(--color-btn-hover-bg); border-radius: 50%; transform: scale(0); transition: transform .6s var(--ease-out); }
+  .cta__button-arrow { width: 1.6rem; height: 1.6rem; transform: rotate(-45deg); transition: transform .6s var(--ease-out); }
+  .cta__button-label { transition: color .4s; }
+  @media (hover: hover) {
+    .cta__button:hover .cta__button-bg { transform: scale(1.02); }
+    .cta__button:hover { color: var(--color-btn-hover-text); }
+    .cta__button:hover .cta__button-arrow { transform: rotate(0deg) translateX(.2rem); }
+  }
+</style>

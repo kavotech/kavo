@@ -1,0 +1,21 @@
+---
+import Arrow from './Arrow.astro';
+interface Props {
+  href?: string;
+  label: string;
+  variant?: 'primary' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  type?: 'button' | 'submit';
+  class?: string;
+  external?: boolean;
+  [key: string]: unknown;
+}
+const { href, label, variant = 'primary', size = 'md', type = 'button', class: className, external, ...rest } = Astro.props;
+const classes = ['btn', variant === 'outline' && 'btn--outline', size !== 'md' && `btn--${size}`, className].filter(Boolean).join(' ');
+const Tag = href ? 'a' : 'button';
+const linkAttrs = href ? { href, ...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {}) } : { type };
+---
+<Tag class={classes} {...linkAttrs} {...rest} data-cursor="none">
+  <span class="btn__label"><span>{label}</span><span aria-hidden="true">{label}</span></span>
+  <span class="btn__icon" aria-hidden="true"><Arrow /><Arrow /></span>
+</Tag>

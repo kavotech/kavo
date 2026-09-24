@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeHero from '../components/home/HomeHero.astro';
+import Reel from '../components/home/Reel.astro';
+import WhatWeDo from '../components/home/WhatWeDo.astro';
+import SelectedWork from '../components/home/SelectedWork.astro';
+import BrandIntro from '../components/home/BrandIntro.astro';
+import ServiceList from '../components/ServiceList.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import Process from '../components/Process.astro';
+import TechStack from '../components/TechStack.astro';
+import ClientLogos from '../components/ClientLogos.astro';
+import InsightsPreview from '../components/home/InsightsPreview.astro';
+import CTA from '../components/CTA.astro';
+---
+<BaseLayout
+  title="Kavo Technologies — Websites, Apps & Digital Platforms"
+  fullTitle
+  description="Kavo Technologies designs and builds websites, mobile apps, platforms and digital experiences for ambitious businesses across the UK, Uganda and beyond."
+>
+  <HomeHero />
+  <Reel />
+  <WhatWeDo />
+  <SelectedWork />
+  <BrandIntro />
+  <section class="theme-dark section" data-theme="dark">
+    <div class="container">
+      <SectionHeading eyebrow="Capabilities" title="Everything you need to launch and grow" intro="Pick a single service or bring us the whole brief — every capability is delivered by the same senior team." />
+      <ServiceList />
+    </div>
+  </section>
+  <Process />
+  <TechStack />
+  <ClientLogos />
+  <InsightsPreview />
+  <CTA />
+</BaseLayout>

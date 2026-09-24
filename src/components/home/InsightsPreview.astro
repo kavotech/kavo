@@ -1,0 +1,22 @@
+---
+import { getCollection } from 'astro:content';
+import SectionHeading from '../SectionHeading.astro';
+import ArticleCard from '../ArticleCard.astro';
+import Button from '../Button.astro';
+const articles = (await getCollection('insights')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
+---
+<section class="insights-home theme-bone section" data-theme="light">
+  <div class="container">
+    <SectionHeading eyebrow="Insights" title="Latest from Kavo" intro="Practical thinking on websites, software and digital growth.">
+      <div data-reveal><Button href="/insights" label="All insights" variant="outline" /></div>
+    </SectionHeading>
+    <div class="insights-home__grid">
+      {articles.map((a) => <ArticleCard article={a} />)}
+    </div>
+  </div>
+</section>
+<style>
+  .insights-home__grid { display: grid; gap: clamp(2.5rem, 4vw, 3rem) var(--gutter); }
+  @media (min-width: 768px) { .insights-home__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .insights-home__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>

@@ -1,0 +1,109 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import CTA from '../../components/CTA.astro';
+import { projects, workFilters } from '../../data/projects';
+---
+<BaseLayout title="Work — Case Studies" description="Selected websites, mobile apps and digital platforms designed and engineered by Kavo Technologies.">
+  <PageHero eyebrow="Our work" title="Work that moves businesses forward" size="h1" intro="Websites, apps and platforms designed and engineered for ambitious businesses in the UK, Uganda and beyond." />
+
+  <section class="theme-light work-page" data-theme="light">
+    <div class="container">
+      <div class="filters" role="toolbar" aria-label="Filter projects" data-filters data-reveal>
+        {workFilters.map((f, i) => (
+          <button type="button" class="filters__btn" aria-pressed={i === 0 ? 'true' : 'false'} data-filter={f.key}>
+            {f.label}
+            <span class="filters__count">{f.key === 'all' ? projects.length : projects.filter((p) => p.filters.includes(f.key as never)).length}</span>
+          </button>
+        ))}
+      </div>
+      <p class="visually-hidden" aria-live="polite" data-filter-status></p>
+      <div class="work-grid" data-work-grid>
+        {projects.map((p, i) => <ProjectCard project={p} variant="tall" index={i} class="work-grid__item" eager={i < 2} />)}
+      </div>
+    </div>
+  </section>
+
+  <CTA />
+</BaseLayout>
+
+<script>
+  import { gsap } from 'gsap';
+  import { Flip } from 'gsap/Flip';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(Flip, ScrollTrigger);
+
+  const grid = document.querySelector<HTMLElement>('[data-work-grid]');
+  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+  const status = document.querySelector<HTMLElement>('[data-filter-status]');
+  const reduce = document.documentElement.classList.contains('reduce-motion');
+  // Editorial rhythm: sizes cycle so any filtered set still alternates proportions
+  const pattern = ['xl', 'md', 'sm', 'sm', 'md', 'wide'];
+
+  const layout = () => {
+    const visible = Array.from(grid?.querySelectorAll<HTMLElement>('.work-grid__item:not([hidden])') ?? []);
+    visible.forEach((el, i) => { el.dataset.size = pattern[i % pattern.length]; });
+  };
+
+  const apply = (key: string) => {
+    if (!grid) return;
+    const items = Array.from(grid.querySelectorAll<HTMLElement>('.work-grid__item'));
+    const state = Flip.getState(items);
+    let count = 0;
+    items.forEach((el) => {
+      const show = key === 'all' || (el.dataset.filters || '').split(' ').includes(key);
+      el.hidden = !show;
+      if (show) count++;
+      // Cards revealed by filtering should never stay in their pre-reveal state
+      el.querySelectorAll<HTMLElement>('[data-reveal]').forEach((n) => gsap.set(n, { opacity: 1, y: 0 }));
+      el.querySelectorAll<HTMLElement>('[data-reveal-image]').forEach((n) => { gsap.set(n, { clipPath: 'inset(0% 0 0 0)' }); gsap.set(n.firstElementChild, { scale: 1 }); });
+    });
+    layout();
+    if (status) status.textContent = `${count} project${count === 1 ? '' : 's'} shown`;
+    if (!reduce) {
+      Flip.from(state, {
+        duration: 0.8, ease: 'expo.inOut', absolute: true, nested: true,
+        onEnter: (els) => gsap.fromTo(els, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, delay: 0.25 }),
+        onLeave: (els) => gsap.to(els, { opacity: 0, scale: 0.96, duration: 0.4 }),
+        onComplete: () => ScrollTrigger.refresh(),
+      });
+    }
+  };
+
+  layout();
+  buttons.forEach((btn) => btn.addEventListener('click', () => {
+    buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+    apply(btn.dataset.filter || 'all');
+  }));
+</script>
+
+<style>
+  .work-page { padding-bottom: var(--space-2xl); }
+  .filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: var(--space-xl); padding-top: var(--space-md); border-top: 1px solid var(--color-line); }
+  .filters__btn {
+    display: inline-flex; align-items: center; gap: .55rem; height: 2.9rem; padding: 0 1.2rem;
+    border-radius: var(--radius-pill); box-shadow: inset 0 0 0 1px var(--color-line);
+    font-weight: 580; font-size: .98rem; transition: background .35s, color .35s, box-shadow .35s;
+  }
+  .filters__count { font-size: .75rem; color: var(--color-muted); font-variant-numeric: tabular-nums; transition: color .35s; }
+  .filters__btn[aria-pressed='true'] { background: var(--c-ink); color: var(--c-white); box-shadow: none; }
+  .filters__btn[aria-pressed='true'] .filters__count { color: var(--c-volt); }
+  @media (hover: hover) { .filters__btn:hover:not([aria-pressed='true']) { box-shadow: inset 0 0 0 1px var(--c-ink); } }
+
+  .work-grid { display: grid; gap: clamp(3.5rem, 7vw, 7rem) var(--gutter); }
+  @media (min-width: 768px) {
+    .work-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .work-grid :global(.work-grid__item[data-size='xl']) { grid-column: 1 / -1; }
+    .work-grid :global(.work-grid__item[data-size='xl'] .pcard__media) { aspect-ratio: 16 / 8; }
+    .work-grid :global(.work-grid__item[data-size='md']) { grid-column: span 7; }
+    .work-grid :global(.work-grid__item[data-size='md'] .pcard__media) { aspect-ratio: 5 / 5.2; }
+    .work-grid :global(.work-grid__item[data-size='sm']) { grid-column: span 5; margin-top: clamp(4rem, 12vw, 12rem); }
+    .work-grid :global(.work-grid__item[data-size='sm'] .pcard__media) { aspect-ratio: 1 / 1; }
+    .work-grid :global(.work-grid__item[data-size='sm'] + .work-grid__item[data-size='md']) { margin-top: 0; }
+    .work-grid :global(.work-grid__item[data-size='wide']) { grid-column: 2 / -1; }
+    .work-grid :global(.work-grid__item[data-size='wide'] .pcard__media) { aspect-ratio: 16 / 9; }
+    .work-grid :global(.work-grid__item[data-size='xl'] .pcard__title), .work-grid :global(.work-grid__item[data-size='wide'] .pcard__title) { font-size: var(--fs-h2); }
+  }
+  .work-grid :global(.work-grid__item[hidden]) { display: none; }
+</style>

@@ -1,0 +1,12 @@
+---
+/** Masked media reveal: wipes up and settles from a slight zoom. */
+interface Props { class?: string; parallax?: boolean }
+const { class: className, parallax = false } = Astro.props;
+---
+<div class:list={['reveal-image', className]} data-reveal-image>
+  <div class="reveal-image__inner" data-parallax={parallax ? '' : undefined}><slot /></div>
+</div>
+<style>
+  .reveal-image { position: relative; overflow: hidden; border-radius: inherit; }
+  .reveal-image__inner { width: 100%; height: 100%; }
+</style>

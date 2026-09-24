@@ -1,0 +1,53 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Arrow from './Arrow.astro';
+import KavoMark from './KavoMark.astro';
+import { readingTime, formatDate } from '../utils/content';
+
+interface Props { article: CollectionEntry<'insights'>; size?: 'default' | 'large'; headingLevel?: 'h2' | 'h3' }
+const { article, size = 'default', headingLevel = 'h3' } = Astro.props;
+const { title, description, date, category, cover, coverInk } = article.data;
+const href = `/insights/${article.id}`;
+const H = headingLevel;
+---
+<article class:list={['acard', `acard--${size}`]} data-reveal>
+  <a href={href} class="acard__cover is-hoverable" style={`--cover:${cover};--cover-ink:${coverInk}`} data-cursor="Read" tabindex="-1" aria-hidden="true">
+    <span class="acard__cat">{category}</span>
+    <span class="acard__cover-title">{title}</span>
+    <KavoMark class="acard__mark" />
+  </a>
+  <div class="acard__body">
+    <p class="acard__meta"><span>{category}</span><time datetime={date.toISOString()}>{formatDate(date)}</time><span>{readingTime(article.body ?? '')} min read</span></p>
+    <H class="acard__title"><a href={href}>{title}</a></H>
+    {size === 'large' && <p class="t-lead t-muted acard__desc">{description}</p>}
+    <a href={href} class="arrow-link acard__more" aria-label={`Read article: ${title}`}>Read article <Arrow /></a>
+  </div>
+</article>
+
+<style>
+  .acard { display: grid; gap: 1.25rem; align-content: start; }
+  .acard__cover {
+    position: relative; display: flex; flex-direction: column; justify-content: space-between;
+    aspect-ratio: 4 / 3; padding: clamp(1.25rem, 2vw, 2rem); border-radius: var(--radius-lg);
+    background: var(--cover); color: var(--cover-ink); overflow: hidden; isolation: isolate;
+  }
+  .acard__cat { font-size: .75rem; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+  .acard__cover-title { font-size: clamp(1.4rem, 2.2vw, 2.3rem); line-height: 1; letter-spacing: -0.045em; font-weight: 620; max-width: 15ch; transition: transform .8s var(--ease-out); }
+  .acard__mark { position: absolute; right: -8%; bottom: -12%; width: 55%; opacity: .12; z-index: -1; transition: transform 1.2s var(--ease-out); }
+  @media (hover: hover) {
+    .acard__cover:hover .acard__mark { transform: rotate(-20deg) scale(1.08); }
+    .acard__cover:hover .acard__cover-title { transform: translateY(-.35rem); }
+  }
+  .acard__body { display: grid; gap: .7rem; }
+  .acard__meta { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-muted); }
+  .acard__title { font-size: var(--fs-h4); line-height: 1.08; letter-spacing: -0.03em; font-weight: 600; }
+  .acard__title a { background-image: linear-gradient(currentColor, currentColor); background-size: 0 1.5px; background-repeat: no-repeat; background-position: 0 100%; transition: background-size .6s var(--ease-out); }
+  @media (hover: hover) { .acard:hover .acard__title a { background-size: 100% 1.5px; } }
+  .acard__more { font-size: .95rem; margin-top: .25rem; }
+  .acard--large .acard__cover { aspect-ratio: 16 / 9; }
+  .acard--large .acard__cover-title { font-size: var(--fs-h2); max-width: 16ch; }
+  .acard--large .acard__title { font-size: var(--fs-h3); }
+  @media (min-width: 1024px) {
+    .acard--large { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--gutter); align-items: end; }
+  }
+</style>

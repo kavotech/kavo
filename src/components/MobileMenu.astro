@@ -1,0 +1,87 @@
+---
+import Arrow from './Arrow.astro';
+import Button from './Button.astro';
+import { categories, servicesByCategory } from '../data/services';
+import { site } from '../data/site';
+---
+<div class="mobile-menu theme-dark" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Site menu" data-mobile-menu hidden>
+  <div class="mobile-menu__scroll" data-lenis-prevent>
+    <nav class="container mobile-menu__nav" aria-label="Mobile">
+      <ul class="mobile-menu__list" role="list">
+        <li class="mobile-menu__item" data-mm-item>
+          <button class="mobile-menu__link" type="button" aria-expanded="false" aria-controls="mm-services" data-mm-accordion>
+            <span>Services</span>
+            <span class="mobile-menu__plus" aria-hidden="true"></span>
+          </button>
+          <div class="mobile-menu__panel" id="mm-services" hidden>
+            <div class="mobile-menu__panel-inner">
+              {categories.map((cat) => (
+                <div class="mobile-menu__group">
+                  <p class="mobile-menu__cat">{cat.number} — {cat.name}</p>
+                  <ul role="list">
+                    {servicesByCategory(cat.key).map((s) => (
+                      <li><a href={`/services/${s.slug}`}>{s.name.replace(' & Custom Platforms', '')}</a></li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <a class="arrow-link mobile-menu__all" href="/services">View all services <Arrow /></a>
+            </div>
+          </div>
+        </li>
+        <li class="mobile-menu__item" data-mm-item><a class="mobile-menu__link" href="/work"><span>Work</span></a></li>
+        <li class="mobile-menu__item" data-mm-item><a class="mobile-menu__link" href="/about"><span>About</span></a></li>
+        <li class="mobile-menu__item" data-mm-item><a class="mobile-menu__link" href="/insights"><span>Insights</span></a></li>
+        <li class="mobile-menu__item" data-mm-item><a class="mobile-menu__link" href="/contact"><span>Contact</span></a></li>
+      </ul>
+
+      <div class="mobile-menu__footer" data-mm-item>
+        <Button href="/contact" label="Start a project" />
+        <div class="mobile-menu__contact">
+          <a href={`mailto:${site.email}`}>{site.email}</a>
+          <a href={site.phoneHref}>{site.phone}</a>
+        </div>
+        <ul class="mobile-menu__socials" role="list">
+          {site.socials.map((s) => (
+            <li><a href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a></li>
+          ))}
+        </ul>
+      </div>
+    </nav>
+  </div>
+</div>
+
+<style is:global>
+  .mobile-menu {
+    position: fixed; inset: 0; z-index: 95;
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path .75s var(--ease-in-out);
+  }
+  .mobile-menu.is-open { clip-path: inset(0 0 0 0); }
+  .mobile-menu__scroll { height: 100%; overflow-y: auto; overscroll-behavior: contain; padding-top: calc(var(--header-h) + 1.5rem); padding-bottom: 2rem; }
+  .mobile-menu__nav { display: flex; flex-direction: column; min-height: 100%; gap: 2.5rem; }
+  .mobile-menu__list { list-style: none; margin: 0; padding: 0; }
+  .mobile-menu__item { border-bottom: 1px solid var(--color-line); }
+  .mobile-menu__link {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    padding: .7rem 0; font-size: clamp(2.4rem, 11vw, 4.5rem); line-height: 1; font-weight: 600; letter-spacing: -0.05em;
+    text-align: left;
+  }
+  .mobile-menu__plus { position: relative; width: 1.6rem; height: 1.6rem; flex: none; }
+  .mobile-menu__plus::before, .mobile-menu__plus::after {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 100%; height: 2px; background: currentColor;
+    transform: translate(-50%, -50%); transition: transform .5s var(--ease-out);
+  }
+  .mobile-menu__plus::after { transform: translate(-50%, -50%) rotate(90deg); }
+  [aria-expanded='true'] > .mobile-menu__plus::after { transform: translate(-50%, -50%) rotate(0); }
+  .mobile-menu__panel-inner { display: grid; gap: 1.5rem; padding: .5rem 0 1.75rem; }
+  .mobile-menu__cat { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 650; color: var(--c-volt); margin-bottom: .5rem; }
+  .mobile-menu__group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; }
+  .mobile-menu__group a { display: block; padding: .3rem 0; font-size: 1.15rem; font-weight: 500; color: var(--c-white); }
+  .mobile-menu__all { color: var(--c-volt); }
+  .mobile-menu__footer { margin-top: auto; display: grid; gap: 1.5rem; justify-items: start; }
+  .mobile-menu__contact { display: grid; gap: .25rem; font-size: 1.1rem; font-weight: 500; }
+  .mobile-menu__socials { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; color: var(--color-muted); font-weight: 500; }
+  .mobile-menu__socials a { display: inline-block; padding: .25rem 0; }
+  @media (min-width: 1024px) { .mobile-menu { display: none !important; } }
+</style>

@@ -1,0 +1,123 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RevealText from '../../components/RevealText.astro';
+import KavoMark from '../../components/KavoMark.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import CTA from '../../components/CTA.astro';
+import { readingTime, formatDate } from '../../utils/content';
+import { site } from '../../data/site';
+
+export const getStaticPaths = (async () => {
+  const articles = await getCollection('insights');
+  return articles.map((article) => ({ params: { slug: article.id }, props: { article } }));
+}) satisfies GetStaticPaths;
+
+interface Props { article: CollectionEntry<'insights'> }
+const { article } = Astro.props;
+const { Content } = await render(article);
+const { title, description, date, category, cover, coverInk } = article.data;
+const minutes = readingTime(article.body ?? '');
+const related = (await getCollection('insights'))
+  .filter((a) => a.id !== article.id)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 2);
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  datePublished: date.toISOString(),
+  author: { '@type': 'Organization', name: site.name, url: site.url },
+  publisher: { '@id': `${site.url}/#organization` },
+  mainEntityOfPage: `${site.url}/insights/${article.id}`,
+  articleSection: category,
+};
+---
+<BaseLayout title={title} description={description} type="article" schema={schema}>
+  <article>
+    <header class="art-hero theme-light" data-theme="light" data-hero>
+      <div class="container art-hero__inner">
+        <p class="art-hero__meta" data-hero-fade>
+          <a href="/insights" class="link-line">Insights</a>
+          <span>{category}</span>
+          <time datetime={date.toISOString()}>{formatDate(date)}</time>
+          <span>{minutes} min read</span>
+        </p>
+        <RevealText as="h1" trigger="load" class="t-h1 art-hero__title">{title}</RevealText>
+        <p class="t-lead t-muted art-hero__desc" data-hero-fade>{description}</p>
+      </div>
+    </header>
+
+    <div class="container" data-hero-visual>
+      <figure class="art-cover" style={`--cover:${cover};--cover-ink:${coverInk}`} aria-hidden="true">
+        <KavoMark class="art-cover__mark" />
+        <span class="art-cover__cat">{category}</span>
+      </figure>
+    </div>
+
+    <div class="container art-body">
+      <aside class="art-aside">
+        <p class="eyebrow">Kavo Technologies</p>
+        <p class="t-small t-muted">{formatDate(date)} · {minutes} min read</p>
+        <a href="/insights" class="arrow-link t-small">All insights</a>
+      </aside>
+      <div class="prose">
+        <Content />
+      </div>
+    </div>
+  </article>
+
+  {related.length > 0 && (
+    <section class="theme-bone section" data-theme="light" aria-labelledby="related-title">
+      <div class="container">
+        <h2 id="related-title" class="t-h3 related-title">Keep reading</h2>
+        <div class="related-grid">{related.map((a) => <ArticleCard article={a} />)}</div>
+      </div>
+    </section>
+  )}
+  <CTA />
+</BaseLayout>
+
+<style>
+  .art-hero { padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 7rem)); padding-bottom: var(--space-xl); }
+  .art-hero__inner { display: grid; gap: var(--space-lg); }
+  .art-hero__meta { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; font-size: .85rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--color-muted); }
+  .art-hero__meta a { color: var(--color-text); }
+  .art-hero__title { max-width: 18ch; }
+  .art-hero__desc { max-width: 42ch; }
+  .art-cover { position: relative; margin: 0; aspect-ratio: 21 / 8; border-radius: var(--radius-lg); background: var(--cover); color: var(--cover-ink); overflow: hidden; }
+  .art-cover__mark { position: absolute; right: 6%; top: 50%; width: 22%; transform: translateY(-50%) rotate(-12deg); opacity: .9; }
+  .art-cover__cat { position: absolute; left: clamp(1.25rem, 2.5vw, 2.5rem); bottom: clamp(1rem, 2vw, 2rem); font-size: var(--fs-h2); font-weight: 600; letter-spacing: -0.05em; line-height: 1; }
+  @media (max-width: 767px) { .art-cover { aspect-ratio: 4 / 3; } .art-cover__mark { width: 40%; top: 38%; } }
+
+  .art-body { display: grid; gap: var(--space-lg); padding-block: var(--space-xl) var(--space-2xl); }
+  .art-aside { display: grid; gap: .5rem; align-content: start; }
+  @media (min-width: 1024px) {
+    .art-body { grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, .6fr); }
+    .art-aside { position: sticky; top: calc(var(--header-h) + 2rem); align-self: start; }
+  }
+
+  .prose { font-size: clamp(1.08rem, 1rem + .3vw, 1.3rem); line-height: 1.7; max-width: 44rem; }
+  .prose :global(> * + *) { margin-top: 1.4em; }
+  .prose :global(h2) { font-size: var(--fs-h3); line-height: 1.02; letter-spacing: -0.045em; margin-top: 2.2em; }
+  .prose :global(h3) { font-size: var(--fs-h4); margin-top: 1.8em; }
+  .prose :global(p:first-child) { font-size: 1.2em; line-height: 1.5; letter-spacing: -0.015em; }
+  .prose :global(ul), .prose :global(ol) { padding-left: 1.2em; }
+  .prose :global(li + li) { margin-top: .5em; }
+  .prose :global(li::marker) { color: var(--color-muted); font-weight: 600; }
+  .prose :global(strong) { font-weight: 650; }
+  .prose :global(a) { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .2em; transition: text-decoration-color .3s; }
+  .prose :global(a:hover) { text-decoration-color: var(--c-volt-deep); }
+  .prose :global(blockquote) { margin: 2em 0; padding: 1.5em 0 1.5em 1.25em; border-left: 4px solid var(--c-volt); font-size: var(--fs-h4); line-height: 1.15; letter-spacing: -0.03em; font-weight: 580; }
+  .prose :global(blockquote p) { font-size: inherit !important; line-height: inherit !important; }
+  .prose :global(img), .prose :global(video), .prose :global(figure) { border-radius: var(--radius-md); margin-block: 2em; width: 100%; }
+  .prose :global(figcaption) { font-size: .9rem; color: var(--color-muted); margin-top: .6rem; }
+  .prose :global(code) { font-size: .9em; background: var(--c-bone); padding: .1em .35em; border-radius: .3em; }
+  .prose :global(hr) { border: 0; border-top: 1px solid var(--color-line); margin-block: 2.5em; }
+
+  .related-title { margin-bottom: var(--space-lg); }
+  .related-grid { display: grid; gap: var(--space-lg) var(--gutter); }
+  @media (min-width: 768px) { .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>

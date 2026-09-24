@@ -1,0 +1,198 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RevealText from '../../components/RevealText.astro';
+import Button from '../../components/Button.astro';
+import Arrow from '../../components/Arrow.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import ProjectVisual from '../../components/ProjectVisual.astro';
+import RevealImage from '../../components/RevealImage.astro';
+import Process from '../../components/Process.astro';
+import CTA from '../../components/CTA.astro';
+import { services, getCategory, servicesByCategory, type Service } from '../../data/services';
+import { projectsBySlugs } from '../../data/projects';
+import { site } from '../../data/site';
+
+export const getStaticPaths = (() => services.map((service) => ({ params: { slug: service.slug }, props: { service } }))) satisfies GetStaticPaths;
+
+interface Props { service: Service }
+const { service } = Astro.props;
+const cat = getCategory(service.category);
+const related = projectsBySlugs(service.related);
+const siblings = servicesByCategory(service.category).filter((s) => s.slug !== service.slug);
+const hero = related[0];
+
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: service.name,
+    serviceType: service.name,
+    description: service.intro,
+    provider: { '@id': `${site.url}/#organization` },
+    areaServed: ['GB', 'UG'],
+    url: `${site.url}/services/${service.slug}`,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: site.url },
+      { '@type': 'ListItem', position: 2, name: 'Services', item: `${site.url}/services` },
+      { '@type': 'ListItem', position: 3, name: service.name, item: `${site.url}/services/${service.slug}` },
+    ],
+  },
+];
+---
+<BaseLayout title={`${service.name} Services`} description={`${service.short} ${service.intro}`.slice(0, 158)} schema={schema}>
+  <section class="svc-hero theme-light" data-theme="light" data-hero>
+    <div class="container svc-hero__inner">
+      <nav class="crumbs" aria-label="Breadcrumb" data-hero-fade>
+        <ol role="list"><li><a href="/services" class="link-line">Services</a></li><li><a href={`/services#${cat.key}`} class="link-line">{cat.name}</a></li><li aria-current="page">{service.name}</li></ol>
+      </nav>
+      <RevealText as="h1" trigger="load" class="t-display svc-hero__title">{service.headline}</RevealText>
+      <div class="svc-hero__foot">
+        <p class="eyebrow eyebrow--accent" data-hero-fade>{service.name}</p>
+        <div class="svc-hero__intro">
+          <p class="t-lead" data-hero-fade>{service.intro}</p>
+          <div class="svc-hero__actions" data-hero-fade>
+            <Button href="/contact" label="Start a project" />
+            {hero && <Button href="#work" label="See related work" variant="outline" />}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {hero && (
+    <div class="container svc-visual" data-hero-visual>
+      <RevealImage parallax class="svc-visual__frame"><ProjectVisual project={hero} shape="wide" eager /></RevealImage>
+    </div>
+  )}
+
+  <section class="theme-light section" data-theme="light">
+    <div class="container">
+      <SectionHeading eyebrow="Benefits" title="Why it matters" intro={cat.summary} />
+      <ul class="benefits" role="list">
+        {service.benefits.map((b, i) => (
+          <li class="benefit" data-reveal>
+            <span class="benefit__num">0{i + 1}</span>
+            <h3 class="benefit__title">{b.title}</h3>
+            <p class="t-muted">{b.text}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="theme-dark section approach" data-theme="dark">
+    <div class="container approach__grid">
+      <div class="approach__head">
+        <p class="eyebrow" data-reveal>Approach</p>
+        <RevealText as="h2" class="t-h2">How we deliver {service.name.replace(' & Custom Platforms', '').toLowerCase()}</RevealText>
+      </div>
+      <ol class="approach__list" role="list">
+        {service.approach.map((a, i) => (
+          <li class="approach__step" data-reveal>
+            <span class="approach__num">{String(i + 1).padStart(2, '0')}</span>
+            <div><h3 class="t-h4">{a.title}</h3><p class="t-muted">{a.text}</p></div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="theme-volt section section--tight" data-theme="light">
+    <div class="container deliverables">
+      <RevealText as="h2" class="t-h3 deliverables__title">What you get</RevealText>
+      <ul class="deliverables__list" role="list">
+        {service.deliverables.map((d) => <li data-reveal>{d}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  {related.length > 0 && (
+    <section class="theme-bone section" id="work" data-theme="light">
+      <div class="container">
+        <SectionHeading eyebrow="Relevant work" title="Work we’re proud of">
+          <div data-reveal><Button href="/work" label="All projects" variant="outline" /></div>
+        </SectionHeading>
+        <div class:list={['related', { 'related--single': related.length === 1 }]}>
+          {related.slice(0, 2).map((p, i) => <ProjectCard project={p} variant={related.length === 1 ? 'split' : i === 0 ? 'tall' : 'compact'} class={i === 1 ? 'related__offset' : ''} />)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <Process />
+
+  {siblings.length > 0 && (
+    <section class="theme-light section section--tight siblings" data-theme="light">
+      <div class="container">
+        <p class="eyebrow" data-reveal>More {cat.name.toLowerCase()} services</p>
+        <ul class="siblings__list" role="list">
+          {siblings.map((s) => (
+            <li data-reveal><a href={`/services/${s.slug}`} class="siblings__link"><span>{s.name}</span><Arrow /></a></li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )}
+
+  <CTA title={`Ready to talk ${service.name.replace(' & Custom Platforms', '').toLowerCase()}?`} theme="theme-cobalt" />
+</BaseLayout>
+
+<style>
+  .svc-hero { padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 7rem)); padding-bottom: var(--space-xl); }
+  .svc-hero__inner { display: grid; gap: var(--space-lg); }
+  .svc-hero__title { max-width: 13ch; }
+  .svc-hero__foot { display: grid; gap: var(--space-md); margin-top: var(--space-md); }
+  .svc-hero__intro { display: grid; gap: 1.75rem; max-width: 40rem; }
+  .svc-hero__actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+  @media (min-width: 1024px) {
+    .svc-hero__foot { grid-template-columns: 1fr 1fr; align-items: start; }
+  }
+  .crumbs ol { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; margin: 0; padding: 0; font-size: .9rem; font-weight: 500; color: var(--color-muted); }
+  .crumbs li + li::before { content: '/'; margin-right: .5rem; opacity: .6; }
+  .crumbs [aria-current] { color: var(--color-text); }
+  .svc-visual { margin-bottom: var(--space-md); }
+  .svc-visual :global(.svc-visual__frame) { aspect-ratio: 21 / 9; border-radius: var(--radius-lg); }
+  @media (max-width: 767px) { .svc-visual :global(.svc-visual__frame) { aspect-ratio: 4 / 3.4; } }
+
+  .benefits { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  .benefit { display: grid; gap: .75rem; align-content: start; padding: clamp(1.5rem, 2.5vw, 2.25rem); border-radius: var(--radius-lg); background: var(--c-bone); min-height: 17rem; }
+  .benefit__num { font-size: .85rem; font-weight: 650; color: var(--color-muted); margin-bottom: auto; }
+  .benefit__title { font-size: var(--fs-h4); margin-top: 3rem; }
+  @media (min-width: 768px) { .benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1280px) { .benefits { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+  .approach__grid { display: grid; gap: var(--space-xl); }
+  .approach__head { display: grid; gap: var(--space-md); align-content: start; }
+  .approach__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-line); }
+  .approach__step { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; padding: clamp(1.5rem, 2.5vw, 2.25rem) 0; border-bottom: 1px solid var(--color-line); }
+  .approach__step p { margin-top: .5rem; max-width: 42ch; }
+  .approach__num { font-size: clamp(1.5rem, 2.5vw, 2.5rem); font-weight: 600; color: var(--c-volt); letter-spacing: -0.04em; line-height: 1; }
+  @media (min-width: 1024px) {
+    .approach__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+    .approach__head { position: sticky; top: calc(var(--header-h) + 2rem); }
+  }
+
+  .deliverables { display: grid; gap: var(--space-lg); }
+  .deliverables__list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .6rem; }
+  .deliverables__list li { padding: .8rem 1.4rem; border-radius: var(--radius-pill); background: var(--c-ink); color: var(--c-volt); font-size: clamp(1rem, 1.4vw, 1.3rem); font-weight: 580; letter-spacing: -0.015em; }
+  @media (min-width: 1024px) { .deliverables { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: center; } }
+
+  .related { display: grid; gap: clamp(3rem, 6vw, 6rem); }
+  @media (min-width: 768px) {
+    .related:not(.related--single) { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--gutter); align-items: start; }
+    .related :global(.related__offset) { margin-top: clamp(6rem, 14vw, 14rem); }
+  }
+
+  .siblings__list { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; border-top: 1px solid var(--color-line); }
+  .siblings__list li { border-bottom: 1px solid var(--color-line); }
+  .siblings__link { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 0; font-size: var(--fs-h4); font-weight: 600; letter-spacing: -0.035em; }
+  .siblings__link :global(svg) { width: 1.4rem; transition: transform .5s var(--ease-out); flex: none; }
+  @media (hover: hover) { .siblings__link:hover :global(svg) { transform: translateX(.4rem); } }
+  @media (min-width: 1024px) { .siblings__list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--gutter); } }
+</style>

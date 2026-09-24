@@ -1,0 +1,90 @@
+---
+import Arrow from './Arrow.astro';
+import Button from './Button.astro';
+import { categories, servicesByCategory } from '../data/services';
+---
+<div class="mega" id="mega-services" data-mega hidden>
+  <div class="container mega__inner">
+    <div class="mega__intro">
+      <p class="eyebrow" data-mega-item>Services</p>
+      <p class="mega__title" data-mega-item>Strategy, design and engineering under one roof.</p>
+      <div data-mega-item><Button href="/services" label="View all services" size="sm" /></div>
+    </div>
+    <div class="mega__cols">
+      {categories.map((cat) => (
+        <div class="mega__col">
+          <p class="mega__cat" data-mega-item>
+            <span class="mega__num">{cat.number}</span>
+            <a href={`/services#${cat.key}`}>{cat.name}</a>
+          </p>
+          <ul class="mega__list" role="list">
+            {servicesByCategory(cat.key).map((s) => (
+              <li data-mega-item>
+                <a href={`/services/${s.slug}`} class="mega__link">
+                  <span>{s.name.replace(' & Custom Platforms', '')}</span>
+                  <Arrow class="mega__arrow" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+    <a class="mega__feature theme-volt" href="/contact" data-mega-item data-cursor="none">
+      <span class="eyebrow">New project?</span>
+      <span class="mega__feature-title">Have something ambitious in mind?</span>
+      <span class="mega__feature-cta">Start a project <Arrow /></span>
+    </a>
+  </div>
+</div>
+
+<style is:global>
+  .mega {
+    position: absolute; left: 0; right: 0; top: 100%;
+    background: var(--c-white); color: var(--c-ink);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: 0 40px 80px -40px rgba(13,13,15,.35);
+    clip-path: inset(0 0 100% 0 round 0 0 var(--radius-lg) var(--radius-lg));
+    transition: clip-path .7s var(--ease-out);
+  }
+  .mega.is-open { clip-path: inset(0 0 0 0 round 0 0 var(--radius-lg) var(--radius-lg)); }
+  .mega__inner {
+    display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 2.6fr) minmax(0, 1fr);
+    gap: clamp(2rem, 3vw, 4rem); padding-top: clamp(2rem, 3vw, 3rem); padding-bottom: clamp(2.5rem, 3.5vw, 3.5rem);
+    border-top: 1px solid rgba(13,13,15,.1);
+  }
+  .mega__intro { display: flex; flex-direction: column; gap: 1.25rem; align-items: flex-start; }
+  .mega__title { font-size: clamp(1.5rem, 1.9vw, 2.2rem); line-height: 1.05; letter-spacing: -0.035em; font-weight: 600; max-width: 14ch; }
+  .mega__cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1.5rem, 2.5vw, 3rem); }
+  .mega__cat { display: flex; align-items: baseline; gap: .6rem; font-size: .8rem; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; padding-bottom: .9rem; margin-bottom: .6rem; border-bottom: 1px solid rgba(13,13,15,.12); }
+  .mega__num { color: var(--c-muted); font-variant-numeric: tabular-nums; }
+  .mega__list { list-style: none; margin: 0; padding: 0; display: grid; }
+  .mega__link {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: .5rem 0; font-size: clamp(1.02rem, 1.1vw, 1.2rem); font-weight: 520; letter-spacing: -0.015em;
+    transition: transform .45s var(--ease-out), color .3s;
+  }
+  .mega__arrow { width: 1rem; height: 1rem; opacity: 0; transform: translateX(-.6rem); transition: opacity .3s, transform .45s var(--ease-out); flex: none; }
+  @media (hover: hover) {
+    .mega__link:hover { transform: translateX(.35rem); }
+    .mega__link:hover .mega__arrow { opacity: 1; transform: none; }
+  }
+  .mega__link:focus-visible .mega__arrow { opacity: 1; transform: none; }
+  .mega__feature {
+    display: flex; flex-direction: column; justify-content: space-between; gap: 2rem;
+    padding: 1.75rem; border-radius: var(--radius-md); min-height: 16rem;
+    transition: transform .6s var(--ease-out);
+  }
+  .mega__feature-title { font-size: clamp(1.5rem, 1.8vw, 2.1rem); line-height: 1.02; letter-spacing: -0.04em; font-weight: 620; }
+  .mega__feature-cta { display: inline-flex; align-items: center; gap: .5rem; font-weight: 600; }
+  .mega__feature-cta svg { width: 1rem; height: 1rem; transition: transform .45s var(--ease-out); }
+  @media (hover: hover) {
+    .mega__feature:hover { transform: translateY(-4px) rotate(-.6deg); }
+    .mega__feature:hover .mega__feature-cta svg { transform: translateX(.35rem); }
+  }
+  @media (max-width: 1279px) {
+    .mega__inner { grid-template-columns: minmax(0, 2.6fr) minmax(0, 1fr); }
+    .mega__intro { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+    .mega__intro .eyebrow { display: none; }
+  }
+</style>

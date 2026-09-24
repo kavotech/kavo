@@ -1,0 +1,35 @@
+---
+import RevealText from './RevealText.astro';
+interface Props {
+  eyebrow?: string;
+  title: string;
+  intro?: string;
+  theme?: string;
+  size?: 'display' | 'h1';
+}
+const { eyebrow, title, intro, theme = 'theme-light', size = 'display' } = Astro.props;
+const dark = theme === 'theme-dark' || theme === 'theme-cobalt';
+---
+<section class:list={['page-hero', theme]} data-theme={dark ? 'dark' : 'light'} data-hero>
+  <div class="container page-hero__inner">
+    {eyebrow && <p class="eyebrow eyebrow--accent" data-hero-fade>{eyebrow}</p>}
+    <RevealText as="h1" trigger="load" class={`page-hero__title t-${size}`}>{title}</RevealText>
+    {(intro || Astro.slots.has('default')) && (
+      <div class="page-hero__foot">
+        {intro && <p class="t-lead page-hero__intro" data-hero-fade>{intro}</p>}
+        <slot />
+      </div>
+    )}
+  </div>
+</section>
+<style>
+  .page-hero { padding-top: calc(var(--header-h) + clamp(3rem, 9vw, 9rem)); padding-bottom: var(--space-xl); }
+  .page-hero__inner { display: grid; gap: var(--space-lg); }
+  .page-hero__title { max-width: 15ch; }
+  .page-hero__foot { display: grid; gap: var(--space-lg); align-items: end; margin-top: var(--space-md); }
+  .page-hero__intro { max-width: 36ch; }
+  @media (min-width: 1024px) {
+    .page-hero__foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .page-hero__intro { grid-column: 2; }
+  }
+</style>

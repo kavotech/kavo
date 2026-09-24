@@ -1,0 +1,45 @@
+---
+import RevealText from '../RevealText.astro';
+import Button from '../Button.astro';
+import KavoMark from '../KavoMark.astro';
+import { site } from '../../data/site';
+---
+<section class="brand theme-volt section" data-theme="light">
+  <div class="container brand__grid">
+    <div class="brand__head">
+      <p class="eyebrow" data-reveal>About Kavo</p>
+      <RevealText as="h2" class="t-h1 brand__title">Technology should make business simpler.</RevealText>
+    </div>
+    <div class="brand__visual" aria-hidden="true" data-reveal>
+      <KavoMark class="brand__mark" />
+      <span class="brand__ring"></span>
+    </div>
+    <div class="brand__body">
+      <p class="t-lead" data-reveal>Kavo Technologies is a digital technology company building websites, applications and digital platforms for businesses across the UK, Uganda and beyond.</p>
+      <p data-reveal>We combine strategy, design and engineering to transform ideas into products people actually enjoy using — working as one small, senior team from first conversation to launch and beyond.</p>
+      <ul class="brand__markets" role="list" data-reveal>
+        {site.markets.map((m) => <li>{m}</li>)}
+      </ul>
+      <div data-reveal><Button href="/about" label="More about Kavo" /></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .brand__grid { display: grid; gap: var(--space-xl); }
+  .brand__head { display: grid; gap: var(--space-md); }
+  .brand__title { max-width: 12ch; }
+  .brand__visual { position: relative; display: grid; place-items: center; aspect-ratio: 1; max-width: 26rem; width: 70%; }
+  .brand__mark { width: 62%; color: var(--c-ink); animation: brand-float 9s var(--ease-in-out) infinite alternate; }
+  .brand__ring { position: absolute; inset: 0; border: 1.5px dashed rgba(13,13,15,.35); border-radius: 50%; animation: brand-spin 40s linear infinite; }
+  .brand__body { display: grid; gap: 1.5rem; max-width: 40rem; align-content: start; }
+  .brand__markets { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; margin: 0; padding: 0; }
+  .brand__markets li { padding: .45rem .95rem; border-radius: var(--radius-pill); background: var(--c-ink); color: var(--c-volt); font-weight: 600; font-size: .9rem; }
+  @keyframes brand-float { to { transform: rotate(-12deg) translateY(-4%); } }
+  @keyframes brand-spin { to { transform: rotate(360deg); } }
+  @media (min-width: 1024px) {
+    .brand__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+    .brand__head { grid-column: 1 / -1; }
+    .brand__visual { justify-self: center; }
+  }
+</style>

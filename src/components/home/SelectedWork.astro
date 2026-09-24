@@ -1,0 +1,40 @@
+---
+import SectionHeading from '../SectionHeading.astro';
+import ProjectCard from '../ProjectCard.astro';
+import Button from '../Button.astro';
+import { getProject } from '../../data/projects';
+const p = (s: string) => getProject(s)!;
+---
+<section class="work-home theme-bone section" data-theme="light" id="work">
+  <div class="container">
+    <SectionHeading eyebrow="Case studies" title="Selected Work" intro="A selection of websites, apps and platforms we have designed and engineered for our clients.">
+      <div class="work-home__all" data-reveal><Button href="/work" label="All projects" variant="outline" /></div>
+    </SectionHeading>
+
+    <div class="work-home__layout">
+      <ProjectCard project={p('breezyee-go')} variant="feature" index={0} class="wh-a" />
+      <div class="work-home__pair">
+        <ProjectCard project={p('rm-mangoes')} variant="tall" index={1} class="wh-b" />
+        <ProjectCard project={p('moonstone-advocates')} variant="compact" index={2} class="wh-c" />
+      </div>
+      <ProjectCard project={p('oasis-school-management')} variant="split" index={3} />
+      <div class="work-home__pair work-home__pair--flip">
+        <ProjectCard project={p('hauseworks')} variant="compact" index={4} class="wh-c" />
+        <ProjectCard project={p('kampala-diplomatic-international-school')} variant="tall" index={5} class="wh-b" />
+      </div>
+      <ProjectCard project={p('voltex-construction')} variant="split" reverse index={6} />
+    </div>
+  </div>
+</section>
+
+<style>
+  .work-home__layout { display: grid; gap: clamp(4rem, 9vw, 9rem); }
+  .work-home__pair { display: grid; gap: clamp(4rem, 9vw, 9rem); }
+  @media (min-width: 768px) {
+    .work-home__pair { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--gutter); align-items: start; }
+    .work-home__pair :global(.wh-c) { margin-top: clamp(8rem, 18vw, 18rem); }
+    .work-home__pair--flip { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+    .work-home__pair--flip :global(.wh-c) { margin-top: 0; }
+    .work-home__pair--flip :global(.wh-b) { margin-top: clamp(6rem, 12vw, 12rem); }
+  }
+</style>

@@ -1,0 +1,37 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import CTA from '../../components/CTA.astro';
+
+const articles = (await getCollection('insights')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const featured = articles.find((a) => a.data.featured) ?? articles[0];
+const rest = articles.filter((a) => a !== featured);
+const categories = [...new Set(articles.map((a) => a.data.category))];
+---
+<BaseLayout title="Insights — Thinking on Websites, Software & Growth" description="Practical articles from Kavo Technologies on websites, mobile apps, custom platforms and digital growth.">
+  <PageHero eyebrow="Insights" title="Latest from Kavo" intro="Practical thinking on building websites, software and digital products that earn their keep.">
+    <ul class="tag-list" role="list" data-hero-fade>{categories.map((c) => <li class="tag">{c}</li>)}</ul>
+  </PageHero>
+
+  <section class="theme-light section section--flush-top" data-theme="light">
+    <div class="container insights">
+      {featured && <ArticleCard article={featured} size="large" headingLevel="h2" />}
+      {rest.length > 0 && (
+        <div class="insights__grid">
+          {rest.map((a) => <ArticleCard article={a} headingLevel="h2" />)}
+        </div>
+      )}
+    </div>
+  </section>
+
+  <CTA title="Got a question we should answer?" label="Ask us" eyebrow="Talk to us" theme="theme-coral" />
+</BaseLayout>
+
+<style>
+  .insights { display: grid; gap: var(--space-2xl); }
+  .insights__grid { display: grid; gap: clamp(3rem, 5vw, 4rem) var(--gutter); padding-top: var(--space-xl); border-top: 1px solid var(--color-line); }
+  @media (min-width: 768px) { .insights__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1280px) { .insights__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>

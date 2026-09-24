@@ -1,0 +1,35 @@
+---
+import RevealText from './RevealText.astro';
+interface Props {
+  eyebrow?: string;
+  title: string;
+  intro?: string;
+  as?: 'h1' | 'h2' | 'h3';
+  size?: 'h1' | 'h2' | 'h3';
+  class?: string;
+  align?: 'split' | 'stack';
+}
+const { eyebrow, title, intro, as = 'h2', size = 'h2', class: className, align = 'split' } = Astro.props;
+---
+<header class:list={['section-heading', `section-heading--${align}`, className]}>
+  <div class="section-heading__title">
+    {eyebrow && <p class="eyebrow" data-reveal>{eyebrow}</p>}
+    <RevealText as={as} class={`t-${size}`}>{title}</RevealText>
+  </div>
+  {(intro || Astro.slots.has('default')) && (
+    <div class="section-heading__aside">
+      {intro && <p class="section-heading__intro t-lead t-muted" data-reveal>{intro}</p>}
+      <slot />
+    </div>
+  )}
+</header>
+<style>
+  .section-heading { display: grid; gap: var(--space-lg); margin-bottom: var(--space-xl); }
+  .section-heading__title { display: grid; gap: var(--space-md); }
+  .section-heading__aside { display: grid; gap: var(--space-md); justify-items: start; }
+  .section-heading__intro { max-width: 34ch; }
+  @media (min-width: 1024px) {
+    .section-heading--split { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); align-items: end; }
+    .section-heading--split .section-heading__aside { justify-self: end; max-width: 34ch; }
+  }
+</style>

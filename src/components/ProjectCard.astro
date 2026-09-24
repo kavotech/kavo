@@ -1,0 +1,81 @@
+---
+import ProjectVisual from './ProjectVisual.astro';
+import RevealImage from './RevealImage.astro';
+import Arrow from './Arrow.astro';
+import type { Project } from '../data/projects';
+
+interface Props {
+  project: Project;
+  variant?: 'feature' | 'split' | 'tall' | 'compact';
+  reverse?: boolean;
+  index?: number;
+  headingLevel?: 'h2' | 'h3';
+  eager?: boolean;
+  class?: string;
+}
+const { project, variant = 'tall', reverse = false, index, headingLevel = 'h3', eager = false, class: className } = Astro.props;
+const H = headingLevel;
+const shape = variant === 'feature' ? 'wide' : variant === 'split' ? 'wide' : variant === 'compact' ? 'square' : 'tall';
+const href = `/work/${project.slug}`;
+---
+<article
+  class:list={['pcard', `pcard--${variant}`, { 'pcard--reverse': reverse }, className]}
+  data-filters={project.filters.join(' ')}
+  data-reveal-group
+>
+  <a href={href} class="pcard__media is-hoverable" data-cursor="View" tabindex="-1" aria-hidden="true">
+    <RevealImage parallax={variant === 'feature'}>
+      <ProjectVisual project={project} shape={shape} eager={eager} />
+    </RevealImage>
+  </a>
+  <div class="pcard__body">
+    <p class="pcard__meta" data-reveal>
+      {typeof index === 'number' && <span class="pcard__index">{String(index + 1).padStart(2, '0')}</span>}
+      <span>{project.category}</span>
+      {project.year && <span>{project.year}</span>}
+    </p>
+    <H class="pcard__title" data-reveal><a href={href} data-cursor="View">{project.name}</a></H>
+    <p class="pcard__summary t-muted" data-reveal>{project.summary}</p>
+    <div class="pcard__foot" data-reveal>
+      <ul class="tag-list" role="list">{project.tags.map((t) => <li class="tag">{t}</li>)}</ul>
+      <a href={href} class="arrow-link pcard__cta" aria-label={`View project: ${project.name}`}>View project <Arrow /></a>
+    </div>
+  </div>
+</article>
+
+<style>
+  .pcard { position: relative; display: grid; gap: 1.5rem; align-content: start; }
+  .pcard__media { display: block; border-radius: var(--radius-lg); overflow: hidden; position: relative; transform: translateZ(0); }
+  .pcard__media :global(.reveal-image) { height: 100%; }
+  .pcard__media :global(.pv) { transition: transform 1.2s var(--ease-out); }
+  @media (hover: hover) { .pcard__media:hover :global(.pv) { transform: scale(1.035); } }
+  .pcard--feature .pcard__media { aspect-ratio: 16 / 9; }
+  .pcard--split .pcard__media { aspect-ratio: 5 / 4; }
+  .pcard--tall .pcard__media { aspect-ratio: 4 / 5; }
+  .pcard--compact .pcard__media { aspect-ratio: 1 / 1; }
+  @media (max-width: 767px) {
+    .pcard--feature .pcard__media, .pcard--split .pcard__media { aspect-ratio: 4 / 3.4; }
+    .pcard--tall .pcard__media { aspect-ratio: 4 / 4.4; }
+  }
+  .pcard__body { display: grid; gap: .9rem; }
+  .pcard__meta { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; font-size: .82rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--color-muted); }
+  .pcard__index { color: var(--color-text); }
+  .pcard__title { font-size: var(--fs-h3); line-height: .98; letter-spacing: -0.045em; font-weight: 600; }
+  .pcard__title a { background-image: linear-gradient(currentColor, currentColor); background-size: 0 .06em; background-repeat: no-repeat; background-position: 0 95%; transition: background-size .6s var(--ease-out); }
+  @media (hover: hover) { .pcard:hover .pcard__title a { background-size: 100% .06em; } }
+  .pcard__summary { max-width: 44ch; font-size: var(--fs-body); }
+  .pcard__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-top: .4rem; }
+  .pcard__cta { font-size: 1rem; }
+
+  .pcard--feature .pcard__title { font-size: var(--fs-h2); }
+  @media (min-width: 1024px) {
+    .pcard--feature .pcard__body { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); column-gap: var(--gutter); align-items: end; }
+    .pcard--feature .pcard__meta { grid-column: 1 / -1; }
+    .pcard--feature .pcard__summary { grid-column: 2; grid-row: 2; align-self: end; }
+    .pcard--feature .pcard__title { grid-column: 1; grid-row: 2 / span 2; }
+    .pcard--feature .pcard__foot { grid-column: 2; }
+    .pcard--split { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); column-gap: clamp(2rem, 5vw, 6rem); align-items: center; }
+    .pcard--split.pcard--reverse .pcard__media { order: 2; }
+    .pcard--split .pcard__title { font-size: var(--fs-h2); }
+  }
+</style>
