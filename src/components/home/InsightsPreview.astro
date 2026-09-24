@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import SectionHeading from '../SectionHeading.astro';
 import ArticleCard from '../ArticleCard.astro';
 import Button from '../Button.astro';
-const articles = (await getCollection('insights')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 2);
+const articles = (await getCollection('insights')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
 ---
 <section class="insights-home theme-bone section" data-theme="light">
   <div class="container">
@@ -18,4 +18,5 @@ const articles = (await getCollection('insights')).sort((a, b) => b.data.date.va
 <style>
   .insights-home__grid { display: grid; gap: clamp(2.5rem, 4vw, 3rem) var(--gutter); }
   @media (min-width: 768px) { .insights-home__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .insights-home__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 </style>

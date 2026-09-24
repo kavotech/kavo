@@ -6,7 +6,7 @@ import type { Project } from '../data/projects';
 
 interface Props {
   project: Project;
-  variant?: 'feature' | 'split' | 'tall' | 'compact' | 'grid';
+  variant?: 'feature' | 'split' | 'tall' | 'compact';
   reverse?: boolean;
   index?: number;
   headingLevel?: 'h2' | 'h3';
@@ -15,8 +15,7 @@ interface Props {
 }
 const { project, variant = 'tall', reverse = false, index, headingLevel = 'h3', eager = false, class: className } = Astro.props;
 const H = headingLevel;
-const shape = variant === 'feature' || variant === 'split' || variant === 'grid' ? 'wide' : variant === 'compact' ? 'square' : 'tall';
-const isGrid = variant === 'grid';
+const shape = variant === 'feature' ? 'wide' : variant === 'split' ? 'wide' : variant === 'compact' ? 'square' : 'tall';
 const href = `/work/${project.slug}`;
 ---
 <article
@@ -32,15 +31,14 @@ const href = `/work/${project.slug}`;
   <div class="pcard__body">
     <p class="pcard__meta" data-reveal>
       {typeof index === 'number' && <span class="pcard__index">{String(index + 1).padStart(2, '0')}</span>}
-      {isGrid && <span class="pcard__client">{project.name}</span>}
       <span>{project.category}</span>
       {project.year && <span>{project.year}</span>}
     </p>
-    <H class="pcard__title" data-reveal><a href={href} data-cursor="View">{isGrid ? project.headline : project.name}</a></H>
-    {!isGrid && <p class="pcard__summary t-muted" data-reveal>{project.summary}</p>}
+    <H class="pcard__title" data-reveal><a href={href} data-cursor="View">{project.name}</a></H>
+    <p class="pcard__summary t-muted" data-reveal>{project.summary}</p>
     <div class="pcard__foot" data-reveal>
       <ul class="tag-list" role="list">{project.tags.map((t) => <li class="tag">{t}</li>)}</ul>
-      <a href={href} class="arrow-link pcard__cta" aria-label={`View case study: ${project.name}`}>{isGrid ? 'View case study' : 'View project'} <Arrow /></a>
+      <a href={href} class="arrow-link pcard__cta" aria-label={`View project: ${project.name}`}>View project <Arrow /></a>
     </div>
   </div>
 </article>
@@ -55,9 +53,6 @@ const href = `/work/${project.slug}`;
   .pcard--split .pcard__media { aspect-ratio: 5 / 4; }
   .pcard--tall .pcard__media { aspect-ratio: 4 / 5; }
   .pcard--compact .pcard__media { aspect-ratio: 1 / 1; }
-  .pcard--grid .pcard__media { aspect-ratio: 5 / 4; }
-  .pcard--grid .pcard__title { font-size: clamp(1.5rem, 2.2vw, 2.4rem); line-height: 1.08; letter-spacing: -0.035em; max-width: 24ch; }
-  .pcard__client { color: var(--color-text); }
   @media (max-width: 767px) {
     .pcard--feature .pcard__media, .pcard--split .pcard__media { aspect-ratio: 4 / 3.4; }
     .pcard--tall .pcard__media { aspect-ratio: 4 / 4.4; }
@@ -65,7 +60,7 @@ const href = `/work/${project.slug}`;
   .pcard__body { display: grid; gap: .9rem; }
   .pcard__meta { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; font-size: .82rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--color-muted); }
   .pcard__index { color: var(--color-text); }
-  .pcard__title { font-size: var(--fs-h3); line-height: 1; letter-spacing: -0.045em; font-weight: var(--fw-heading); }
+  .pcard__title { font-size: var(--fs-h3); line-height: .98; letter-spacing: -0.045em; font-weight: 600; }
   .pcard__title a { background-image: linear-gradient(currentColor, currentColor); background-size: 0 .06em; background-repeat: no-repeat; background-position: 0 95%; transition: background-size .6s var(--ease-out); }
   @media (hover: hover) { .pcard:hover .pcard__title a { background-size: 100% .06em; } }
   .pcard__summary { max-width: 44ch; font-size: var(--fs-body); }

@@ -14,8 +14,6 @@ export interface Project {
   /** Year of delivery — left undefined where not confirmed */
   year?: number;
   summary: string;
-  /** Editorial, outcome-led card title (no unverified figures) */
-  headline: string;
   location?: string;
   overview: string;
   challenge: string;
@@ -57,7 +55,6 @@ export const projects: Project[] = [
     filters: ['apps', 'platforms'],
     tags: ['Mobile App', 'UX/UI', 'Platform Development'],
     summary: 'Mobile marketplace connecting customers with young workers and removal services.',
-    headline: 'Getting a two-sided marketplace moving for Breezyee Go',
     overview:
       'Breezyee Go is a mobile marketplace that lets customers book help with removals, deliveries and everyday jobs — and gives young workers a straightforward way to find paid work nearby.',
     challenge:
@@ -85,7 +82,6 @@ export const projects: Project[] = [
     filters: ['websites', 'growth'],
     tags: ['E-commerce', 'Web Design', 'Social Media'],
     summary: 'A bright, appetite-led online store for a fresh mango supplier.',
-    headline: 'A fresher way to order seasonal fruit for RM Mangoes',
     overview:
       'RM Mangoes needed a way to sell seasonal fresh fruit online with the same warmth and energy as the product itself.',
     challenge:
@@ -114,7 +110,6 @@ export const projects: Project[] = [
     tags: ['Web Design', 'Web Development', 'Content Strategy'],
     location: 'Kampala, Uganda',
     summary: 'A confident, welcoming digital home for an international school community.',
-    headline: 'A welcoming digital front door for Kampala Diplomatic International School',
     overview:
       'An international school website designed to speak to prospective families, current parents and staff — each with very different needs.',
     challenge:
@@ -142,7 +137,6 @@ export const projects: Project[] = [
     filters: ['websites', 'growth'],
     tags: ['Web Design', 'Brand Presence', 'SEO'],
     summary: 'A calm, authoritative website for a law firm built on trust.',
-    headline: 'Calm, credible and easy to contact: a new website for Moonstone Advocates',
     overview:
       'Moonstone Advocates wanted a website that communicates expertise and discretion, and makes it easy for prospective clients to take the first step.',
     challenge:
@@ -170,7 +164,6 @@ export const projects: Project[] = [
     filters: ['websites', 'growth'],
     tags: ['Web Design', 'Booking Journey', 'Google Business'],
     summary: 'A clean, conversion-focused website for a home services brand.',
-    headline: 'Turning local searches into booked jobs for Hauseworks',
     overview:
       'Hauseworks needed a website that makes a professional first impression and turns local searches into booked jobs.',
     challenge:
@@ -198,7 +191,6 @@ export const projects: Project[] = [
     filters: ['websites', 'growth'],
     tags: ['E-commerce', 'Product Catalogue', 'Google Ads'],
     summary: 'A rich, flavour-first online presence for a speciality food supplier.',
-    headline: 'Making a big catalogue easy to browse for Punjab Exotic Foods',
     overview:
       'Punjab Exotic Foods supplies speciality ingredients and foods. They needed a digital storefront that does justice to the product range and is easy to browse.',
     challenge:
@@ -226,7 +218,6 @@ export const projects: Project[] = [
     filters: ['websites', 'growth'],
     tags: ['Web Design', 'Web Development', 'SEO'],
     summary: 'A bold, industrial website for a construction company.',
-    headline: 'An industrial-strength web presence for Voltex Construction',
     overview:
       'Voltex Construction wanted a website with the same strength and precision as the projects they deliver.',
     challenge:
@@ -254,7 +245,6 @@ export const projects: Project[] = [
     filters: ['platforms', 'apps'],
     tags: ['Web Application', 'Dashboards', 'School Systems'],
     summary: 'A school management platform bringing admissions, records and fees into one place.',
-    headline: 'One organised platform for running a school: Oasis School Management',
     overview:
       'Oasis School Management is a web platform that helps schools manage students, attendance, fees and communication without juggling spreadsheets and paper.',
     challenge:

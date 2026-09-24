@@ -5,9 +5,9 @@
    ========================================================================== */
 :root {
   /* Palette */
-  --c-ink: #141414;
-  --c-ink-2: #1d1d1f;
-  --c-ink-3: #29292c;
+  --c-ink: #0d0d0f;
+  --c-ink-2: #17171b;
+  --c-ink-3: #232329;
   --c-white: #ffffff;
   --c-bone: #f2efe8;
   --c-stone: #e3dfd5;
@@ -34,20 +34,19 @@
 
   /* Typography */
   --font-sans: 'Inter Tight Variable', 'Inter Tight', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --fs-display: clamp(2.75rem, 9.2vw, 14rem);
-  --fs-h1: clamp(2.6rem, 7vw, 10rem);
-  --fs-h2: clamp(2.25rem, 5vw, 6.25rem);
-  --fs-h3: clamp(1.6rem, 2.9vw, 3.5rem);
+  --fs-display: clamp(2.75rem, 9.4vw, 11.75rem);
+  --fs-h1: clamp(2.6rem, 7.6vw, 9rem);
+  --fs-h2: clamp(2.25rem, 5.6vw, 6.5rem);
+  --fs-h3: clamp(1.75rem, 3.4vw, 3.75rem);
   --fs-h4: clamp(1.35rem, 2vw, 2.1rem);
   --fs-lead: clamp(1.2rem, 0.95rem + 0.9vw, 1.75rem);
   --fs-body: clamp(1rem, 0.96rem + 0.2vw, 1.175rem);
   --fs-small: 0.9rem;
   --fs-eyebrow: 0.78rem;
-  --lh-tight: 0.95;
-  --lh-heading: 1.05;
-  --fw-heading: 680;
+  --lh-tight: 0.92;
+  --lh-heading: 1.02;
   --lh-body: 1.6;
-  --tracking-display: -0.05em;
+  --tracking-display: -0.055em;
   --tracking-heading: -0.04em;
 
   /* Spacing */
@@ -60,11 +59,9 @@
   --space-xl: clamp(3rem, 6vw, 6rem);
   --space-2xl: clamp(4.5rem, 10vw, 10rem);
   --space-3xl: clamp(6rem, 14vw, 14rem);
-  --gutter: clamp(1rem, 2.8vw, 2.5rem);
-  --container: 1600px;
-  --header-h: 6.5rem;
-  --panel-gap: clamp(0.5rem, 0.9vw, 0.875rem);
-  --radius-panel: clamp(1.5rem, 3vw, 3rem);
+  --gutter: clamp(1rem, 3.4vw, 3rem);
+  --container: 1760px;
+  --header-h: 5.5rem;
 
   /* Shape */
   --radius-sm: 0.5rem;
@@ -82,7 +79,7 @@
 
 @media (max-width: 767px) {
   :root {
-    --header-h: 4.5rem;
+    --header-h: 4.25rem;
     --fs-display: clamp(2.5rem, 12.4vw, 5.5rem);
     --fs-h1: clamp(2.35rem, 11vw, 5rem);
     --fs-h2: clamp(2.1rem, 9.4vw, 4rem);
@@ -114,7 +111,7 @@ body {
   font-size: var(--fs-body);
   line-height: var(--lh-body);
   font-optical-sizing: auto;
-  background: var(--c-ink);
+  background: var(--c-white);
   color: var(--c-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -129,7 +126,7 @@ a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl, dd { margin: 0; }
 ul[role='list'], ol[role='list'] { list-style: none; padding: 0; }
-h1, h2, h3, h4 { font-weight: var(--fw-heading); line-height: var(--lh-heading); letter-spacing: var(--tracking-heading); text-wrap: balance; }
+h1, h2, h3, h4 { font-weight: 600; line-height: var(--lh-heading); letter-spacing: var(--tracking-heading); text-wrap: balance; }
 p { text-wrap: pretty; }
 ::selection { background: var(--c-volt); color: var(--c-ink); }
 
@@ -155,25 +152,6 @@ p { text-wrap: pretty; }
 }
 
 /* ==========================================================================
-   Page shell: dark canvas, content in a rounded panel, colour blocks inset
-   ========================================================================== */
-#main {
-  position: relative; z-index: 1;
-  margin-top: var(--header-h);
-  background: var(--c-white);
-  border-radius: 0 0 var(--radius-panel) var(--radius-panel);
-  overflow: clip;
-  padding-bottom: var(--panel-gap);
-}
-#main > :is(.theme-dark, .theme-bone, .theme-volt, .theme-cobalt, .theme-coral),
-#main > .inset-panel {
-  margin: var(--panel-gap) var(--panel-gap) 0;
-  border-radius: var(--radius-panel);
-  overflow: clip;
-}
-#main > :is(.theme-dark, .theme-bone, .theme-volt, .theme-cobalt, .theme-coral) + :is(.theme-light) { margin-top: 0; }
-
-/* ==========================================================================
    Layout primitives
    ========================================================================== */
 .container {
@@ -195,11 +173,11 @@ p { text-wrap: pretty; }
 /* ==========================================================================
    Typography helpers
    ========================================================================== */
-.t-display { font-size: var(--fs-display); line-height: var(--lh-tight); letter-spacing: var(--tracking-display); font-weight: var(--fw-heading); }
-.t-h1 { font-size: var(--fs-h1); line-height: var(--lh-tight); letter-spacing: var(--tracking-display); font-weight: var(--fw-heading); }
-.t-h2 { font-size: var(--fs-h2); line-height: 0.96; letter-spacing: var(--tracking-display); font-weight: var(--fw-heading); }
-.t-h3 { font-size: var(--fs-h3); line-height: 1.02; letter-spacing: var(--tracking-heading); font-weight: var(--fw-heading); }
-.t-h4 { font-size: var(--fs-h4); line-height: 1.1; letter-spacing: -0.03em; font-weight: var(--fw-heading); }
+.t-display { font-size: var(--fs-display); line-height: var(--lh-tight); letter-spacing: var(--tracking-display); font-weight: 600; }
+.t-h1 { font-size: var(--fs-h1); line-height: var(--lh-tight); letter-spacing: var(--tracking-display); font-weight: 600; }
+.t-h2 { font-size: var(--fs-h2); line-height: 0.96; letter-spacing: var(--tracking-display); font-weight: 600; }
+.t-h3 { font-size: var(--fs-h3); line-height: 1; letter-spacing: var(--tracking-heading); font-weight: 600; }
+.t-h4 { font-size: var(--fs-h4); line-height: 1.1; letter-spacing: -0.03em; font-weight: 600; }
 .t-lead { font-size: var(--fs-lead); line-height: 1.35; letter-spacing: -0.02em; font-weight: 450; }
 .t-body { font-size: var(--fs-body); line-height: var(--lh-body); }
 .t-small { font-size: var(--fs-small); line-height: 1.5; }
@@ -222,43 +200,50 @@ p { text-wrap: pretty; }
    Buttons & links
    ========================================================================== */
 .btn {
-  --btn-h: 3rem;
+  --btn-h: 3.5rem;
   position: relative;
-  display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+  display: inline-flex; align-items: center; gap: .9rem;
   height: var(--btn-h);
-  padding: 0 1.5rem;
+  padding: 0 .45rem 0 1.6rem;
   border-radius: var(--radius-pill);
-  font-size: 1rem; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap;
+  font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap;
   background: var(--color-btn-bg); color: var(--color-btn-text);
   isolation: isolate; overflow: hidden;
-  transition: color .45s var(--ease-out), transform var(--transition-fast), box-shadow .3s;
+  transition: color var(--transition-medium), transform var(--transition-fast);
 }
 .btn::before {
   content: ''; position: absolute; inset: 0; z-index: -1;
   background: var(--color-btn-hover-bg);
   border-radius: inherit;
   transform: translateY(101%);
-  transition: transform .5s var(--ease-out);
+  transition: transform .55s var(--ease-out);
 }
-.btn__label { position: relative; display: inline-block; overflow: hidden; line-height: 1.25; }
+.btn__label { position: relative; display: inline-block; overflow: hidden; }
 .btn__label span { display: block; transition: transform .5s var(--ease-out); }
 .btn__label span + span { position: absolute; inset: 0; transform: translateY(110%); }
-.btn__icon { position: relative; display: grid; place-items: center; overflow: hidden; width: 1rem; height: 1rem; }
-.btn__icon svg { width: 1rem; height: 1rem; transition: transform .5s var(--ease-out); }
+.btn__icon {
+  position: relative; display: grid; place-items: center; overflow: hidden;
+  width: calc(var(--btn-h) - .9rem); height: calc(var(--btn-h) - .9rem);
+  border-radius: 50%;
+  background: var(--color-btn-text); color: var(--color-btn-bg);
+  transition: background var(--transition-medium), color var(--transition-medium);
+}
+.btn__icon svg { width: 1.05rem; height: 1.05rem; transition: transform .5s var(--ease-out); }
 .btn__icon svg + svg { position: absolute; transform: translateX(-180%); }
 @media (hover: hover) {
   .btn:hover::before { transform: translateY(0); }
   .btn:hover { color: var(--color-btn-hover-text); }
   .btn:hover .btn__label span:first-child { transform: translateY(-110%); }
   .btn:hover .btn__label span + span { transform: translateY(0); }
+  .btn:hover .btn__icon { background: var(--color-btn-hover-text); color: var(--color-btn-hover-bg); }
   .btn:hover .btn__icon svg:first-child { transform: translateX(180%); }
   .btn:hover .btn__icon svg + svg { transform: translateX(0); }
 }
 .btn:active { transform: scale(.98); }
-.btn--outline { --color-btn-hover-bg: var(--color-text); --color-btn-hover-text: var(--color-bg); background: transparent; color: var(--color-text); box-shadow: inset 0 0 0 1px currentColor; }
-.btn--accent { --color-btn-bg: var(--c-volt); --color-btn-text: var(--c-ink); --color-btn-hover-bg: var(--c-white); --color-btn-hover-text: var(--c-ink); }
-.btn--sm { --btn-h: 2.5rem; font-size: .92rem; padding: 0 1.1rem; }
-.btn--lg { --btn-h: 3.5rem; font-size: 1.1rem; padding: 0 2rem; }
+.btn--outline { --color-btn-hover-bg: var(--color-text); --color-btn-hover-text: var(--color-bg); background: transparent; color: var(--color-text); box-shadow: inset 0 0 0 1px var(--color-line); }
+.btn--outline .btn__icon { background: var(--color-text); color: var(--color-bg); }
+.btn--sm { --btn-h: 2.75rem; font-size: .92rem; padding-left: 1.15rem; }
+.btn--lg { --btn-h: 4.25rem; font-size: 1.1rem; padding-left: 2rem; }
 
 .link-line {
   position: relative; display: inline-block;
