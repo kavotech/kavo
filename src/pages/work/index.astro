@@ -20,7 +20,7 @@ import { projects, workFilters } from '../../data/projects';
       </div>
       <p class="visually-hidden" aria-live="polite" data-filter-status></p>
       <div class="work-grid" data-work-grid>
-        {projects.map((p, i) => <ProjectCard project={p} variant="tall" index={i} class="work-grid__item" eager={i < 2} />)}
+        {projects.map((p, i) => <ProjectCard project={p} variant="grid" headingLevel="h2" class="work-grid__item" eager={i < 2} />)}
       </div>
     </div>
   </section>
@@ -38,13 +38,6 @@ import { projects, workFilters } from '../../data/projects';
   const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
   const status = document.querySelector<HTMLElement>('[data-filter-status]');
   const reduce = document.documentElement.classList.contains('reduce-motion');
-  // Editorial rhythm: sizes cycle so any filtered set still alternates proportions
-  const pattern = ['xl', 'md', 'sm', 'sm', 'md', 'wide'];
-
-  const layout = () => {
-    const visible = Array.from(grid?.querySelectorAll<HTMLElement>('.work-grid__item:not([hidden])') ?? []);
-    visible.forEach((el, i) => { el.dataset.size = pattern[i % pattern.length]; });
-  };
 
   const apply = (key: string) => {
     if (!grid) return;
@@ -59,7 +52,6 @@ import { projects, workFilters } from '../../data/projects';
       el.querySelectorAll<HTMLElement>('[data-reveal]').forEach((n) => gsap.set(n, { opacity: 1, y: 0 }));
       el.querySelectorAll<HTMLElement>('[data-reveal-image]').forEach((n) => { gsap.set(n, { clipPath: 'inset(0% 0 0 0)' }); gsap.set(n.firstElementChild, { scale: 1 }); });
     });
-    layout();
     if (status) status.textContent = `${count} project${count === 1 ? '' : 's'} shown`;
     if (!reduce) {
       Flip.from(state, {
@@ -71,7 +63,6 @@ import { projects, workFilters } from '../../data/projects';
     }
   };
 
-  layout();
   buttons.forEach((btn) => btn.addEventListener('click', () => {
     buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
     apply(btn.dataset.filter || 'all');
@@ -91,19 +82,7 @@ import { projects, workFilters } from '../../data/projects';
   .filters__btn[aria-pressed='true'] .filters__count { color: var(--c-volt); }
   @media (hover: hover) { .filters__btn:hover:not([aria-pressed='true']) { box-shadow: inset 0 0 0 1px var(--c-ink); } }
 
-  .work-grid { display: grid; gap: clamp(3.5rem, 7vw, 7rem) var(--gutter); }
-  @media (min-width: 768px) {
-    .work-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
-    .work-grid :global(.work-grid__item[data-size='xl']) { grid-column: 1 / -1; }
-    .work-grid :global(.work-grid__item[data-size='xl'] .pcard__media) { aspect-ratio: 16 / 8; }
-    .work-grid :global(.work-grid__item[data-size='md']) { grid-column: span 7; }
-    .work-grid :global(.work-grid__item[data-size='md'] .pcard__media) { aspect-ratio: 5 / 5.2; }
-    .work-grid :global(.work-grid__item[data-size='sm']) { grid-column: span 5; margin-top: clamp(4rem, 12vw, 12rem); }
-    .work-grid :global(.work-grid__item[data-size='sm'] .pcard__media) { aspect-ratio: 1 / 1; }
-    .work-grid :global(.work-grid__item[data-size='sm'] + .work-grid__item[data-size='md']) { margin-top: 0; }
-    .work-grid :global(.work-grid__item[data-size='wide']) { grid-column: 2 / -1; }
-    .work-grid :global(.work-grid__item[data-size='wide'] .pcard__media) { aspect-ratio: 16 / 9; }
-    .work-grid :global(.work-grid__item[data-size='xl'] .pcard__title), .work-grid :global(.work-grid__item[data-size='wide'] .pcard__title) { font-size: var(--fs-h2); }
-  }
+  .work-grid { display: grid; gap: clamp(3rem, 5vw, 4.5rem) var(--gutter); }
+  @media (min-width: 768px) { .work-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .work-grid :global(.work-grid__item[hidden]) { display: none; }
 </style>

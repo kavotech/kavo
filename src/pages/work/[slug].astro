@@ -4,8 +4,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import RevealText from '../../components/RevealText.astro';
 import RevealImage from '../../components/RevealImage.astro';
 import ProjectVisual from '../../components/ProjectVisual.astro';
-import Arrow from '../../components/Arrow.astro';
 import Button from '../../components/Button.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
 import { projects, type Project } from '../../data/projects';
 import { getService } from '../../data/services';
 import { site } from '../../data/site';
@@ -13,18 +13,20 @@ import { site } from '../../data/site';
 export const getStaticPaths = (() =>
   projects.map((project, i) => ({
     params: { slug: project.slug },
-    props: { project, next: projects[(i + 1) % projects.length] },
+    props: {
+      project,
+      more: [1, 2, 3].map((n) => projects[(i + n) % projects.length]),
+    },
   }))) satisfies GetStaticPaths;
 
-interface Props { project: Project; next: Project }
-const { project, next } = Astro.props;
+interface Props { project: Project; more: Project[] }
+const { project, more } = Astro.props;
 const svc = project.services.map((s) => getService(s)).filter((s): s is NonNullable<typeof s> => Boolean(s));
 const sections = [
-  { key: 'Challenge', text: project.challenge },
-  { key: 'Approach', text: project.approach },
-  { key: 'Solution', text: project.solution },
+  { key: 'Challenge', text: project.challenge, shape: 'square' as const },
+  { key: 'Approach', text: project.approach, shape: 'tall' as const },
+  { key: 'Solution', text: project.solution, shape: 'wide' as const },
 ];
-const onDark = project.visual.ink === '#ffffff';
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'CreativeWork',
@@ -76,15 +78,16 @@ const schema = {
     </div>
   </section>
 
-  <section class="theme-bone section cs-story" data-theme="light">
+  <section class="theme-light section section--flush-top cs-story" data-theme="light">
     <div class="container">
       {sections.map((s, i) => (
         <article class="cs-story__row">
-          <div class="cs-story__label">
+          <div class="cs-story__copy">
             <span class="cs-story__num" data-reveal>0{i + 1}</span>
             <RevealText as="h2" class="t-h2">{s.key}</RevealText>
+            <p class="t-lead cs-story__text" data-reveal>{s.text}</p>
           </div>
-          <p class="t-lead cs-story__text" data-reveal>{s.text}</p>
+          <RevealImage class:list={['cs-story__media', `cs-story__media--${s.shape}`]}><ProjectVisual project={project} shape={s.shape} /></RevealImage>
         </article>
       ))}
     </div>
@@ -108,13 +111,6 @@ const schema = {
     </div>
   </section>
 
-  <section class="cs-screens theme-light" data-theme="light" aria-label="Interface visuals">
-    <div class="container cs-screens__grid">
-      <RevealImage class="cs-screens__a"><ProjectVisual project={project} shape="tall" /></RevealImage>
-      <RevealImage class="cs-screens__b"><ProjectVisual project={project} shape="square" /></RevealImage>
-    </div>
-  </section>
-
   <section class="theme-light section section--tight cs-tech" data-theme="light">
     <div class="container cs-tech__grid">
       <p class="eyebrow" data-reveal>Technologies used</p>
@@ -132,19 +128,21 @@ const schema = {
     </div>
   </section>
 
-  <section class="cs-next" data-theme={onDark ? 'dark' : 'light'} style={`--next-bg:${next.visual.bg};--next-ink:${next.visual.ink}`}>
-    <a href={`/work/${next.slug}`} class="cs-next__link" data-cursor="Next">
-      <span class="container cs-next__inner">
-        <span class="eyebrow cs-next__eyebrow">Next project</span>
-        <span class="cs-next__title">{next.name}</span>
-        <span class="cs-next__meta">{next.category} <Arrow /></span>
-      </span>
-    </a>
+  <section class="theme-bone section cs-more" data-theme="light" aria-labelledby="more-work">
+    <div class="container">
+      <div class="cs-more__head">
+        <h2 id="more-work" class="t-h2">More work</h2>
+        <Button href="/work" label="View all work" variant="outline" />
+      </div>
+      <div class="cs-more__grid">
+        {more.map((p) => <ProjectCard project={p} variant="grid" headingLevel="h3" />)}
+      </div>
+    </div>
   </section>
 </BaseLayout>
 
 <style>
-  .cs-hero { padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 7rem)); padding-bottom: var(--space-lg); }
+  .cs-hero { padding-top: clamp(2.5rem, 7vw, 7rem); padding-bottom: var(--space-lg); }
   .cs-hero__inner { display: grid; gap: var(--space-lg); }
   .cs-hero__meta { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; font-size: .85rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--color-muted); }
   .cs-hero__meta a { color: var(--color-text); }
@@ -169,30 +167,22 @@ const schema = {
   }
 
   .cs-story .container { display: grid; gap: var(--space-2xl); }
-  .cs-story__row { display: grid; gap: var(--space-md); }
-  .cs-story__label { display: grid; gap: .75rem; }
-  .cs-story__num { font-size: .9rem; font-weight: 650; color: var(--color-muted); }
-  .cs-story__text { max-width: 44ch; }
+  .cs-story__row { display: grid; gap: var(--space-lg); align-items: center; }
+  .cs-story__copy { display: grid; gap: var(--space-md); align-content: start; }
+  .cs-story__num { font-size: .9rem; font-weight: 700; color: var(--color-muted); }
+  .cs-story__text { max-width: 40ch; }
+  .cs-story :global(.cs-story__media) { border-radius: var(--radius-panel); aspect-ratio: 4 / 3.4; }
   @media (min-width: 1024px) {
-    .cs-story__row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-    .cs-story__row:nth-child(even) .cs-story__label { order: 2; }
-    .cs-story__label { position: sticky; top: calc(var(--header-h) + 2rem); }
+    .cs-story__row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); column-gap: clamp(2rem, 6vw, 7rem); }
+    .cs-story__row:nth-child(even) .cs-story__copy { order: 2; }
+    .cs-story :global(.cs-story__media--tall) { aspect-ratio: 4 / 4.4; }
   }
-
   .cs-features__head { display: grid; gap: var(--space-md); margin-bottom: var(--space-xl); }
   .cs-features { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
   .cs-feature { display: grid; gap: .8rem; align-content: start; padding: clamp(1.5rem, 2.5vw, 2.5rem); border-radius: var(--radius-lg); background: var(--c-ink-2); box-shadow: inset 0 0 0 1px var(--color-line); min-height: 15rem; transition: background .5s, transform .6s var(--ease-out); }
   .cs-feature__num { font-weight: 650; color: var(--c-volt); margin-bottom: 2.5rem; }
   @media (hover: hover) { .cs-feature:hover { background: var(--c-ink-3); transform: translateY(-4px); } }
   @media (min-width: 768px) { .cs-features { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-  .cs-screens { padding-top: var(--space-2xl); }
-  .cs-screens__grid { display: grid; gap: var(--gutter); }
-  .cs-screens :global(.cs-screens__a) { aspect-ratio: 4 / 5; border-radius: var(--radius-lg); }
-  .cs-screens :global(.cs-screens__b) { aspect-ratio: 1; border-radius: var(--radius-lg); }
-  @media (min-width: 768px) {
-    .cs-screens__grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: end; }
-  }
 
   .cs-tech__grid { display: grid; gap: var(--space-md); }
   .cs-tech__list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .1em .6em; font-size: var(--fs-h3); font-weight: 600; letter-spacing: -0.045em; line-height: 1.1; }
@@ -201,14 +191,8 @@ const schema = {
   .cs-outcome__grid { display: grid; gap: var(--space-lg); }
   .cs-outcome__text { max-width: 20ch; }
 
-  .cs-next__link { display: block; background: var(--next-bg); color: var(--next-ink); padding-block: clamp(4rem, 10vw, 10rem); overflow: hidden; }
-  .cs-next__inner { display: grid; gap: 1rem; }
-  .cs-next__eyebrow { color: inherit; }
-  .cs-next__title { font-size: var(--fs-h1); line-height: .9; letter-spacing: var(--tracking-display); font-weight: 600; transition: transform 1s var(--ease-out); max-width: 14ch; }
-  .cs-next__meta { display: inline-flex; align-items: center; gap: .6rem; font-weight: 600; font-size: 1.1rem; }
-  .cs-next__meta :global(svg) { width: 1.3rem; transition: transform .6s var(--ease-out); }
-  @media (hover: hover) {
-    .cs-next__link:hover .cs-next__title { transform: translateX(2rem); }
-    .cs-next__link:hover .cs-next__meta :global(svg) { transform: translateX(.5rem); }
-  }
+  .cs-more__head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1.5rem; margin-bottom: var(--space-lg); }
+  .cs-more__grid { display: grid; gap: clamp(3rem, 5vw, 4rem) var(--gutter); }
+  @media (min-width: 768px) { .cs-more__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1280px) { .cs-more__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 </style>

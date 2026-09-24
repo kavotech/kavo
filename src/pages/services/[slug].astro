@@ -71,6 +71,20 @@ const schema = [
     </div>
   )}
 
+  {related.length > 0 && (
+    <section class="theme-light section section--flush-top" id="work" data-theme="light">
+      <div class="container">
+        <div class="related-head">
+          <h2 class="t-h3">Related work</h2>
+          <Button href="/work" label="View all work" variant="outline" />
+        </div>
+        <div class="related">
+          {related.slice(0, 3).map((p) => <ProjectCard project={p} variant="grid" headingLevel="h3" />)}
+        </div>
+      </div>
+    </section>
+  )}
+
   <section class="theme-light section" data-theme="light">
     <div class="container">
       <SectionHeading eyebrow="Benefits" title="Why it matters" intro={cat.summary} />
@@ -112,19 +126,6 @@ const schema = [
     </div>
   </section>
 
-  {related.length > 0 && (
-    <section class="theme-bone section" id="work" data-theme="light">
-      <div class="container">
-        <SectionHeading eyebrow="Relevant work" title="Work we’re proud of">
-          <div data-reveal><Button href="/work" label="All projects" variant="outline" /></div>
-        </SectionHeading>
-        <div class:list={['related', { 'related--single': related.length === 1 }]}>
-          {related.slice(0, 2).map((p, i) => <ProjectCard project={p} variant={related.length === 1 ? 'split' : i === 0 ? 'tall' : 'compact'} class={i === 1 ? 'related__offset' : ''} />)}
-        </div>
-      </div>
-    </section>
-  )}
-
   <Process />
 
   {siblings.length > 0 && (
@@ -144,7 +145,7 @@ const schema = [
 </BaseLayout>
 
 <style>
-  .svc-hero { padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 7rem)); padding-bottom: var(--space-xl); }
+  .svc-hero { padding-top: clamp(2.5rem, 7vw, 7rem); padding-bottom: var(--space-xl); }
   .svc-hero__inner { display: grid; gap: var(--space-lg); }
   .svc-hero__title { max-width: 13ch; }
   .svc-hero__foot { display: grid; gap: var(--space-md); margin-top: var(--space-md); }
@@ -183,12 +184,10 @@ const schema = [
   .deliverables__list li { padding: .8rem 1.4rem; border-radius: var(--radius-pill); background: var(--c-ink); color: var(--c-volt); font-size: clamp(1rem, 1.4vw, 1.3rem); font-weight: 580; letter-spacing: -0.015em; }
   @media (min-width: 1024px) { .deliverables { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: center; } }
 
-  .related { display: grid; gap: clamp(3rem, 6vw, 6rem); }
-  @media (min-width: 768px) {
-    .related:not(.related--single) { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--gutter); align-items: start; }
-    .related :global(.related__offset) { margin-top: clamp(6rem, 14vw, 14rem); }
-  }
-
+  .related-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1.5rem; padding-top: var(--space-lg); margin-bottom: var(--space-lg); border-top: 1px solid var(--color-line); }
+  .related { display: grid; gap: clamp(3rem, 5vw, 4rem) var(--gutter); }
+  @media (min-width: 768px) { .related { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1280px) { .related { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .siblings__list { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; border-top: 1px solid var(--color-line); }
   .siblings__list li { border-bottom: 1px solid var(--color-line); }
   .siblings__link { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 0; font-size: var(--fs-h4); font-weight: 600; letter-spacing: -0.035em; }

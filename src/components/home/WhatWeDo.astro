@@ -1,62 +1,61 @@
 ---
-import SectionHeading from '../SectionHeading.astro';
+import RevealText from '../RevealText.astro';
 import Arrow from '../Arrow.astro';
 import { categories, servicesByCategory } from '../../data/services';
 ---
 <section class="wwd theme-light section" data-theme="light">
   <div class="container">
-    <SectionHeading eyebrow="Expertise" title="What we do best" intro="Three disciplines, one team. We combine strategy, design and engineering to build digital products around real business goals." />
-    <ul class="wwd__list" role="list">
+    <div class="wwd__head">
+      <p class="eyebrow" data-reveal>Expertise</p>
+      <RevealText as="h2" class="t-h1">What we do best</RevealText>
+    </div>
+    <div class="wwd__grid">
       {categories.map((cat) => (
-        <li class="wwd__item" style={`--accent:${cat.accent}`} data-reveal>
-          <a href={`/services#${cat.key}`} class="wwd__link" data-cursor="Explore">
-            <span class="wwd__fill" aria-hidden="true"></span>
-            <span class="wwd__num">{cat.number}</span>
-            <span class="wwd__name">{cat.name}</span>
-            <span class="wwd__desc">
-              <span class="wwd__summary">{cat.summary}</span>
-              <span class="wwd__subs">{servicesByCategory(cat.key).map((s) => s.name.replace(' & Custom Platforms', '')).join(' · ')}</span>
-            </span>
-            <span class="wwd__arrow" aria-hidden="true"><Arrow /></span>
+        <article class="wwd__tile" style={`--accent:${cat.accent}`} data-reveal>
+          <span class="wwd__num">{cat.number}</span>
+          <h3 class="wwd__name">{cat.name}</h3>
+          <p class="wwd__summary">{cat.summary}</p>
+          <ul class="wwd__subs" role="list">
+            {servicesByCategory(cat.key).map((s) => (
+              <li><a href={`/services/${s.slug}`} class="link-line">{s.name.replace(' & Custom Platforms', '')}</a></li>
+            ))}
+          </ul>
+          <a href={`/services#${cat.key}`} class="wwd__more" aria-label={`Learn more about ${cat.name}`}>
+            <span>Learn more</span><span class="wwd__arrow" aria-hidden="true"><Arrow /></span>
           </a>
-        </li>
+        </article>
       ))}
-    </ul>
+    </div>
   </div>
 </section>
 
 <style>
-  .wwd__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-line); }
-  .wwd__item { border-bottom: 1px solid var(--color-line); }
-  .wwd__link {
-    position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .5rem 1.25rem;
-    padding: clamp(1.5rem, 3vw, 2.75rem) 0; isolation: isolate;
+  .wwd__head { display: grid; gap: var(--space-md); margin-bottom: var(--space-xl); }
+  .wwd__grid { display: grid; gap: var(--panel-gap); }
+  .wwd__tile {
+    position: relative; display: flex; flex-direction: column; gap: 1.25rem;
+    padding: clamp(1.5rem, 2.6vw, 2.5rem); border-radius: var(--radius-panel);
+    background: var(--c-bone); min-height: clamp(26rem, 38vw, 36rem);
+    isolation: isolate; overflow: hidden;
   }
-  .wwd__fill { position: absolute; inset: 0 calc(var(--gutter) * -1); z-index: -1; background: var(--accent); transform: scaleY(0); transform-origin: bottom; transition: transform .7s var(--ease-out); }
-  .wwd__num { align-self: start; padding-top: .8em; font-size: .85rem; font-weight: 600; color: var(--color-muted); font-variant-numeric: tabular-nums; }
-  .wwd__name { font-size: var(--fs-h1); line-height: .9; letter-spacing: var(--tracking-display); font-weight: 600; transition: transform .7s var(--ease-out), color .4s; }
-  .wwd__desc { grid-column: 2 / -1; display: grid; gap: .6rem; max-width: 40rem; }
-  .wwd__summary { font-size: var(--fs-lead); line-height: 1.3; letter-spacing: -0.02em; }
-  .wwd__subs { font-size: .95rem; color: var(--color-muted); transition: color .4s; }
-  .wwd__arrow { grid-row: 1; grid-column: 3; display: grid; place-items: center; width: clamp(3rem, 5vw, 5rem); aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--color-line); transition: background .4s, color .4s, transform .7s var(--ease-out); }
-  .wwd__arrow :global(svg) { width: 40%; transform: rotate(-45deg); transition: transform .6s var(--ease-out); }
-  @media (min-width: 1024px) {
-    .wwd__link { grid-template-columns: 4rem minmax(0, 1.3fr) minmax(0, 1fr) auto; column-gap: var(--gutter); }
-    .wwd__desc { grid-column: 3; }
-    .wwd__arrow { grid-column: 4; }
-  }
+  .wwd__tile::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--accent); transform: translateY(101%); transition: transform .7s var(--ease-out); }
+  .wwd__num { font-size: .85rem; font-weight: 700; color: var(--color-muted); transition: color .4s; }
+  .wwd__name { font-size: var(--fs-h2); line-height: .95; letter-spacing: var(--tracking-display); margin-top: auto; }
+  .wwd__summary { font-size: var(--fs-lead); line-height: 1.3; letter-spacing: -0.02em; max-width: 26ch; }
+  .wwd__subs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1rem; font-size: .95rem; color: var(--color-muted); transition: color .4s; }
+  .wwd__more { display: inline-flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; padding-top: 1.25rem; border-top: 1px solid var(--color-line); font-weight: 700; }
+  .wwd__more::after { content: ''; position: absolute; inset: 0; }
+  .wwd__subs a { position: relative; z-index: 1; }
+  .wwd__arrow { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 50%; background: var(--c-ink); color: var(--c-white); transition: transform .6s var(--ease-out); }
+  .wwd__arrow :global(svg) { width: 1.1rem; }
   @media (hover: hover) {
-    .wwd__link:hover .wwd__fill { transform: scaleY(1); }
-    .wwd__link:hover .wwd__name { transform: translateX(1.5rem); color: var(--c-ink); }
-    .wwd__link:hover { color: var(--c-ink); }
-    .wwd__link:hover .wwd__subs, .wwd__link:hover .wwd__num { color: rgba(13,13,15,.7); }
-    .wwd__link:hover .wwd__arrow { background: var(--c-ink); color: var(--accent); box-shadow: none; }
-    .wwd__link:hover .wwd__arrow :global(svg) { transform: rotate(0); }
+    .wwd__tile:hover::before { transform: translateY(0); }
+    .wwd__tile:hover .wwd__arrow { transform: rotate(-45deg); }
+    .wwd__tile:nth-child(2):hover { color: var(--c-white); }
+    .wwd__tile:nth-child(2):hover .wwd__subs, .wwd__tile:nth-child(2):hover .wwd__num { color: rgba(255,255,255,.8); }
+    .wwd__tile:nth-child(2):hover .wwd__more { border-color: rgba(255,255,255,.3); }
+    .wwd__tile:nth-child(2):hover .wwd__arrow { background: var(--c-white); color: var(--c-cobalt); }
+    .wwd__tile:not(:nth-child(2)):hover .wwd__subs, .wwd__tile:not(:nth-child(2)):hover .wwd__num { color: rgba(20,20,20,.75); }
   }
-  /* cobalt accent needs light text */
-  @media (hover: hover) {
-    .wwd__item:nth-child(2) .wwd__link:hover, .wwd__item:nth-child(2) .wwd__link:hover .wwd__name { color: var(--c-white); }
-    .wwd__item:nth-child(2) .wwd__link:hover .wwd__subs, .wwd__item:nth-child(2) .wwd__link:hover .wwd__num { color: rgba(255,255,255,.8); }
-    .wwd__item:nth-child(2) .wwd__link:hover .wwd__arrow { background: var(--c-white); color: var(--c-cobalt); }
-  }
+  @media (min-width: 1024px) { .wwd__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 </style>

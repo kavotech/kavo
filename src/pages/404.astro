@@ -4,7 +4,7 @@ import RevealText from '../components/RevealText.astro';
 import Button from '../components/Button.astro';
 ---
 <BaseLayout title="Page not found" description="The page you were looking for could not be found." noindex headerTheme="dark">
-  <section class="nf theme-dark" data-theme="dark" data-hero>
+  <section class="nf theme-light" data-theme="light" data-hero>
     <div class="container nf__inner">
       <p class="eyebrow" data-hero-fade>Error 404</p>
       <RevealText as="h1" trigger="load" class="t-display">This page took a wrong turn.</RevealText>
@@ -17,7 +17,7 @@ import Button from '../components/Button.astro';
   </section>
 </BaseLayout>
 <style>
-  .nf { min-height: 100svh; display: flex; align-items: center; padding-top: var(--header-h); }
+  .nf { min-height: calc(100svh - var(--header-h)); display: flex; align-items: center; padding-block: var(--space-xl); }
   .nf__inner { display: grid; gap: var(--space-lg); }
   .nf__inner :global(h1) { max-width: 12ch; }
   .nf__actions { display: flex; flex-wrap: wrap; gap: .75rem; }

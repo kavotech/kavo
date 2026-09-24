@@ -26,7 +26,7 @@ import KavoMark from '../KavoMark.astro';
 </section>
 
 <style>
-  .home-hero { min-height: 100svh; display: flex; align-items: flex-end; padding-top: calc(var(--header-h) + 3rem); padding-bottom: clamp(2.5rem, 5vw, 4.5rem); }
+  .home-hero { min-height: calc(100svh - var(--header-h)); display: flex; align-items: flex-end; padding-top: clamp(3rem, 8vw, 7rem); padding-bottom: clamp(2.5rem, 5vw, 4.5rem); }
   .home-hero__inner { display: grid; gap: clamp(1.5rem, 3vw, 3rem); }
   .home-hero__title { max-width: 10.5em; }
   .home-hero__foot { display: grid; gap: 2rem; align-items: end; margin-top: clamp(.5rem, 2vw, 2rem); }
