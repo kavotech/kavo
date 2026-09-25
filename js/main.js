@@ -939,3 +939,42 @@ function initMobileCardAnimations() {
     cards.forEach(card => observer.observe(card));
 }
 
+
+// ========================================
+// Brand colour theme (blue / red logo)
+// ========================================
+(function initTheme() {
+    const root = document.documentElement;
+    const favicon = document.getElementById('siteFavicon');
+    const buttons = document.querySelectorAll('[data-theme-set]');
+
+    function apply(theme) {
+        if (theme === 'red') root.setAttribute('data-theme', 'red');
+        else root.removeAttribute('data-theme');
+        buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === theme)));
+        if (favicon) favicon.href = `public/kavo-logo-${theme}.png`;
+    }
+
+    let saved = 'blue';
+    try { saved = localStorage.getItem('kavo-theme') === 'red' ? 'red' : 'blue'; } catch (e) { /* storage unavailable */ }
+    apply(saved);
+
+    buttons.forEach((b) => b.addEventListener('click', () => {
+        apply(b.dataset.themeSet);
+        try { localStorage.setItem('kavo-theme', b.dataset.themeSet); } catch (e) { /* ignore */ }
+    }));
+})();
+
+// ========================================
+// Projects filter
+// ========================================
+(function initProjectFilter() {
+    const chips = document.querySelectorAll('.project-filters .chip');
+    const cards = document.querySelectorAll('.project-card');
+    if (!chips.length) return;
+    chips.forEach((chip) => chip.addEventListener('click', () => {
+        chips.forEach((c) => c.classList.toggle('is-active', c === chip));
+        const f = chip.dataset.filter;
+        cards.forEach((card) => { card.hidden = f !== 'all' && card.dataset.cat !== f; });
+    }));
+})();

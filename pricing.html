@@ -19,9 +19,10 @@
     <meta name="twitter:description" content="Transparent UK pricing for websites, e-commerce stores, and business websites. All packages include a free domain.">
     <meta name="twitter:image" content="https://kavotech.uk/public/kavologo.png">
     <link rel="canonical" href="https://kavotech.uk/pricing.html">
-    <link rel="icon" type="image/png" href="public/kavologo.png?v=20260503-9">
-    <link rel="apple-touch-icon" href="public/kavologo.png?v=20260503-9">
-    <link rel="stylesheet" href="css/styles.css?v=20260811-1">
+    <link rel="icon" type="image/png" href="public/kavo-logo-blue.png?v=20260925-1" id="siteFavicon">
+    <link rel="apple-touch-icon" href="public/kavo-logo-blue.png?v=20260925-1">
+    <script>try{if(localStorage.getItem('kavo-theme')==='red')document.documentElement.setAttribute('data-theme','red')}catch(e){}</script>
+    <link rel="stylesheet" href="css/styles.css?v=20260925-1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,15 +32,20 @@
     <header class="header" id="header">
         <div class="container header-container">
             <a href="index.html" class="logo">
-                <img src="public/kavologo.png?v=20260503-9" alt="Kavo Tech" class="logo-img" width="500" height="500" decoding="async">
+                <img src="public/kavo-logo-blue.png?v=20260925-1" alt="Kavo Tech" class="logo-img logo-blue" width="256" height="256" decoding="async"><img src="public/kavo-logo-red.png?v=20260925-1" alt="" aria-hidden="true" class="logo-img logo-red" width="256" height="256" decoding="async">
             </a>
             <nav class="nav">
                 <ul class="nav-links">
                     <li><a href="services.html" data-page-link="services">SERVICES</a></li>
                     <li><a href="index.html#clients">CLIENTS</a></li>
+                    <li><a href="projects.html" data-page-link="projects">PROJECTS</a></li>
                     <li><a href="pricing.html" data-page-link="pricing">PRICING</a></li>
                     <li><a href="about.html" data-page-link="about">WHY US</a></li>
                 </ul>
+                <div class="theme-switch" role="group" aria-label="Brand colour">
+                    <button type="button" class="theme-dot theme-dot-blue" data-theme-set="blue" aria-label="Blue theme" aria-pressed="true"></button>
+                    <button type="button" class="theme-dot theme-dot-red" data-theme-set="red" aria-label="Red theme" aria-pressed="false"></button>
+                </div>
                 <a href="contact.html" class="btn btn-primary nav-cta">GET QUOTE</a>
             </nav>
             <button class="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNavDrawer">
@@ -65,10 +71,12 @@
                 <li><a href="index.html">HOME</a></li>
                 <li><a href="services.html" data-page-link="services">SERVICES</a></li>
                 <li><a href="index.html#clients">CLIENTS</a></li>
+                <li><a href="projects.html" data-page-link="projects">PROJECTS</a></li>
                 <li><a href="pricing.html" data-page-link="pricing">PRICING</a></li>
                 <li><a href="about.html" data-page-link="about">WHY US</a></li>
                 <li><a href="contact.html" data-page-link="contact">CONTACT</a></li>
             </ul>
+            <div class="theme-switch theme-switch-mobile" role="group" aria-label="Brand colour"><span>THEME</span><button type="button" class="theme-dot theme-dot-blue" data-theme-set="blue" aria-label="Blue theme" aria-pressed="true"></button><button type="button" class="theme-dot theme-dot-red" data-theme-set="red" aria-label="Red theme" aria-pressed="false"></button></div>
             <a href="contact.html" class="btn btn-primary mobile-nav-cta">GET QUOTE</a>
         </nav>
     </div>
@@ -203,7 +211,7 @@
             <div class="footer-grid" data-animate="fade-up" data-delay="120">
                 <div class="footer-about">
                     <a href="index.html" class="footer-logo">
-                        <img src="public/kavologo.png?v=20260503-9" alt="Kavo Tech" class="footer-logo-img" width="500" height="500" loading="lazy" decoding="async">
+                        <img src="public/kavo-logo-blue.png?v=20260925-1" alt="Kavo Tech" class="footer-logo-img logo-blue" width="256" height="256" loading="lazy" decoding="async"><img src="public/kavo-logo-red.png?v=20260925-1" alt="" aria-hidden="true" class="footer-logo-img logo-red" width="256" height="256" loading="lazy" decoding="async">
                     </a>
                     <p>We design, build, and launch high-performing digital experiences for ambitious brands that want to look sharper and grow faster.</p>
                     <a href="contact.html" class="footer-cta">
@@ -229,6 +237,7 @@
                         <li><a href="index.html">Home</a></li>
                         <li><a href="services.html">Services</a></li>
                         <li><a href="index.html#clients">Clients</a></li>
+                        <li><a href="projects.html">Projects</a></li>
                         <li><a href="pricing.html">Pricing</a></li>
                         <li><a href="contact.html">Contact</a></li>
                     </ul>
@@ -279,6 +288,7 @@
                 <p>&copy; 2026 Kavo Tech. All rights reserved.</p>
                 <div class="footer-bottom-links">
                     <a href="services.html">Services</a>
+                    <a href="projects.html">Projects</a>
                     <a href="pricing.html">Pricing</a>
                     <a href="contact.html">Contact</a>
                 </div>
@@ -286,7 +296,7 @@
         </div>
     </footer>
 
-    <script src="js/main.js?v=20260811-1"></script>
+    <script src="js/main.js?v=20260925-1"></script>
     <!-- Cookie popup -->
     <div class="cookie-popup" id="cookiePopup" role="dialog" aria-labelledby="cookieTitle" aria-describedby="cookieDesc" aria-modal="true">
         <button class="cookie-close" id="cookieClose" aria-label="Close cookie dialog">✕</button>
