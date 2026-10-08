@@ -40,7 +40,8 @@ Files of interest:
 
 Client reviews (no database):
 
-- Clients leave reviews at `/review.html?t=<one-time token>`; reviews are saved to `data/reviews.json` in this repo via the GitHub API, then Vercel redeploys and they show on the site.
-- Vercel environment variables (Production + Preview): `REVIEW_SECRET` (long random string, signs links), `REVIEW_ADMIN_KEY` (used to create links), `GITHUB_TOKEN` (fine-grained token, Contents: read & write on this repo only). Optional: `GITHUB_REPO` (default `kavotech/kavo`), `GITHUB_BRANCH` (default `master`), `PUBLIC_SITE_URL`.
-- Create a link: `https://kavotech.uk/api/review-link?key=<REVIEW_ADMIN_KEY>&client=Company%20Name`
+- Clients open a plain link, `/review.html?t=<code>`. Each code works once; the repo only stores the code's SHA-256 hash in `data/review-invites.json`.
+- Reviews are saved to `data/reviews.json` via the GitHub API, Vercel redeploys, and they show on the home and projects pages.
+- Only one Vercel env var is needed: `GITHUB_TOKEN` (fine-grained token, Contents: read & write, limited to this repo). Optional: `GITHUB_REPO` (default `kavotech/kavo`), `GITHUB_BRANCH` (default `master`).
+- New links: generate a code with `newCode()`/`inviteFor()` from `server/reviews-core.js` and add the invite to `data/review-invites.json`.
 - Remove a review: delete its entry in `data/reviews.json` and commit.

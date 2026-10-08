@@ -10,33 +10,18 @@ const KINDS = ['Website', 'E-commerce store', 'Web app / platform', 'Mobile app'
 const b64url = (buf) => Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const fromB64url = (s) => Buffer.from(String(s).replace(/-/g, '+').replace(/_/g, '/'), 'base64');
 
-function secret() {
-    const s = process.env.REVIEW_SECRET;
-    if (!s || s.length < 16) throw new Error('REVIEW_SECRET is not set (min 16 chars).');
-    return s;
+const sha = (v) => crypto.createHash("sha256").update(String(v)).digest("hex");
+let invites = [];
+try { invites = require("../data/review-invites.json"); } catch (e) { invites = []; }
+// A review link is a plain URL with a random code. The repo only stores the code's SHA-256 hash.
+function verifyToken(code) {
+    if (typeof code !== "string" || !/^[a-z0-9]{8,40}$/.test(code)) return null;
+    const h = sha(code);
+    const inv = invites.find((i) => i.h === h);
+    return inv ? { id: h.slice(0, 16), label: inv.label || "" } : null;
 }
-function sign(payload) {
-    return b64url(crypto.createHmac('sha256', secret()).update(payload).digest()).slice(0, 27);
-}
-function safeEqual(a, b) {
-    const x = Buffer.from(String(a)), y = Buffer.from(String(b));
-    return x.length === y.length && crypto.timingSafeEqual(x, y);
-}
-function makeToken(label) {
-    const id = crypto.randomBytes(8).toString('hex');
-    const payload = b64url(JSON.stringify({ i: id, l: String(label || '').slice(0, 80) }));
-    return payload + '.' + sign(payload);
-}
-function verifyToken(token) {
-    if (typeof token !== 'string' || token.length > 400) return null;
-    const [payload, sig] = token.split('.');
-    if (!payload || !sig || !safeEqual(sig, sign(payload))) return null;
-    try {
-        const d = JSON.parse(fromB64url(payload).toString('utf8'));
-        if (!/^[0-9a-f]{16}$/.test(d.i)) return null;
-        return { id: d.i, label: typeof d.l === 'string' ? d.l : '' };
-    } catch (e) { return null; }
-}
+function newCode() { return crypto.randomBytes(8).toString("hex").slice(0, 12); }
+function inviteFor(code, label) { return { h: sha(code), label: label || "" }; }
 
 /* ---------- storage ---------- */
 function gh() {
@@ -124,4 +109,4 @@ async function linkState(token) {
     return { status: 200, valid: true, used: list.some((r) => r.id === t.id), label: t.label };
 }
 
-module.exports = { KINDS, makeToken, verifyToken, addReview, linkState, safeEqual };
+module.exports = { KINDS, newCode, inviteFor, verifyToken, addReview, linkState };
