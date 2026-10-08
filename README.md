@@ -37,3 +37,10 @@ Files of interest:
 - `api/contact.js` — Vercel contact endpoint
 - `netlify/functions/contact.js` — Netlify contact endpoint
 - `server/contact-email.js` — shared Resend email logic
+
+Client reviews (no database):
+
+- Clients leave reviews at `/review.html?t=<one-time token>`; reviews are saved to `data/reviews.json` in this repo via the GitHub API, then Vercel redeploys and they show on the site.
+- Vercel environment variables (Production + Preview): `REVIEW_SECRET` (long random string, signs links), `REVIEW_ADMIN_KEY` (used to create links), `GITHUB_TOKEN` (fine-grained token, Contents: read & write on this repo only). Optional: `GITHUB_REPO` (default `kavotech/kavo`), `GITHUB_BRANCH` (default `master`), `PUBLIC_SITE_URL`.
+- Create a link: `https://kavotech.uk/api/review-link?key=<REVIEW_ADMIN_KEY>&client=Company%20Name`
+- Remove a review: delete its entry in `data/reviews.json` and commit.
