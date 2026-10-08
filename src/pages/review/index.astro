@@ -1,0 +1,186 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Arrow from '../../components/Arrow.astro';
+import { projectTypes } from '../../data/reviews';
+---
+<BaseLayout title="Leave a review" description="Share your experience of working with Kavo Technologies." noindex>
+  <section class="rv theme-light" data-theme="light" data-hero>
+    <div class="container rv__grid">
+      <header class="rv__head">
+        <p class="eyebrow eyebrow--accent" data-hero-fade>Client review</p>
+        <h1 class="t-h1 rv__title" data-hero-fade>How did we do?</h1>
+        <p class="t-lead t-muted rv__lede" data-hero-fade>Thank you for working with Kavo Technologies. Your review will appear on our website, so other businesses can hear about your experience.</p>
+      </header>
+
+      <div class="rv__panel" data-hero-fade>
+        <p class="rv__state" data-review-loading>Checking your review link…</p>
+
+        <div class="rv__state rv__state--error" data-review-invalid hidden>
+          <p class="t-h4">This link can’t be used</p>
+          <p class="t-muted" data-review-invalid-msg></p>
+          <a href="/contact" class="arrow-link">Get in touch <Arrow /></a>
+        </div>
+
+        <form class="rform" novalidate data-review-form hidden>
+          <div class="rform__trap" aria-hidden="true">
+            <label for="reviewTrap">Leave this field empty</label>
+            <input type="text" id="reviewTrap" name="honeypot" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <fieldset class="rform__set">
+            <legend class="rform__legend">Your rating <span aria-hidden="true">*</span></legend>
+            <div class="stars" role="radiogroup" aria-describedby="rating-error">
+              {[5, 4, 3, 2, 1].map((n) => (
+                <>
+                  <input type="radio" name="rating" id={`star-${n}`} value={n} />
+                  <label for={`star-${n}`} title={`${n} star${n > 1 ? 's' : ''}`}>
+                    <span class="visually-hidden">{n} star{n > 1 ? 's' : ''}</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" /></svg>
+                  </label>
+                </>
+              ))}
+            </div>
+            <p class="rform__hint" data-rating-label>Tap a star to rate</p>
+            <p class="rform__error" id="rating-error" aria-live="polite"></p>
+          </fieldset>
+
+          <fieldset class="rform__set">
+            <legend class="rform__legend">About you</legend>
+            <div class="rform__row">
+              <div class="rfield">
+                <label for="rv-name">Your name *</label>
+                <input id="rv-name" name="name" type="text" autocomplete="name" maxlength="80" required aria-describedby="name-error" />
+                <p class="rform__error" id="name-error" aria-live="polite"></p>
+              </div>
+              <div class="rfield">
+                <label for="rv-role">Your role <span class="rform__opt">(optional)</span></label>
+                <input id="rv-role" name="role" type="text" autocomplete="organization-title" maxlength="80" placeholder="e.g. Founder, Director" />
+              </div>
+            </div>
+            <div class="rfield">
+              <label for="rv-company">Company name *</label>
+              <input id="rv-company" name="company" type="text" autocomplete="organization" maxlength="120" required aria-describedby="company-error" />
+              <p class="rform__error" id="company-error" aria-live="polite"></p>
+            </div>
+          </fieldset>
+
+          <fieldset class="rform__set">
+            <legend class="rform__legend">Your project</legend>
+            <div class="rform__row">
+              <div class="rfield">
+                <label for="rv-type">What did we build for you? *</label>
+                <select id="rv-type" name="projectType" required aria-describedby="type-error">
+                  <option value="">Choose one</option>
+                  {projectTypes.map((t) => <option value={t}>{t}</option>)}
+                </select>
+                <p class="rform__error" id="type-error" aria-live="polite"></p>
+              </div>
+              <div class="rfield">
+                <label for="rv-project">Project or website name <span class="rform__opt">(optional)</span></label>
+                <input id="rv-project" name="projectName" type="text" maxlength="160" placeholder="e.g. our new website" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="rform__set">
+            <legend class="rform__legend">Your review</legend>
+            <div class="rfield">
+              <label for="rv-body">Tell us about your experience *</label>
+              <textarea id="rv-body" name="body" rows="6" maxlength="1500" required aria-describedby="body-error body-count" placeholder="How was the process? How has the result helped your business?"></textarea>
+              <p class="rform__count" id="body-count" data-body-count>0 / 1500</p>
+              <p class="rform__error" id="body-error" aria-live="polite"></p>
+            </div>
+            <label class="rcheck">
+              <input type="checkbox" name="consent" id="rv-consent" aria-describedby="consent-error" />
+              <span>I’m happy for Kavo Technologies to publish this review, with my name and company, on its website. *</span>
+            </label>
+            <p class="rform__error" id="consent-error" aria-live="polite"></p>
+          </fieldset>
+
+          <div class="rform__submit">
+            <button type="submit" class="btn btn--lg" data-cursor="none">
+              <span class="btn__label"><span data-submit-label>Publish my review</span><span aria-hidden="true">Publish my review</span></span>
+              <span class="btn__icon" aria-hidden="true"><Arrow /><Arrow /></span>
+            </button>
+            <p class="rform__status" role="status" aria-live="polite" data-review-status></p>
+          </div>
+        </form>
+
+        <div class="rv__done theme-volt" data-review-done hidden tabindex="-1">
+          <p class="eyebrow">Review published</p>
+          <p class="t-h2">Thank you!</p>
+          <p class="t-lead">Your review is now live on our website. We really appreciate you taking the time.</p>
+          <div class="rv__done-actions">
+            <a href="/reviews" class="btn"><span class="btn__label"><span>See your review</span><span aria-hidden="true">See your review</span></span><span class="btn__icon" aria-hidden="true"><Arrow /><Arrow /></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { initReviewForm } from '../../scripts/review-form';
+  initReviewForm();
+</script>
+
+<style>
+  .rv { padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 7rem)); padding-bottom: var(--space-2xl); }
+  .rv__grid { display: grid; gap: var(--space-xl); }
+  .rv__head { display: grid; gap: var(--space-lg); align-content: start; }
+  .rv__title { max-width: 10ch; }
+  .rv__lede { max-width: 34ch; }
+  @media (min-width: 1024px) {
+    .rv__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); column-gap: clamp(3rem, 6vw, 7rem); }
+    .rv__head { position: sticky; top: calc(var(--header-h) + 2rem); align-self: start; }
+  }
+  .rv__state { display: grid; gap: 1rem; padding: 2rem; border-radius: var(--radius-lg); background: var(--c-bone); }
+  .rv__done { display: grid; gap: 1.25rem; padding: clamp(2rem, 5vw, 4rem); border-radius: var(--radius-lg); }
+  .rv__done:focus { outline: none; }
+  .rv__done-actions { margin-top: .5rem; }
+
+  .rform { display: grid; gap: clamp(2rem, 4vw, 2.75rem); }
+  .rform__trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .rform__set { border: 0; margin: 0; padding: 0 0 clamp(2rem, 4vw, 2.75rem); min-width: 0; display: grid; gap: 1.25rem; border-bottom: 1px solid var(--color-line); }
+  .rform__legend { padding: 0; margin-bottom: 1rem; font-size: var(--fs-h4); font-weight: 600; letter-spacing: -0.035em; }
+  .rform__row { display: grid; gap: 1.25rem; }
+  @media (min-width: 768px) { .rform__row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .rform__opt { font-weight: 450; color: var(--color-muted); }
+  .rform__hint { font-size: .95rem; font-weight: 550; color: var(--color-muted); min-height: 1.5em; }
+  .rform__error { font-size: .88rem; font-weight: 550; color: var(--c-error); }
+  .rform__error:empty { display: none; }
+  .rform__count { font-size: .8rem; color: var(--color-muted); justify-self: end; font-variant-numeric: tabular-nums; }
+  .rform__submit { display: grid; gap: 1rem; justify-items: start; }
+  .rform__submit .btn[disabled] { opacity: .6; pointer-events: none; }
+  .rform__status[data-state='error'] { color: var(--c-error); font-weight: 550; }
+  .rform__status[data-state='pending'] { color: var(--color-muted); }
+
+  .rfield { display: grid; gap: .45rem; }
+  .rfield label { font-size: .92rem; font-weight: 600; }
+  .rfield input, .rfield textarea, .rfield select {
+    width: 100%; font: inherit; font-size: 1.1rem; color: var(--c-ink);
+    padding: .9rem 0; border: 0; border-bottom: 1.5px solid rgba(13,13,15,.25); border-radius: 0; background: transparent;
+    transition: border-color .3s; appearance: none;
+  }
+  .rfield textarea { resize: vertical; min-height: 9rem; line-height: 1.5; }
+  .rfield select { background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 12px) 50%, calc(100% - 6px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 2rem; cursor: pointer; }
+  .rfield input:focus, .rfield textarea:focus, .rfield select:focus { outline: none; border-bottom-color: var(--c-ink); }
+  .rfield input:focus-visible, .rfield textarea:focus-visible, .rfield select:focus-visible { box-shadow: 0 2px 0 0 var(--c-ink); }
+  .rfield [aria-invalid='true'] { border-bottom-color: var(--c-error); }
+
+  /* Star rating: radios in reverse order so CSS can fill "this star and the ones before it" */
+  .stars { display: inline-flex; flex-direction: row-reverse; justify-content: flex-end; gap: .35rem; }
+  .stars input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .stars label { cursor: pointer; padding: .15rem; border-radius: .5rem; }
+  .stars svg { width: clamp(2.6rem, 8vw, 3.4rem); height: auto; fill: transparent; stroke: var(--c-ink); stroke-width: 1.4; stroke-linejoin: round; transition: fill .2s, transform .35s var(--ease-out); }
+  .stars input:checked + label svg { fill: var(--c-volt-deep); stroke: var(--c-ink); }
+  .stars input:checked ~ label svg { fill: var(--c-volt-deep); }
+  @media (hover: hover) {
+    .stars:hover label svg { fill: transparent; }
+    .stars label:hover svg, .stars label:hover ~ label svg { fill: var(--c-volt); transform: scale(1.06); }
+  }
+  .stars input:focus-visible + label { outline: 2px solid var(--c-ink); outline-offset: 2px; }
+
+  .rcheck { display: flex; gap: .75rem; align-items: flex-start; font-size: .98rem; cursor: pointer; }
+  .rcheck input { flex: none; width: 1.3rem; height: 1.3rem; margin: .1rem 0 0; accent-color: var(--c-ink); }
+</style>

@@ -1,0 +1,159 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Arrow from '../../components/Arrow.astro';
+import { projectTypes } from '../../data/reviews';
+---
+<BaseLayout title="Create a review link" description="Internal tool for creating client review links." noindex>
+  <section class="rl theme-light" data-theme="light" data-hero>
+    <div class="container rl__grid">
+      <header class="rl__head">
+        <p class="eyebrow eyebrow--accent" data-hero-fade>Internal tool</p>
+        <h1 class="t-h1" data-hero-fade>Create a review link</h1>
+        <p class="t-lead t-muted" data-hero-fade>Fill in what you know about the client. Their details will be pre-filled when they open the link. Each link can be used once.</p>
+      </header>
+
+      <form class="rl__form" novalidate data-link-form data-hero-fade>
+        <div class="rl__field">
+          <label for="rl-key">Admin password *</label>
+          <input id="rl-key" name="adminKey" type="password" autocomplete="current-password" required />
+          <label class="rl__remember"><input type="checkbox" name="remember" /> Remember on this device</label>
+        </div>
+        <div class="rl__row">
+          <div class="rl__field">
+            <label for="rl-company">Client company</label>
+            <input id="rl-company" name="company" type="text" maxlength="120" placeholder="e.g. RM Mangoes" />
+          </div>
+          <div class="rl__field">
+            <label for="rl-name">Client name</label>
+            <input id="rl-name" name="name" type="text" maxlength="80" placeholder="Person leaving the review" />
+          </div>
+        </div>
+        <div class="rl__row">
+          <div class="rl__field">
+            <label for="rl-type">What did you build?</label>
+            <select id="rl-type" name="projectType">
+              <option value="">Let the client choose</option>
+              {projectTypes.map((t) => <option value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div class="rl__field">
+            <label for="rl-project">Project or website name</label>
+            <input id="rl-project" name="projectName" type="text" maxlength="120" placeholder="e.g. New online store" />
+          </div>
+        </div>
+        <div class="rl__field rl__field--short">
+          <label for="rl-days">Link expires after (days)</label>
+          <input id="rl-days" name="days" type="number" min="1" max="365" value="30" inputmode="numeric" />
+        </div>
+        <button type="submit" class="btn" data-cursor="none">
+          <span class="btn__label"><span data-link-label>Create link</span><span aria-hidden="true">Create link</span></span>
+          <span class="btn__icon" aria-hidden="true"><Arrow /><Arrow /></span>
+        </button>
+        <p class="rl__status" role="status" aria-live="polite" data-link-status></p>
+
+        <div class="rl__result theme-volt" data-link-result hidden>
+          <p class="eyebrow">Review link ready</p>
+          <input class="rl__url" type="text" readonly data-link-url aria-label="Review link" />
+          <p class="t-small" data-link-expiry></p>
+          <div class="rl__actions">
+            <button type="button" class="btn btn--sm" data-link-copy><span class="btn__label"><span>Copy link</span><span aria-hidden="true">Copy link</span></span></button>
+            <a class="btn btn--sm btn--outline" data-link-whatsapp target="_blank" rel="noopener noreferrer"><span class="btn__label"><span>Send on WhatsApp</span><span aria-hidden="true">Send on WhatsApp</span></span></a>
+            <a class="btn btn--sm btn--outline" data-link-email><span class="btn__label"><span>Send by email</span><span aria-hidden="true">Send by email</span></span></a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  const KEY = 'kavo:review-admin';
+  const form = document.querySelector<HTMLFormElement>('[data-link-form]');
+  if (form) {
+    const status = form.querySelector<HTMLElement>('[data-link-status]')!;
+    const result = form.querySelector<HTMLElement>('[data-link-result]')!;
+    const urlInput = form.querySelector<HTMLInputElement>('[data-link-url]')!;
+    const expiry = form.querySelector<HTMLElement>('[data-link-expiry]')!;
+    const keyInput = form.querySelector<HTMLInputElement>('[name="adminKey"]')!;
+    const remember = form.querySelector<HTMLInputElement>('[name="remember"]')!;
+    const label = form.querySelector<HTMLElement>('[data-link-label]')!;
+
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved) { keyInput.value = saved; remember.checked = true; }
+    } catch { /* storage unavailable */ }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const adminKey = String(fd.get('adminKey') || '');
+      if (!adminKey) { status.textContent = 'Enter the admin password.'; keyInput.focus(); return; }
+      label.textContent = 'Creating…';
+      status.textContent = '';
+      try {
+        const res = await fetch('/api/review-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminKey,
+            company: fd.get('company'), name: fd.get('name'),
+            projectType: fd.get('projectType'), projectName: fd.get('projectName'),
+            days: Number(fd.get('days') || 30),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.error || 'Could not create the link.');
+        try { if (remember.checked) localStorage.setItem(KEY, adminKey); else localStorage.removeItem(KEY); } catch { /* ignore */ }
+
+        urlInput.value = data.url;
+        expiry.textContent = `Expires ${new Date(data.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}. Works once.`;
+        const who = String(fd.get('name') || '').split(' ')[0];
+        const message = `Hi${who ? ` ${who}` : ''}, thank you for working with Kavo Technologies! We'd love to hear how it went — it takes about 2 minutes: ${data.url}`;
+        form.querySelector<HTMLAnchorElement>('[data-link-whatsapp]')!.href = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        form.querySelector<HTMLAnchorElement>('[data-link-email]')!.href = `mailto:?subject=${encodeURIComponent('How did we do? — Kavo Technologies')}&body=${encodeURIComponent(message)}`;
+        result.hidden = false;
+        urlInput.select();
+        ScrollTrigger.refresh();
+      } catch (err) {
+        status.textContent = err instanceof Error ? err.message : 'Could not create the link.';
+      } finally {
+        label.textContent = 'Create link';
+      }
+    });
+
+    form.querySelector('[data-link-copy]')?.addEventListener('click', async (e) => {
+      const btnLabel = (e.currentTarget as HTMLElement).querySelector('.btn__label span');
+      try { await navigator.clipboard.writeText(urlInput.value); } catch { urlInput.select(); document.execCommand('copy'); }
+      if (btnLabel) { btnLabel.textContent = 'Copied!'; setTimeout(() => (btnLabel.textContent = 'Copy link'), 2000); }
+    });
+  }
+</script>
+
+<style>
+  .rl { padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 6rem)); padding-bottom: var(--space-2xl); }
+  .rl__grid { display: grid; gap: var(--space-xl); }
+  .rl__head { display: grid; gap: var(--space-md); align-content: start; max-width: 36rem; }
+  @media (min-width: 1024px) { .rl__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); column-gap: clamp(3rem, 6vw, 7rem); } }
+  .rl__form { display: grid; gap: 1.5rem; justify-items: start; }
+  .rl__form > * { width: 100%; }
+  .rl__form > .btn { width: auto; }
+  .rl__row { display: grid; gap: 1.5rem; }
+  @media (min-width: 768px) { .rl__row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .rl__field { display: grid; gap: .45rem; }
+  .rl__field--short { max-width: 16rem; }
+  .rl__field > label:first-child { font-size: .92rem; font-weight: 600; }
+  .rl__field input:not([type='checkbox']), .rl__field select {
+    width: 100%; font: inherit; font-size: 1.05rem; padding: .85rem 0; border: 0; border-bottom: 1.5px solid rgba(13,13,15,.25);
+    border-radius: 0; background: transparent; color: var(--c-ink); appearance: none;
+  }
+  .rl__field input:focus, .rl__field select:focus { outline: none; border-bottom-color: var(--c-ink); }
+  .rl__remember { display: inline-flex; align-items: center; gap: .5rem; font-size: .9rem; color: var(--color-muted); cursor: pointer; }
+  .rl__remember input { accent-color: var(--c-ink); }
+  .rl__status { font-weight: 550; color: var(--c-error); }
+  .rl__status:empty { display: none; }
+  .rl__result { display: grid; gap: 1rem; padding: clamp(1.5rem, 3vw, 2.5rem); border-radius: var(--radius-lg); }
+  .rl__url { width: 100%; font: inherit; font-size: .95rem; padding: .9rem 1rem; border: 0; border-radius: var(--radius-sm); background: var(--c-white); color: var(--c-ink); }
+  .rl__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+</style>

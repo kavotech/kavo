@@ -10,7 +10,7 @@ export default defineConfig({
   trailingSlash: 'ignore',
   build: { format: 'directory' },
   prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
-  integrations: [sitemap({ filter: (page) => !page.includes('/404') })],
+  integrations: [sitemap({ filter: (page) => !page.includes('/404') && !page.includes('/review/') && !page.endsWith('/review') })],
   scopedStyleStrategy: 'class',
   devToolbar: { enabled: false },
 });

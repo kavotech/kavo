@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import Reviews from '../components/Reviews.astro';
+import CTA from '../components/CTA.astro';
+---
+<BaseLayout title="Client Reviews" description="Reviews from businesses that have worked with Kavo Technologies on websites, apps and digital platforms.">
+  <PageHero eyebrow="Reviews" title="In our clients’ words" size="h1" intro="Every review here was written by a client after we finished their project." />
+  <Reviews limit={0} showAllLink={false} title="All reviews" />
+  <noscript>
+    <section class="container section"><p class="t-lead">Please enable JavaScript to read our client reviews.</p></section>
+  </noscript>
+  <CTA title="Want results like these?" label="Start a project" />
+</BaseLayout>

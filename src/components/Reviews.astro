@@ -1,0 +1,140 @@
+---
+/**
+ * Live client reviews. Loaded in the browser from /api/reviews so new
+ * reviews appear without a redeploy. The section stays hidden until at least
+ * one published review exists — no placeholder testimonials are ever shown.
+ */
+import Button from './Button.astro';
+
+interface Props {
+  /** Maximum reviews to show; 0 shows all */
+  limit?: number;
+  showAllLink?: boolean;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+const { limit = 6, showAllLink = true, title = 'What our clients say', headingLevel = 'h2' } = Astro.props;
+const H = headingLevel;
+---
+<section class="reviews theme-bone section" data-theme="light" data-reviews data-limit={limit} hidden aria-labelledby="reviews-title">
+  <div class="container">
+    <div class="reviews__head">
+      <div class="reviews__title">
+        <p class="eyebrow">Client reviews</p>
+        <H class="t-h2" id="reviews-title">{title}</H>
+      </div>
+      <div class="reviews__summary">
+        <p class="reviews__score"><span data-reviews-average>0.0</span><span class="reviews__outof">/5</span></p>
+        <p class="reviews__stars" aria-hidden="true" data-reviews-avg-stars></p>
+        <p class="t-small t-muted" data-reviews-count></p>
+        {showAllLink && <Button href="/reviews" label="All reviews" variant="outline" size="sm" class="reviews__all" />}
+      </div>
+    </div>
+    <ul class="reviews__grid" role="list" data-reviews-list></ul>
+  </div>
+</section>
+
+<template id="review-card">
+  <li class="rcard">
+    <p class="rcard__stars" data-stars></p>
+    <blockquote class="rcard__body"><p data-body></p></blockquote>
+    <footer class="rcard__foot">
+      <span class="rcard__avatar" aria-hidden="true" data-initials></span>
+      <span class="rcard__who">
+        <span class="rcard__name" data-name></span>
+        <span class="rcard__company" data-company></span>
+      </span>
+      <span class="tag rcard__type" data-type></span>
+    </footer>
+  </li>
+</template>
+
+<script>
+  interface Review {
+    id: string; name: string; company: string; role: string | null;
+    project_type: string; project_name: string | null; rating: number; body: string; created_at: string;
+  }
+
+  const stars = (n: number) => '★★★★★'.slice(0, Math.round(n)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(n));
+
+  async function loadReviews(section: HTMLElement) {
+    const list = section.querySelector<HTMLElement>('[data-reviews-list]');
+    const template = document.getElementById('review-card') as HTMLTemplateElement | null;
+    if (!list || !template) return;
+    try {
+      const res = await fetch('/api/reviews', { headers: { Accept: 'application/json' } });
+      if (!res.ok) return;
+      const data: { reviews: Review[]; count: number; average: number } = await res.json();
+      if (!data.reviews?.length) return;
+
+      const limit = Number(section.dataset.limit || 0);
+      const shown = limit ? data.reviews.slice(0, limit) : data.reviews;
+      shown.forEach((r) => {
+        const card = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        const set = (sel: string, text: string) => { const el = card.querySelector(sel); if (el) el.textContent = text; };
+        const starsEl = card.querySelector<HTMLElement>('[data-stars]')!;
+        starsEl.textContent = stars(r.rating);
+        starsEl.setAttribute('aria-label', `Rated ${r.rating} out of 5`);
+        starsEl.setAttribute('role', 'img');
+        set('[data-body]', r.body);
+        set('[data-name]', r.role ? `${r.name}, ${r.role}` : r.name);
+        set('[data-company]', r.project_name ? `${r.company} · ${r.project_name}` : r.company);
+        set('[data-type]', r.project_type);
+        set('[data-initials]', r.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase());
+        list.appendChild(card);
+      });
+
+      const avg = section.querySelector('[data-reviews-average]');
+      if (avg) avg.textContent = data.average.toFixed(1);
+      const avgStars = section.querySelector('[data-reviews-avg-stars]');
+      if (avgStars) avgStars.textContent = stars(data.average);
+      const count = section.querySelector('[data-reviews-count]');
+      if (count) count.textContent = `Based on ${data.count} client review${data.count === 1 ? '' : 's'}`;
+
+      section.hidden = false;
+      // Sections above/below changed height: let scroll animations re-measure.
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      ScrollTrigger.refresh();
+    } catch {
+      // Network or API unavailable: leave the section hidden.
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-reviews]').forEach(loadReviews);
+</script>
+
+<style>
+  .reviews__head { display: grid; gap: var(--space-lg); margin-bottom: var(--space-xl); }
+  .reviews__title { display: grid; gap: var(--space-md); }
+  .reviews__summary { display: grid; gap: .35rem; justify-items: start; align-content: end; }
+  .reviews__score { font-size: var(--fs-h2); font-weight: 650; letter-spacing: -0.05em; line-height: 1; }
+  .reviews__outof { font-size: .4em; color: var(--color-muted); letter-spacing: 0; margin-left: .15em; }
+  .reviews__stars { font-size: 1.4rem; letter-spacing: .12em; color: var(--c-ink); }
+  .reviews__summary :global(.reviews__all) { margin-top: 1rem; }
+  @media (min-width: 1024px) {
+    .reviews__head { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: end; }
+    .reviews__summary { justify-self: end; justify-items: end; text-align: right; }
+  }
+
+  .reviews__grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  @media (min-width: 768px) { .reviews__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1280px) { .reviews__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .reviews__grid :global(.rcard) {
+    display: flex; flex-direction: column; gap: 1.25rem;
+    padding: clamp(1.5rem, 2.4vw, 2.25rem); border-radius: var(--radius-lg);
+    background: var(--c-white); box-shadow: 0 1px 0 rgba(13,13,15,.06);
+    transition: transform .6s var(--ease-out), box-shadow .6s var(--ease-out);
+  }
+  @media (hover: hover) {
+    .reviews__grid :global(.rcard:hover) { transform: translateY(-4px); box-shadow: 0 30px 60px -40px rgba(13,13,15,.35); }
+  }
+  .reviews__grid :global(.rcard__stars) { font-size: 1.15rem; letter-spacing: .12em; }
+  .reviews__grid :global(.rcard__body) { margin: 0; font-size: clamp(1.05rem, 1rem + .3vw, 1.25rem); line-height: 1.5; letter-spacing: -0.01em; white-space: pre-line; flex: 1; }
+  .reviews__grid :global(.rcard__foot) { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-top: 1.25rem; border-top: 1px solid var(--color-line); }
+  .reviews__grid :global(.rcard__avatar) { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: var(--c-volt); font-weight: 700; font-size: .9rem; flex: none; }
+  .reviews__grid :global(.rcard__who) { display: grid; gap: .1rem; flex: 1; min-width: 10rem; }
+  .reviews__grid :global(.rcard__name) { font-weight: 650; }
+  .reviews__grid :global(.rcard__company) { font-size: .9rem; color: var(--color-muted); }
+  .reviews__grid :global(.rcard__type) { font-size: .75rem; }
+</style>

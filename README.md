@@ -66,3 +66,26 @@ Both use `server/contact-email.js` to validate and send emails via Resend. Envir
 ## Deployment
 
 Both `vercel.json` and `netlify.toml` run `npm run build` and publish `dist/`. Legacy `.html` URLs (`/services.html`, `/about.html`, `/contact.html`, `/pricing.html`) redirect to the new routes.
+
+## Client reviews
+
+Clients leave reviews through a private, single-use link. Reviews go live on `/reviews` and the homepage straight away (no rebuild needed).
+
+**One-time setup**
+
+1. Create a Supabase project for Kavo (free tier is fine) and run `supabase/reviews.sql` in its SQL editor.
+2. Add these environment variables in Vercel/Netlify (and `.env` locally):
+   - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (Project settings → API)
+   - `REVIEW_LINK_SECRET` — a long random string (e.g. `openssl rand -hex 32`)
+   - `REVIEW_ADMIN_KEY` — the password you'll use to create links
+3. Redeploy.
+
+**Sending a link**
+
+Open `https://kavotech.uk/review/new`, enter the admin password and the client's details, then copy the link or send it straight to WhatsApp/email. Links expire after 30 days by default and work once.
+
+**Hiding a review**
+
+In Supabase → Table editor → `reviews`, set `published` to `false`. It disappears from the site within about a minute.
+
+Files: `server/reviews.js` (logic), `api/reviews.js` + `api/review-link.js` (Vercel), `netlify/functions/reviews.js` + `review-link.js` (Netlify), `src/pages/review/` (client form and link tool), `src/components/Reviews.astro` (live display).

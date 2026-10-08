@@ -11,6 +11,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/reviews"
+  to = "/.netlify/functions/reviews"
+  status = 200
+
+[[redirects]]
+  from = "/api/review-link"
+  to = "/.netlify/functions/review-link"
+  status = 200
+
+[[redirects]]
   from = "/index.html"
   to = "/"
   status = 301
