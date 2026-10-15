@@ -2,10 +2,18 @@
 import RevealText from '../RevealText.astro';
 import Button from '../Button.astro';
 import KavoMark from '../KavoMark.astro';
+import { startingFrom, currency } from '../../data/pricing';
 ---
 <section class="home-hero theme-light" data-theme="light" data-hero>
   <div class="container home-hero__inner">
-    <p class="home-hero__eyebrow eyebrow eyebrow--accent" data-hero-fade>Kavo Technologies — Digital product studio, UK &amp; Uganda</p>
+    <div class="home-hero__top" data-hero-fade>
+      <p class="home-hero__eyebrow eyebrow eyebrow--accent">Kavo Technologies — Digital product studio, UK &amp; Uganda</p>
+      <a href="/pricing" class="home-hero__price" data-cursor="none">
+        <span class="home-hero__price-dot" aria-hidden="true"></span>
+        Packages from just <strong>{currency}{startingFrom}</strong>
+        <span class="home-hero__price-arrow" aria-hidden="true">→</span>
+      </a>
+    </div>
     <RevealText as="h1" trigger="load" class="home-hero__title t-display">Digital experiences, built differently.</RevealText>
     <div class="home-hero__foot">
       <a href="#reel" class="home-hero__scroll" data-hero-fade data-cursor="none" aria-label="Scroll to explore">
@@ -15,7 +23,7 @@ import KavoMark from '../KavoMark.astro';
         </span>
       </a>
       <div class="home-hero__intro">
-        <p class="t-lead" data-hero-fade>Kavo Technologies designs and builds websites, apps, platforms and digital experiences for ambitious businesses.</p>
+        <p class="t-lead" data-hero-fade>Kavo Technologies designs and builds <span class="home-hero__cycle" data-cycle="websites|mobile apps|online stores|dashboards|booking systems"><span data-cycle-word>websites</span></span> for ambitious businesses — at prices small businesses can actually afford.</p>
         <div class="home-hero__actions" data-hero-fade>
           <Button href="/contact" label="Start a project" />
           <Button href="/work" label="See our work" variant="outline" />
@@ -28,6 +36,23 @@ import KavoMark from '../KavoMark.astro';
 <style>
   .home-hero { min-height: 100svh; display: flex; align-items: flex-end; padding-top: calc(var(--header-h) + 3rem); padding-bottom: clamp(2.5rem, 5vw, 4.5rem); }
   .home-hero__inner { display: grid; gap: clamp(1.5rem, 3vw, 3rem); }
+  .home-hero__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem; }
+  .home-hero__price {
+    display: inline-flex; align-items: center; gap: .6rem; padding: .55rem 1.1rem .55rem .9rem;
+    border-radius: var(--radius-pill); background: var(--c-ink); color: var(--c-white); font-size: .95rem; font-weight: 550;
+    transition: background .35s, color .35s;
+  }
+  .home-hero__price strong { color: var(--c-volt); font-weight: 750; transition: color .35s; }
+  .home-hero__price-dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--c-volt); animation: price-pulse 2s ease-out infinite; }
+  .home-hero__price-arrow { transition: transform .45s var(--ease-out); }
+  @media (hover: hover) {
+    .home-hero__price:hover { background: var(--c-volt); color: var(--c-ink); }
+    .home-hero__price:hover strong { color: var(--c-ink); }
+    .home-hero__price:hover .home-hero__price-arrow { transform: translateX(.25rem); }
+  }
+  @keyframes price-pulse { 0% { box-shadow: 0 0 0 0 rgba(216,255,62,.7); } 100% { box-shadow: 0 0 0 .7rem rgba(216,255,62,0); } }
+  .home-hero__cycle { display: inline-flex; overflow: hidden; vertical-align: bottom; padding-bottom: .08em; margin-bottom: -.08em; }
+  .home-hero__cycle > span { display: inline-block; background: linear-gradient(transparent 60%, var(--c-volt) 60%); font-weight: 600; white-space: nowrap; }
   .home-hero__title { max-width: 10.5em; }
   .home-hero__foot { display: grid; gap: 2rem; align-items: end; margin-top: clamp(.5rem, 2vw, 2rem); }
   .home-hero__intro { display: grid; gap: 1.75rem; max-width: 36rem; }

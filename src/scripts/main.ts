@@ -3,6 +3,7 @@ import { initHeader } from './header';
 import { initReveals, playIntro, refreshMotion } from './motion';
 import { initCursor, initMagnetic } from './cursor';
 import { initTransitions } from './transitions';
+import { initScrollProgress, initCountUps, initTilt, initWordCycle } from './extras';
 
 declare global {
   interface Window { __kavoReady?: boolean }
@@ -17,6 +18,10 @@ export function initSite() {
   initReveals();
   initCursor();
   initMagnetic();
+  initScrollProgress();
+  initCountUps();
+  initTilt();
+  initWordCycle();
 
   document.querySelectorAll('[data-back-to-top]').forEach((btn) =>
     btn.addEventListener('click', () => {

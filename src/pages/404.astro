@@ -1,24 +1,108 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import RevealText from '../components/RevealText.astro';
 import Button from '../components/Button.astro';
+import Arrow from '../components/Arrow.astro';
+import KavoMark from '../components/KavoMark.astro';
+import PriceTicker from '../components/PriceTicker.astro';
+
+const links = [
+  { label: 'Services', text: 'Websites, software and growth', href: '/services' },
+  { label: 'Work', text: 'Projects we’re proud of', href: '/work' },
+  { label: 'Pricing', text: 'Packages from just £15', href: '/pricing' },
+  { label: 'Contact', text: 'Start a conversation', href: '/contact' },
+];
 ---
 <BaseLayout title="Page not found" description="The page you were looking for could not be found." noindex headerTheme="dark">
-  <section class="nf theme-dark" data-theme="dark" data-hero>
+  <section class="nf theme-dark" data-theme="dark" data-hero data-nf>
     <div class="container nf__inner">
-      <p class="eyebrow" data-hero-fade>Error 404</p>
-      <RevealText as="h1" trigger="load" class="t-display">This page took a wrong turn.</RevealText>
-      <p class="t-lead t-muted" data-hero-fade>The page you’re looking for has moved or no longer exists.</p>
-      <div class="nf__actions" data-hero-fade>
-        <Button href="/" label="Back to home" />
-        <Button href="/work" label="See our work" variant="outline" />
+      <p class="eyebrow" data-hero-fade>Error 404 · Page not found</p>
+
+      <h1 class="nf__digits" aria-label="404">
+        <span class="nf__digit" data-depth="0.6" aria-hidden="true">4</span>
+        <span class="nf__zero" data-depth="1.4" aria-hidden="true"><KavoMark class="nf__mark" /></span>
+        <span class="nf__digit" data-depth="0.9" aria-hidden="true">4</span>
+      </h1>
+
+      <div class="nf__copy">
+        <p class="t-h3 nf__line" data-hero-fade>This page took a wrong turn.</p>
+        <p class="t-lead t-muted" data-hero-fade>The link may be broken, or the page may have moved. Let’s get you somewhere useful.</p>
+        <div class="nf__actions" data-hero-fade>
+          <Button href="/" label="Back to home" />
+          <Button href="/contact" label="Report a broken link" variant="outline" />
+        </div>
       </div>
+
+      <ul class="nf__links" role="list" data-hero-fade>
+        {links.map((l) => (
+          <li>
+            <a href={l.href} class="nf__link" data-cursor="Go">
+              <span class="nf__link-label">{l.label}</span>
+              <span class="nf__link-text">{l.text}</span>
+              <Arrow class="nf__link-arrow" />
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   </section>
+  <PriceTicker />
 </BaseLayout>
+
+<script>
+  import { gsap } from 'gsap';
+  const root = document.querySelector<HTMLElement>('[data-nf]');
+  const reduce = document.documentElement.classList.contains('reduce-motion');
+  if (root && !reduce) {
+    const parts = Array.from(root.querySelectorAll<HTMLElement>('[data-depth]'));
+    // Drop-in: digits fall into place with a little bounce
+    gsap.from(parts, { yPercent: -120, rotate: (i) => [-18, 30, 14][i] ?? 0, opacity: 0, duration: 1.3, ease: 'bounce.out', stagger: 0.12, delay: 0.25 });
+    // Pointer parallax on desktop
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      const movers = parts.map((el) => ({
+        x: gsap.quickTo(el, 'x', { duration: 0.9, ease: 'power3' }),
+        y: gsap.quickTo(el, 'y', { duration: 0.9, ease: 'power3' }),
+        depth: Number(el.dataset.depth || 1),
+      }));
+      root.addEventListener('pointermove', (e) => {
+        const px = e.clientX / window.innerWidth - 0.5;
+        const py = e.clientY / window.innerHeight - 0.5;
+        movers.forEach((m) => { m.x(px * 60 * m.depth); m.y(py * 40 * m.depth); });
+      });
+      root.addEventListener('pointerleave', () => movers.forEach((m) => { m.x(0); m.y(0); }));
+    }
+  }
+</script>
+
 <style>
-  .nf { min-height: 100svh; display: flex; align-items: center; padding-top: var(--header-h); }
+  .nf { min-height: 100svh; padding-top: calc(var(--header-h) + clamp(2rem, 5vw, 4rem)); padding-bottom: var(--space-xl); overflow: hidden; }
   .nf__inner { display: grid; gap: var(--space-lg); }
-  .nf__inner :global(h1) { max-width: 12ch; }
-  .nf__actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+  .nf__digits {
+    display: flex; align-items: center; gap: .02em; margin: 0;
+    font-size: clamp(8rem, 30vw, 26rem); line-height: .8; font-weight: 700; letter-spacing: -0.08em; color: var(--c-white);
+  }
+  .nf__digit, .nf__zero { display: inline-block; will-change: transform; }
+  .nf__zero { width: .78em; height: .78em; margin-inline: .04em; }
+  .nf__mark { width: 100%; height: 100%; color: var(--c-volt); animation: nf-spin 9s var(--ease-in-out) infinite; }
+  @keyframes nf-spin { 0%, 20% { transform: rotate(0); } 30%, 45% { transform: rotate(-90deg); } 55%, 70% { transform: rotate(-180deg); } 80%, 100% { transform: rotate(-360deg); } }
+  .nf__copy { display: grid; gap: 1.25rem; max-width: 40rem; }
+  .nf__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .5rem; }
+  .nf__links { list-style: none; margin: var(--space-md) 0 0; padding: 0; display: grid; gap: .75rem; }
+  @media (min-width: 768px) { .nf__links { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1280px) { .nf__links { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .nf__link {
+    position: relative; display: grid; gap: .35rem; padding: 1.4rem 1.5rem; border-radius: var(--radius-md);
+    background: var(--c-ink-2); box-shadow: inset 0 0 0 1px var(--color-line); overflow: hidden; isolation: isolate;
+    transition: color .4s;
+  }
+  .nf__link::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--c-volt); transform: translateY(101%); transition: transform .55s var(--ease-out); }
+  .nf__link-label { font-size: var(--fs-h4); font-weight: 650; letter-spacing: -0.03em; }
+  .nf__link-text { font-size: .95rem; color: var(--color-muted); transition: color .4s; }
+  .nf__link :global(.nf__link-arrow) { position: absolute; right: 1.4rem; top: 1.5rem; width: 1.3rem; transform: rotate(-45deg); transition: transform .5s var(--ease-out); }
+  @media (hover: hover) {
+    .nf__link:hover { color: var(--c-ink); }
+    .nf__link:hover::before { transform: translateY(0); }
+    .nf__link:hover .nf__link-text { color: rgba(13,13,15,.7); }
+    .nf__link:hover :global(.nf__link-arrow) { transform: rotate(0); }
+  }
+  @media (prefers-reduced-motion: reduce) { .nf__mark { animation: none; } }
 </style>

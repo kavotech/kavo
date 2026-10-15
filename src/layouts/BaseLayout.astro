@@ -95,6 +95,7 @@ const schemas = [orgSchema, ...(schema ? (Array.isArray(schema) ? schema : [sche
   </head>
   <body data-header-theme={headerTheme}>
     <a class="skip-link" href="#main">Skip to content</a>
+    <div class="scroll-progress" aria-hidden="true"><span data-scroll-progress></span></div>
     <Header />
     <main id="main" tabindex="-1">
       <slot />
@@ -115,6 +116,8 @@ const schemas = [orgSchema, ...(schema ? (Array.isArray(schema) ? schema : [sche
 
 <style is:global>
   main:focus { outline: none; }
+  .scroll-progress { position: fixed; inset: 0 0 auto; height: 3px; z-index: 120; pointer-events: none; }
+  .scroll-progress span { display: block; height: 100%; background: var(--c-volt); transform: scaleX(0); transform-origin: left; box-shadow: 0 0 0 1px rgba(13,13,15,.08); }
   .curtain {
     position: fixed; inset: 0; z-index: 200; pointer-events: none;
     display: grid; place-items: center;
