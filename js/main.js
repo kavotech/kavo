@@ -96,12 +96,13 @@ function createFocusTrap(container) {
             container.addEventListener('keydown', handleKeydown);
             const focusable = getFocusable();
             const target = initialFocusEl && focusable.includes(initialFocusEl) ? initialFocusEl : focusable[0];
-            if (target) target.focus();
+            // preventScroll: focusing an element that is still animating in must not jump the page
+            if (target) target.focus({ preventScroll: true });
         },
         deactivate(restoreFocusTo) {
             container.removeEventListener('keydown', handleKeydown);
             if (restoreFocusTo && typeof restoreFocusTo.focus === 'function') {
-                restoreFocusTo.focus();
+                restoreFocusTo.focus({ preventScroll: true });
             }
         }
     };
@@ -214,11 +215,15 @@ function initHeroWordAnimation() {
         }
 
         function createWordFragment(text) {
-            const normalized = text.replace(/\s+/g, ' ').trim();
+            const collapsed = text.replace(/\s+/g, ' ');
+            const normalized = collapsed.trim();
             if (!normalized) return null;
 
             const words = normalized.split(' ');
             const fragment = document.createDocumentFragment();
+            // Keep spaces that separate this text from neighbouring inline
+            // elements (e.g. "through <strong>stunning websites</strong>").
+            if (collapsed.startsWith(' ')) fragment.appendChild(document.createTextNode(' '));
 
             words.forEach((word, index) => {
                 const span = document.createElement('span');
@@ -231,6 +236,7 @@ function initHeroWordAnimation() {
                     fragment.appendChild(document.createTextNode(' '));
                 }
             });
+            if (collapsed.endsWith(' ')) fragment.appendChild(document.createTextNode(' '));
 
             return fragment;
         }
